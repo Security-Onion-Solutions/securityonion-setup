@@ -1,0 +1,70 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion50) precise; urgency=low
+ .
+   * pkill -f ossec_agent
+   * move ossec_agent out of sensor-only code so that it gets renamed properly for master-only
+   * master-only also needs to create bpf.conf and threshold.conf
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -562,6 +562,15 @@ ufw allow 1514/udp >> $LOG 2>&1
+ echo "y" | ufw enable >> $LOG 2>&1
+ 
+ #########################################
++# HIDS Sensor
++#########################################
++SENSORNAME="$HOSTNAME-ossec"
++sed -i "s|^set HOSTNAME.*$|set HOSTNAME $SENSORNAME|g" /etc/nsm/ossec/ossec_agent.conf
++sed -i "s|^set NET_GROUP.*$|set NET_GROUP $SENSORNAME|g" /etc/nsm/ossec/ossec_agent.conf
++sed -i "s|^set SERVER_HOST.*$|set SERVER_HOST $SERVERNAME|g" /etc/nsm/ossec/ossec_agent.conf
++pkill -f ossec_agent
++
++#########################################
+ # Add the Sguil server if necessary
+ #########################################
+ if [ $SERVER -eq 1 ]
+@@ -601,6 +610,10 @@ echo "# Please wait while adjusting Sgui
+ # We keep all our rules in /etc/nsm/rules, so symlink all other rules locations to here
+ rm -rf /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
+ ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
++# Sensors will try to scp bpf.conf and threshold.conf from master, so let's create them if they don't already exist
++if [ ! -f /etc/nsm/rules/bpf.conf ]; then touch /etc/nsm/rules/bpf.conf; fi
++if [ ! -f /etc/nsm/rules/threshold.conf ]; then cp /etc/nsm/templates/snort/threshold.conf /etc/nsm/rules/; fi
++
+ fi
+ 
+ #########################################
+@@ -613,13 +626,6 @@ echo "# Please wait while creating Sguil
+ BY2PORT=8000
+ HOSTNAME=`hostname`
+ 
+-# HIDS Sensor
+-SENSORNAME="$HOSTNAME-ossec"
+-sed -i "s|^set HOSTNAME.*$|set HOSTNAME $SENSORNAME|g" /etc/nsm/ossec/ossec_agent.conf
+-sed -i "s|^set NET_GROUP.*$|set NET_GROUP $SENSORNAME|g" /etc/nsm/ossec/ossec_agent.conf
+-sed -i "s|^set SERVER_HOST.*$|set SERVER_HOST $SERVERNAME|g" /etc/nsm/ossec/ossec_agent.conf
+-pkill ossec_agent
+-
+ # Configure SSH Key authentication to server if necessary
+ if [ "$SERVERNAME" != "localhost" ]
+ then

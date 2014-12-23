@@ -1,0 +1,109 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion66) precise; urgency=low
+ .
+   * convert more lists to radiolists, fix some logic bugs
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -40,7 +40,8 @@ if grep "Security Onion" /etc/network/in
+ 	    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+ 	else
+ 	    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+-	    exit
++	    # exit 0 so we can continue running Setup
++	    exit 0
+ 	fi
+ else
+ 	# First-time user.  Ask if they want to continue.
+@@ -60,7 +61,8 @@ http://code.google.com/p/security-onion/
+ 	ANSWER="$?"
+ 	if [ $ANSWER -eq 1 ]; then
+ 	    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+-	    exit
++	    # exit 0 so we can continue running Setup
++	    exit 0
+ 	else
+ 	    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+ 	fi
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -168,6 +168,9 @@ fi
+ # sosetup-network
+ #########################################
+ [ -f /usr/bin/sosetup-network ] && /usr/bin/sosetup-network
++ANSWER="$?"
++# If there were errors in sosetup-network, then exit
++[ $ANSWER -eq 1 ] && exit
+ 
+ #########################################
+ # Quick Setup or Advanced Setup
+@@ -190,8 +193,14 @@ Advanced Setup is recommended for produc
+ - you choose which sensor processes to enable/disable"
+ YES="Quick Setup"
+ NO="Advanced Setup"
+-zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+-ADVANCED_SETUP="$?"
++SETUP=""
++SETUP=`zenity --list --radiolist \
++        --column "1" --column "2" --hide-header --title="$TITLE" \
++        FALSE "Quick Setup" FALSE "Advanced Setup" --text="$TEXT"`
++[ "$SETUP" == "" ] && exit
++[ "$SETUP" == "Quick Setup" ] && ADVANCED_SETUP="0" || ADVANCED_SETUP="1"
++#zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++#ADVANCED_SETUP="$?"
+ if [ $ADVANCED_SETUP -eq 0 ]; then
+ 	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Performing Quick Setup."
+ 	if [ $NUM_INTERFACES -gt 1 ]; then
+@@ -219,7 +228,7 @@ If this is a sensor for a distributed de
+ You will need to be able to SSH to the existing Server box with an account with sudo privileges.\n\
+ \n\
+ Otherwise, choose Standalone to configure both Server and Sensor components on this box."
+-	COMPONENTS=`zenity --height=300 --list --column="Component" --hide-header --title="$TITLE" --text="$TEXT" Server Sensor Standalone`
++	COMPONENTS=`zenity --height=300 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" FALSE Server FALSE Sensor FALSE Standalone`
+ 	case $COMPONENTS in
+         Standalone)
+                 [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Standalone"
+@@ -333,17 +342,17 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVE
+ 
+ 	# Ask which IDS engine to use.
+ 	TEXT="Which IDS Engine would you like to use?"
+-	IDS_ENGINE=`zenity --list --column="Component" --hide-header --title="$TITLE" --text="$TEXT" Snort Suricata`
++	IDS_ENGINE=`zenity --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" FALSE Snort FALSE Suricata`
+ 	[ -z $IDS_ENGINE ] && exit 
+         [ $DEBUG -eq 1 ] && echo "DEBUG: User selected $IDS_ENGINE."
+ 
+ 	# Ask which IDS ruleset to use.
+ 	TEXT="Which IDS ruleset would you like to use?"
+-	IDS_RULESET=`zenity --width=600 --height=300 --list --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-column="1" --text="$TEXT" --title="$TITLE" \
+-	"ETGPL" "Emerging Threats GPL"  "no oinkcode required" \
+-	"ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
+-	"VRTET" "Snort VRT ruleset and Emerging Threats NoGPL ruleset" "requires Snort VRT oinkcode" \
+-	"VRT" "Snort VRT ruleset only and set a VRT policy" "requires Snort VRT oinkcode" `
++	IDS_RULESET=`zenity --width=600 --height=300 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
++	FALSE "ETGPL" "Emerging Threats GPL"  "no oinkcode required" \
++	FALSE "ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
++	FALSE "VRTET" "Snort VRT ruleset and Emerging Threats NoGPL ruleset" "requires Snort VRT oinkcode" \
++	FALSE "VRT" "Snort VRT ruleset only and set a VRT policy" "requires Snort VRT oinkcode" `
+ 
+ 	case $IDS_RULESET in
+ 	ETGPL)

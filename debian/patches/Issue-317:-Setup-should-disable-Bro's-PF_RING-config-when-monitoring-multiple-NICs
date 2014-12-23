@@ -1,0 +1,40 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion52) precise; urgency=low
+ .
+   * Issue 317: Setup should disable Bro's PF_RING config when monitoring multiple NICs
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -788,6 +788,12 @@ lb_procs=$BRO_LB_PROCS
+ 
+ EOF
+                 done
++		# If monitoring more than one interface, disable PF_RING:
++		# http://securityonion.blogspot.com/2013/02/important-note-for-those-monitoring.html
++		if [ `echo $INTERFACES | wc -w` -gt 1 ]; then
++			sed -i 's|^lb_method=pf_ring|#lb_method=pf_ring|g' /opt/bro/etc/node.cfg
++			sed -i 's|^lb_procs|#lb_procs|g' /opt/bro/etc/node.cfg
++		fi
+         fi
+ 	# Finished with node.cfg
+ 	# Now update networks.cfg

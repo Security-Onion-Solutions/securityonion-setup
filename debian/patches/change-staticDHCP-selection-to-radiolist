@@ -1,0 +1,76 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion63) precise; urgency=low
+ .
+   * change static/DHCP selection to radiolist
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -98,10 +98,12 @@ fi
+ #########################################
+ # Choose static or DHCP configuration for management interface
+ #########################################
+-TEXT="Should $MGMT_INTERFACE use DHCP or static addressing (highly recommended)?"
+-MGMT_CONFIG_TYPE=`zenity --list \
+-        --title="$TITLE" \
+-        --column="" static DHCP --hide-header --text="$TEXT"`
++TEXT="Should $MGMT_INTERFACE use DHCP or static addressing?\n\
++\n\
++Static addressing is highly recommended for production deployments."
++MGMT_CONFIG_TYPE=`zenity --list --radiolist \
++        --column "1" --column "2" --hide-header --title="$TITLE" \
++        FALSE static FALSE DHCP --text="$TEXT"`
+ 
+ # Define a function to validate IP addresses    
+  is_ip() {
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1054,6 +1054,7 @@ echo "WARN_DISK_USAGE=$WARN_DISK_USAGE"
+ echo "CRIT_DISK_USAGE=$CRIT_DISK_USAGE" 		>> $CONF
+ echo "BRO_ENABLED=$BRO_ENABLED" 			>> $CONF
+ echo "OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED" 	>> $CONF
++echo "LOCAL_HIDS_RULE_TUNING=false"			>> $CONF
+ 
+ #########################################
+ # Download rules using Pulledpork
+@@ -1107,6 +1108,8 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		echo "Configuring for Snort VRT and Emerging Threats NoGPL rulesets" >> $LOG 2>&1
+ 		# Enable Snort.
+ 		sed -i "s\#rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|<oinkcode>\rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
++		# Change open to open-nogpl
++		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open-nogpl\g' $PP_CONF >> $LOG 2>&1
+ 		# Test Internet access
+ 		curl -s $ET_URL && curl -s $VRT_URL && INTERNET="UP"
+ 		;;
+@@ -1119,9 +1122,11 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+ 		mkdir -p /var/log/nsm/
+ 		/usr/bin/pulledpork.pl -c $PP_CONF >> /var/log/nsm/pulledpork.log
++		echo "LOCAL_NIDS_RULE_TUNING=false" >> $CONF
+ 	else
+ 		#zenity --error --text="Rule download sites appear to be down.  Skipping rule update."
+-		echo "Rule download sites appear to be down.  Skipping rule update." >> $LOG 2>&1
++		echo "LOCAL_NIDS_RULE_TUNING=true" >> $CONF
++		echo "Rule download sites appear to be down.  Setting LOCAL_NIDS_RULE_TUNING to true." >> $LOG 2>&1
+ 	fi
+ fi
+ 

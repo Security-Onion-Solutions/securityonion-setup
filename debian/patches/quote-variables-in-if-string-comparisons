@@ -1,0 +1,54 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion12) precise; urgency=low
+ .
+   * quote variables in if string comparisons
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -354,7 +354,7 @@ Please use alphanumeric characters only.
+ 		TEXT="What is your email address?\r\rThis will be used when logging into Snorby."
+ 		SNORBY_EMAIL=`zenity --title="$TITLE" --text="$TEXT" --entry`
+ 		[ x$SNORBY_EMAIL = "x" ] && exit
+-		if [[ $SNORBY_EMAIL != *?"@"?*.?* ]] ; then 
++		if [[ "$SNORBY_EMAIL" != *?"@"?*.?* ]] ; then 
+ 			zenity --error --text="Invalid email address\! \r \
+ \r \
+ Please ensure your email address is of the form: \r \
+@@ -829,7 +829,7 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		;;
+ 	esac
+ 
+-	if [ $INTERNET = "UP" ]; then
++	if [ "$INTERNET" = "UP" ]; then
+ 		echo "65"
+ 		echo "# Please wait while executing PulledPork to download rules..." | tee -a $LOG
+ 		mkdir -p /etc/nsm/rules/backup/
+@@ -903,7 +903,7 @@ if [ "$ELSA" = "YES" ]; then
+     else
+         /usr/bin/securityonion-elsa-config.sh -t LOG >> $LOG 2>&1
+     fi
+-    if [ $UPDATE_ELSA_SERVER = "YES" ]; then
++    if [ "$UPDATE_ELSA_SERVER" = "YES" ]; then
+ 	xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo "/usr/bin/securityonion_elsa_register.rb -f && service apache2 restart"
+     fi
+ fi

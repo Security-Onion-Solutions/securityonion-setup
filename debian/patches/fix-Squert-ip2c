@@ -1,0 +1,120 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion65) precise; urgency=low
+ .
+   * fix Squert ip2c
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1173,45 +1173,47 @@ sleep 10s
+ #########################################
+ # Configure Salt
+ #########################################
+-if [ "$SALT" = "NO" ]; then
+-	# Stop both running salt services
+-	service salt-master stop >> $LOG 2>&1
+-	service salt-minion stop >> $LOG 2>&1
+-	# Disable both salt services
+-	[ -f /etc/init/salt-master.conf ] && mv /etc/init/salt-master.conf /etc/init/salt-master.DISABLED
+-	[ -f /etc/init/salt-minion.conf ] && mv /etc/init/salt-minion.conf /etc/init/salt-minion.DISABLED
+-else
+-	# Enable Salt
+-	if [ $SERVER -eq 1 ]; then
+-		# If this box is a Master Server we need to run salt-master
+-		# If salt-master is DISABLED we need to enable it
+-		[ -f /etc/init/salt-master.DISABLED ] && mv /etc/init/salt-master.DISABLED /etc/init/salt-master.conf
+-		# Start salt-master
+-		service salt-master restart >> $LOG 2>&1
+-	else
+-		# If this box is not a Master we need to disable salt-master
+-		# Stop salt-master
++if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
++	if [ "$SALT" = "NO" ]; then
++		# Stop both running salt services
+ 		service salt-master stop >> $LOG 2>&1
+-		# Disable salt-master
++		service salt-minion stop >> $LOG 2>&1
++		# Disable both salt services
+ 		[ -f /etc/init/salt-master.conf ] && mv /etc/init/salt-master.conf /etc/init/salt-master.DISABLED
+-	fi
+-
+-	# All boxes run salt-minion
+-	# Configure minion
+-	echo "master: $SERVERNAME" > /etc/salt/minion.d/onionsalt.conf
+-	# If salt-minion is DISABLED, enable it
+-	[ -f /etc/init/salt-minion.DISABLED ] && mv /etc/init/salt-minion.DISABLED /etc/init/salt-minion.conf
+-	service salt-minion restart >> $LOG 2>&1
+-	ufw allow salt >> $LOG 2>&1
+-
+-	# Takes a few seconds for the minion to check in
+-	sleep 10s
+-
+-	# salt-master needs to accept the key from salt-minion
+-	if [ "$SERVERNAME" = "localhost" ]; then
+-		salt-key -a $HOSTNAME -y >> $LOG 2>&1
++		[ -f /etc/init/salt-minion.conf ] && mv /etc/init/salt-minion.conf /etc/init/salt-minion.DISABLED
+ 	else
+-		echo "salt-key -a $HOSTNAME -y" >> /tmp/sosetupscp
++		# Enable Salt
++		if [ $SERVER -eq 1 ]; then
++			# If this box is a Master Server we need to run salt-master
++			# If salt-master is DISABLED we need to enable it
++			[ -f /etc/init/salt-master.DISABLED ] && mv /etc/init/salt-master.DISABLED /etc/init/salt-master.conf
++			# Start salt-master
++			service salt-master restart >> $LOG 2>&1
++		else
++			# If this box is not a Master we need to disable salt-master
++			# Stop salt-master
++			service salt-master stop >> $LOG 2>&1
++			# Disable salt-master
++			[ -f /etc/init/salt-master.conf ] && mv /etc/init/salt-master.conf /etc/init/salt-master.DISABLED
++		fi
++	
++		# All boxes run salt-minion
++		# Configure minion
++		echo "master: $SERVERNAME" > /etc/salt/minion.d/onionsalt.conf
++		# If salt-minion is DISABLED, enable it
++		[ -f /etc/init/salt-minion.DISABLED ] && mv /etc/init/salt-minion.DISABLED /etc/init/salt-minion.conf
++		service salt-minion restart >> $LOG 2>&1
++		ufw allow salt >> $LOG 2>&1
++	
++		# Takes a few seconds for the minion to check in
++		sleep 10s
++	
++		# salt-master needs to accept the key from salt-minion
++		if [ "$SERVERNAME" = "localhost" ]; then
++			salt-key -a $HOSTNAME -y >> $LOG 2>&1
++		else
++			echo "salt-key -a $HOSTNAME -y" >> /tmp/sosetupscp
++		fi
+ 	fi
+ fi
+ 
+@@ -1275,7 +1277,7 @@ zenity --progress --title="$TITLE" --tex
+ #########################################
+ if [ -d /var/lib/mysql/securityonion_db/ ]; then
+ 	/usr/bin/sguild-add-user "$SGUIL_CLIENT_USERNAME" "$SGUIL_CLIENT_PASSWORD_1" >/dev/null
+-	cd /var/www/squert/.scripts/Ip2c/
++	cd /var/www/squert/.scripts/
+ 	# Setup needs to delete /var/www/squert/.scripts/Ip2c/*.md5 before running ip2c.tcl
+ 	# http://code.google.com/p/security-onion/issues/detail?id=250
+ 	rm -f *.md5

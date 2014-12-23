@@ -1,0 +1,155 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion2) precise; urgency=low
+ .
+   * ask user for number of lb_procs
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -86,6 +86,12 @@ IDS_ENGINE="snort"
+ IDS_RULESET="ETGPL"
+ INTERFACES=`cat "/proc/net/dev" | egrep "eth[0-9]+" | awk '{print $1}' | cut -d\: -f1`
+ SENSORTAB="/etc/nsm/sensortab"
++# IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
++IDS_LB_PROCS=1
++IDS_LB_PROCS_CONFIRM="- Run a single IDS process per interface.\r\n"
++# BRO_LB_PROCS goes into Bro's node.cfg and controls threads for Bro
++BRO_LB_PROCS=1
++BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\r\n"
+ 
+ #########################################
+ # Debug
+@@ -131,9 +137,9 @@ Advanced Setup gives you more control ov
+ - which IDS engine to use (Snort or Suricata)\r\n\
+ - which IDS ruleset(s) to use (Emerging Threats, Snort VRT, or both)\r\n\
+ - which network interfaces should be monitored by the IDS Engine and Bro\r\n\
+-- enabling or disabling ELSA (Enterprise Log Search and Archive)\r\n\
++- how many processes to run for Snort/Suricata/Bro\r\n\
+ \r\n\
+-Quick Setup is recommended for first-time users.  Would you like to use Quick Setup?"
++Quick Setup is recommended for first-time users and is NOT recommended for production deployments.  Would you like to use Quick Setup?"
+ YES="Yes, use Quick Setup!"
+ NO="No, use Advanced Setup."
+ zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
+@@ -218,6 +224,39 @@ You may select multiple interfaces using
+ 	SENSOR_CONFIRM_1="- Configure $IDS_ENGINE and Bro to monitor each of the following interfaces:\r\n"
+ 	SENSOR_CONFIRM_2="$INTERFACES\r\n"
+ 
++	# Determine number of cores and use that a maximum value for IDS/Bro processes to run
++	CORES=`grep -c ^processor /proc/cpuinfo`; LIST=`seq 1 $CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
++	
++	if [ "$CORES" -gt 1 ]; then
++	# IDS_LB_PROCS
++	TEXT="How many $IDS_ENGINE processes would you like to run?\r\n\
++	\r\n\
++This is limited by the number of CPU cores on your system.\r\n\
++\r\n\
++If you need to change this later, you can change the IDS_LB_PROCS variable in /etc/nsm/HOSTNAME-INTERFACE/sensor.conf."
++	IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
++	if [ "$IDS_LB_PROCS" = "" ]
++        then
++                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++                exit
++        fi
++	IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced $IDS_ENGINE processes per interface.\r\n"
++
++	# BRO_LB_PROCS
++	TEXT="How many Bro processes would you like to run?\r\n\
++	\r\n\
++This is limited by the number of CPU cores on your system.\r\n\
++\r\n\
++If you need to change this later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
++	BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
++	if [ "$BRO_LB_PROCS" = "" ]
++        then
++                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++                exit
++        fi
++	BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Bro processes per interface.\r\n"
++	fi # End if CORES > 1
++
+ 	# End IF SENSOR=1
+ 	fi 
+ 
+@@ -390,6 +429,8 @@ $SNORBY_USER_CONFIRM\
+ $SENSOR_CONFIRM_1\
+ $SENSOR_CONFIRM_2\
+ $SENSOR_CONFIRM_3\
++$IDS_LB_PROCS_CONFIRM\
++$BRO_LB_PROCS_CONFIRM\
+ $IDS_RULESET_ACTION\
+ $ELSA_ACTION_CONFIRM\
+ \r\n\
+@@ -595,10 +636,12 @@ do
+ 	# /etc/nsm/rules/
+ 	if [ ! -f /etc/nsm/rules/threshold.conf ]; then cp /etc/nsm/templates/snort/threshold.conf /etc/nsm/rules/; fi
+ 	if [ ! -f /etc/nsm/rules/gen-msg.map ]; then cp /etc/nsm/templates/snort/gen-msg.map /etc/nsm/rules/; fi
+-	# Create a combined classification.config
+-	grep -h -v "^#" /etc/nsm/templates/snort/classification.config /etc/nsm/templates/suricata/classification.config |sort -u > /etc/nsm/rules/classification.config
+-	# Create a combined reference.config
+-	grep -h -v "^#" /etc/nsm/templates/snort/reference.config /etc/nsm/templates/suricata/reference.config |sort -u > /etc/nsm/rules/reference.config
++	if [ ! -f /etc/nsm/rules/classification.config ]; then
++		grep -h -v "^#" /etc/nsm/templates/snort/classification.config /etc/nsm/templates/suricata/classification.config |sort -u > /etc/nsm/rules/classification.config
++	fi
++	if [ ! -f /etc/nsm/rules/reference.config ]; then
++		grep -h -v "^#" /etc/nsm/templates/snort/reference.config /etc/nsm/templates/suricata/reference.config |sort -u > /etc/nsm/rules/reference.config
++	fi
+ 
+         # Create symbolic links for threshold.conf, sid-msg.map, gen-msg.map, classification.config, and reference.config
+ 	for FILENAME in threshold.conf sid-msg.map gen-msg.map classification.config reference.config
+@@ -607,6 +650,9 @@ do
+ 	        ln -s /etc/nsm/rules/$FILENAME /etc/nsm/"$SENSORNAME"/$FILENAME | tee -a $LOG
+ 	done
+ 
++	# Add IDS_LB_PROCS to sensor.conf
++	echo "IDS_LB_PROCS=$IDS_LB_PROCS" >> /etc/nsm/"$SENSORNAME"/sensor.conf
++
+ 	# Create symbolic link for sensor rules directory on server
+ 	if [ "$SERVERNAME" = "localhost" ]
+ 	then
+@@ -664,7 +710,7 @@ type=worker
+ host=$IP
+ interface=$INTERFACE
+ lb_method=pf_ring
+-lb_procs=1
++lb_procs=$BRO_LB_PROCS
+ 
+ EOF
+                 done
+@@ -687,12 +733,13 @@ EOF
+ 	# Need to create the /nsm/bro/ directories in case they don't already exist
+ 	mkdir -p /nsm/bro/spool
+ 	mkdir -p /nsm/bro/logs
+-	chown -R sguil:sguil /nsm/bro
++	# Disabling the Bro non-root stuff for now
++	#chown -R sguil:sguil /nsm/bro
+ 	# Allow Bro to run as non-root
+-	setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/bro
+-	setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/capstats
++	#setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/bro
++	#setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/capstats
+ 	# Now tell Bro to install the new config and create the "current" symlink in /nsm/bro/logs
+-	sudo -u sguil /opt/bro/bin/broctl install |tee -a $LOG
++	#sudo -u sguil /opt/bro/bin/broctl install |tee -a $LOG
+ fi
+ 
+ fi

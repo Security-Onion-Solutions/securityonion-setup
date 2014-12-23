@@ -1,0 +1,745 @@
+securityonion-setup (20120912-0ubuntu0securityonion125) precise; urgency=low
+
+  * fix sosetup-fix-ppconf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 10 Oct 2014 14:01:11 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion124) precise; urgency=low
+
+  * removing verbose echo statements from sosetup-fix-ppconf
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 10 Oct 2014 10:43:26 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion123) precise; urgency=low
+
+  * Issue 626:	Update Setup for Sguil 0.9 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 05 Oct 2014 16:16:24 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion122) precise; urgency=low
+
+  * cosmetic fix 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 24 Sep 2014 08:28:56 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion121) precise; urgency=low
+
+  * if Snort Community line exists, just uncomment it 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 24 Sep 2014 08:14:50 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion120) precise; urgency=low
+
+  * Issue 613: sosetup: if user chooses VRT rules, enable Community as well 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 24 Sep 2014 07:41:15 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion119) precise; urgency=low
+
+  * Issue 590:	Setup: sosetup.conf SALT="YES" 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 15 Sep 2014 16:49:29 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion118) precise; urgency=low
+
+  * fix sensor bugs 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 03 Sep 2014 17:03:30 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion117) precise; urgency=low
+
+  * fix ELSA log_size_limit 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 03 Sep 2014 13:45:28 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion116) precise; urgency=low
+
+  * fix answer file for sensors 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 03 Sep 2014 09:55:48 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion115) precise; urgency=low
+
+  * automated answer file 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 02 Sep 2014 19:31:41 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion114) precise; urgency=low
+
+  * Issue 576:	Setup: restart MySQL to make config changes take effect 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 15 Aug 2014 16:33:45 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion113) precise; urgency=low
+
+  * add -P option to pulledpork.pl execution
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 24 Jul 2014 11:05:48 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion112) precise; urgency=low
+
+  * Issue 565:	sosetup: run PulledPork with -T option if ENGINE=suricata 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 24 Jul 2014 09:51:10 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion111) precise; urgency=low
+
+  * Issue 564:	Setup: avoid breaking ELSA syslog-ng.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 24 Jul 2014 09:24:05 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion110) precise; urgency=low
+
+  * Issue 539: sosetup: support more network card naming stuff
+  * Issue 522: sosetup should handle more than 10 interfaces correctly 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 16 Jul 2014 16:06:13 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion109) precise; urgency=low
+
+  * only display final pulledpork screen if server 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 15 Jul 2014 17:45:27 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion108) precise; urgency=low
+
+  * fix bugs 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 15 Jul 2014 16:43:04 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion107) precise; urgency=low
+
+  * Issue 527:	Setup: when choosing sensor-only and entering server name, do not allow the hostname or IP address of the sensor itself 
+  * Issue 546:	Setup: change true/false options to yes/no
+  * Issue 543:	Setup: if no Internet access, notify user that we're setting LOCAL_NIDS_RULE_TUNING=yes
+  * Issue 538:	sosetup: add references to sostat, sostat-redacted and sostat-quick
+  * Issue 545:	Setup: add comments to /etc/nsm/securityonion.conf
+  * Issue 525:	Setup: configure all available sniffing interfaces and prompt for which interfaces to enable
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 14 Jul 2014 16:33:49 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion106) precise; urgency=low
+
+  * Update copyright date 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 22 Jun 2014 10:20:22 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion105) precise; urgency=low
+
+  * Fix /etc/init/network-manager.conf as well 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 29 May 2014 20:19:01 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion104) precise; urgency=low
+
+  * Issue 542: Setup: when disabling salt, avoid modifying salt package files 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 29 May 2014 09:07:08 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion103) precise; urgency=low
+
+  * check for DNS failure as well 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 21 Apr 2014 09:30:47 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion102) precise; urgency=low
+
+  * Issue 524: Setup should test connection to master server using ssh instead of nc 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 19 Apr 2014 17:16:18 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion101) precise; urgency=low
+
+  * Issue 489: sosetup: capture rmmod output
+  * Issue 479: sosetup: should verify that it can resolve server hostname before trying to connect
+  * Issue 496: sosetup: VRT policy screen should be a radiolist
+  * Issue 514: sosetup: fix df /nsm check
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 21 Mar 2014 13:56:59 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion100) precise; urgency=low
+
+  * Issue 485: sosetup-network: mention MTU and other custom config can be manually added to /etc/network/interfaces
+  * Issue 499: sosetup-network: fix backup path in /etc/network/interfaces
+  * Issue 511: sosetup-network: management interface selection should be a radiolist 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 14 Mar 2014 09:04:37 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion99) precise; urgency=low
+
+  * use GB for LOG_SIZE_LIMIT 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 06 Feb 2014 11:10:23 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion98) precise; urgency=low
+
+  * fix MySQL check and default LOG_SIZE_LIMIT to half disk size
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 06 Feb 2014 09:52:36 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion97) precise; urgency=low
+
+  * MySQL tuning 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 05 Feb 2014 13:53:44 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion96) precise; urgency=low
+
+  * fix query_timeout in /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-api.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 04 Feb 2014 07:11:53 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion95) precise; urgency=low
+
+  * another fix for log_size_limit 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 01 Feb 2014 15:48:56 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion94) precise; urgency=low
+
+  * fixes for log_size_limit 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 01 Feb 2014 11:41:34 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion93) precise; urgency=low
+
+  * Issues 463 and 470 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 30 Jan 2014 09:18:12 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion92) precise; urgency=low
+
+  * Issues 435, 446, and 452 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 27 Dec 2013 10:21:39 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion91) precise; urgency=low
+
+  * push logic down to nsm_server_add 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 26 Dec 2013 20:38:33 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion90) precise; urgency=low
+
+  * sosetup-network: replace ifconfig with ip link and avoid stopping Network Manager (just disable it) 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 11 Nov 2013 06:51:01 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion89) precise; urgency=low
+
+  * Snorby ELSA query should quote IP address and groupby program 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 11 Nov 2013 06:33:04 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion88) precise; urgency=low
+
+  * update URL 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 11 Nov 2013 05:13:19 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion87) precise; urgency=low
+
+  * pivot from Snorby to ELSA 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 11 Nov 2013 04:44:43 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion86) precise; urgency=low
+
+  * cosmetic fixes
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 10 Nov 2013 12:55:34 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion84) precise; urgency=low
+
+  * Support new ELSA r1090 architecture
+
+ -- Scott Allen Runnels <srunnels@gmail.com>  Thu, 21 Nov 2013 13:08:38 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion80) precise; urgency=low
+
+  * enable/disable Bro file extraction 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 09 Nov 2013 17:43:36 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion79) precise; urgency=low
+
+  * cosmetic fixes 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 09 Nov 2013 17:32:32 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion78) precise; urgency=low
+
+  * Bro file extraction option 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 09 Nov 2013 17:14:23 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion77) precise; urgency=low
+
+  * add DAYSTOKEEP and DAYSTOREPAIR to Advanced Setup
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 09 Nov 2013 16:30:36 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion76) precise; urgency=low
+
+  * Bro 2.2 supports PF_RING on multiple interfaces now, prompt user to reboot for Setup phase 1 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 08 Nov 2013 11:46:01 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion75) precise; urgency=low
+
+  * Squert - add indexes for cid and sid 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 14 Oct 2013 08:40:09 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion74) precise; urgency=low
+
+  * Squert 1.1.5 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 12 Oct 2013 07:31:17 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion73) precise; urgency=low
+
+  * add netsniff-ng ring-buffer and mmap options
+  * Issue 391:Setup should write log file to /tmp and then copy to /var/log/nsm/sosetup.log when done
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 07 Oct 2013 09:14:19 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion72) precise; urgency=low
+
+  * more FQDN fixes for salt-minion 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 01 Sep 2013 17:00:13 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion71) precise; urgency=low
+
+  * salt-minion checks in using FQDN instead of just hostname 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 01 Sep 2013 16:37:19 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion70) precise; urgency=low
+
+  * only open salt firewall ports if master 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 31 Aug 2013 07:58:34 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion69) precise; urgency=low
+
+  * have minion run state.highstate at end 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 31 Aug 2013 00:01:07 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion68) precise; urgency=low
+
+  * tell master that this minion is a sensor 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 30 Aug 2013 23:08:15 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion67) precise; urgency=low
+
+  * improve salt integration 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 27 Aug 2013 10:33:23 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion66) precise; urgency=low
+
+  * convert more lists to radiolists, fix some logic bugs 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 24 Aug 2013 09:01:25 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion65) precise; urgency=low
+
+  * fix Squert ip2c 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 23 Aug 2013 07:54:30 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion64) precise; urgency=low
+
+  * update for Squert 1.1 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 22 Aug 2013 23:50:33 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion63) precise; urgency=low
+
+  * change static/DHCP selection to radiolist 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 20 Aug 2013 23:14:40 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion62) precise; urgency=low
+
+  * wait 10 seconds before trying to accept minion 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 18 Aug 2013 15:11:30 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion61) precise; urgency=low
+
+  * Initial salt integration 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 18 Aug 2013 14:26:48 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion60) precise; urgency=low
+
+  * wait 10 seconds after "start securityonion" to allow services to start 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 04 Jul 2013 20:16:32 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion59) precise; urgency=low
+
+  * Advanced Setup asks about enabling snort, bro, and pcap 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 04 Jul 2013 19:10:28 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion58) precise; urgency=low
+
+  * Advanced Setup asks about enabling argus, prads, and http_agent 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 04 Jul 2013 19:04:11 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion57) precise; urgency=low
+
+  * Add CRIT_DISK_USAGE selection screen to Advanced Setup 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 04 Jul 2013 15:17:25 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion56) precise; urgency=low
+
+  * Add PCAP_SIZE selection screen to Advanced Setup 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 01 Jul 2013 07:07:06 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion55) precise; urgency=low
+
+  * if user enables ELSA, configure OSSEC to send alerts to local syslog 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 26 May 2013 12:48:47 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion54) precise; urgency=low
+
+  * update Bro PF_RING load balancing verbiage 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 04 May 2013 21:23:28 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion53) precise; urgency=low
+
+  * add Bro PF_RING verbiage to Bro PF_RING core selection screen 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 04 May 2013 20:38:59 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion52) precise; urgency=low
+
+  * Issue 317: Setup should disable Bro's PF_RING config when monitoring multiple NICs 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 04 May 2013 19:56:04 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion51) precise; urgency=low
+
+  * allow user to only configure management interface if so desired
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 08 Mar 2013 15:03:01 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion50) precise; urgency=low
+
+  * pkill -f ossec_agent
+  * move ossec_agent out of sensor-only code so that it gets renamed properly for master-only
+  * master-only also needs to create bpf.conf and threshold.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 20 Jan 2013 14:17:25 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion49) precise; urgency=low
+
+  * change "pkill -f" to "pkill" 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 19 Jan 2013 20:08:46 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion48) precise; urgency=low
+
+  * Quick Setup configures netsniff-ng with -c
+  * sosetup-network should only disable NIC offloading on sniffing interfaces 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 21 Dec 2012 12:08:57 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion47) precise; urgency=low
+
+  * work around Remastersys bug 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 21 Dec 2012 11:56:54 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion46) precise; urgency=low
+
+  * disable IPv6 on sniffing interfaces 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 17 Dec 2012 16:42:43 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion45) precise; urgency=low
+
+  * add extra warning about NIC offload features 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 12 Dec 2012 15:01:27 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion44) precise; urgency=low
+
+  * pre-populate Snorby with capME URL for transcripts 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 02 Dec 2012 11:37:53 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion43) precise; urgency=low
+
+  * require non-empty domain name in /etc/network/interfaces 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 02 Dec 2012 11:25:42 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion42) precise; urgency=low
+
+  * add dns-domain to /etc/network/interfaces
+  * when sosetup-network has already been run, default to "skip"
+  * sleep after reboot to prevent Setup from continuing 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 30 Nov 2012 07:14:19 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion41) precise; urgency=low
+
+  * another fix for sosetupscp 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 29 Nov 2012 12:41:32 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion40) precise; urgency=low
+
+  * change > sosetupscp to >> to allow multiple interfaces to be symlinked on central server properly 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 29 Nov 2012 12:26:14 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion39) precise; urgency=low
+
+  * when configuring sensor, set ENGINE variable properly REDO
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 20 Nov 2012 16:03:43 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion38) precise; urgency=low
+
+  * Add more verbiage to server/sensor/standalone screen. 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 20 Nov 2012 09:50:06 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion37) precise; urgency=low
+
+  * split sosetup-network into a separate script 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 20 Nov 2012 08:55:28 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion36) precise; urgency=low
+
+  * when configuring sensor, set ENGINE variable properly
+  * when configuring management interface, network address and broadcast address are optional 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 19 Nov 2012 15:38:14 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion35) precise; urgency=low
+
+  * set MON_INTERFACES variable
+  * restart sensor processes after bouncing interfaces
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 16 Nov 2012 15:03:59 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion34) precise; urgency=low
+
+  * /etc/network/interfaces config by Matt Gregory 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 16 Nov 2012 10:53:16 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion33) precise; urgency=low
+
+  * fix while loop for alphanumeric passwords 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 15 Nov 2012 09:31:07 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion32) precise; urgency=low
+
+  * require passwords to have alphanumeric characters 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 14 Nov 2012 17:07:50 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion31) precise; urgency=low
+
+  * NSM scripts are now responsible for copying IDS_LB_PROCS to suricata.yaml 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 12 Nov 2012 08:36:35 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion30) precise; urgency=low
+
+  * fix classification.config and reference.config 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 10 Nov 2012 06:38:20 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion29) precise; urgency=low
+
+  * replace threads: 1 in suricata.yaml 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 10 Nov 2012 06:27:29 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion28) precise; urgency=low
+
+  * change suricata threads variable from afpacket to pfring 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 10 Nov 2012 06:12:44 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion27) precise; urgency=low
+
+  * include source for dev ppa 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 09 Nov 2012 13:46:05 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion26) precise; urgency=low
+
+  * add bpf-bro.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 09 Nov 2012 12:46:07 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion25) precise; urgency=low
+
+  * IDS alerts now available in ELSA
+  * fix bug when running Setup a second time 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 10 Oct 2012 16:04:51 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion24) precise; urgency=low
+
+  * open port 514 (tcp and udp) for syslog 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 09 Oct 2012 14:06:15 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion23) precise; urgency=low
+
+  * fix formatting of BRO_LB_PROCS screen 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 04 Oct 2012 16:28:51 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion22) precise; urgency=low
+
+  * define CORES in variables section, recommend BRO_LB_PROCS=CORES/2 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 04 Oct 2012 09:55:16 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion21) precise; urgency=low
+
+  * scp threshold.conf and bpf.conf to sensor 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 03 Oct 2012 17:00:25 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion20) precise; urgency=low
+
+  * scp sid-msg.map to sensor 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 02 Oct 2012 16:39:22 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion19) precise; urgency=low
+
+  * treat so_rules just like downloaded.rules and local.rules 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 02 Oct 2012 16:29:02 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion18) precise; urgency=low
+
+  * add /etc/sguild symlink to allow Sguil email to work 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 26 Sep 2012 19:24:47 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion17) precise; urgency=low
+
+  * fix progress bar
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 26 Sep 2012 16:01:35 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion16) precise; urgency=low
+
+  * queue up ssh commands and run as single batch 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 26 Sep 2012 14:53:32 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion15) precise; urgency=low
+
+  * echo "y" | ufw enable (for running over SSH) 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 26 Sep 2012 08:54:37 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion14) precise; urgency=low
+
+  * remove extraneous ssh 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 25 Sep 2012 18:41:49 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion13) precise; urgency=low
+
+  * updated Component screen 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 25 Sep 2012 14:26:22 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion12) precise; urgency=low
+
+  * quote variables in if string comparisons 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 25 Sep 2012 11:21:36 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion11) precise; urgency=low
+
+  * split up final screen into three separate screens 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 24 Sep 2012 14:00:27 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion10) precise; urgency=low
+
+  * add support for Suricata 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 20 Sep 2012 16:25:23 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion9) precise; urgency=low
+
+  * fix NUM_INTERFACES 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 19 Sep 2012 17:05:17 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion8) precise; urgency=low
+
+  * create /var/log/nsm/ before trying to write log file 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 19 Sep 2012 14:56:13 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion7) precise; urgency=low
+
+  * create log file properly 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 19 Sep 2012 11:48:28 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion6) precise; urgency=low
+
+  * massive improvements to Setup wizard 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 18 Sep 2012 09:57:41 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion5) precise; urgency=low
+
+  * bug fixes 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 17 Sep 2012 16:58:17 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion4) precise; urgency=low
+
+  * uncomment broctl install 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 14 Sep 2012 11:47:51 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion3) precise; urgency=low
+
+  * increment BY2PORT by 100 for each interface to allow for multiple barnyard/snort_agent per interface 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 13 Sep 2012 16:27:33 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion2) precise; urgency=low
+
+  * ask user for number of lb_procs 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 13 Sep 2012 12:39:11 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion1) precise; urgency=low
+
+  * Initial release
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 12 Sep 2012 10:38:30 -0400

@@ -1,0 +1,87 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion106) precise; urgency=low
+ .
+   * Update copyright date
+Author: doug <doug@securityonion-dev>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ #
+-# Copyright (C) 2010-2013 Doug Burks and Security Onion
++# Copyright (C) 2010-2014 Doug Burks and Security Onion
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License Version 2 as
+@@ -20,51 +20,6 @@
+ #
+ # Description:
+ # Configure Security Onion.
+-#
+-# Version:
+-# 20121116
+-#
+-# Changelog:
+-# 20111116 - Set OSSEC timezone to match OS timezone
+-#
+-# 20111222 - Start Snorby
+-#
+-# 20120106 - If configuring server, make sure MySQL is started
+-# 	     If this box was previously a slave, we need to remove securityonion_ssh.conf
+-#
+-# 20120113 - Configure Bro
+-#
+-# 20120119 - Update threshold config in suricata.yaml
+-#	     Update PulledPork URLs
+-#
+-# 20120123 - If only one interface, configure Bro for standalone
+-#
+-# 20120124 - ossec_agent is now integrated into NSM scripts
+-#
+-# 20120229 - Run Snorby in production mode
+-#	     Add "mon" to list of valid interface types
+-#
+-# 20120312 - New Snorby packages
+-#
+-# 20120412 - Issue 226:	Rename bro workers
+-# http://code.google.com/p/security-onion/issues/detail?id=226
+-#
+-# 20120425 - Fix the following issues:
+-# Modify Setup script so that IDS Engine choice is a list instead of Yes or No default:
+-# http://code.google.com/p/security-onion/issues/detail?id=155
+-# Setup needs to delete /var/www/squert/.scripts/Ip2c/*.md5 before running ip2c.tcl:
+-# http://code.google.com/p/security-onion/issues/detail?id=250
+-# Update Setup to allow running multiple times in sensor-->server config:
+-# http://code.google.com/p/security-onion/issues/detail?id=256
+-# Setup should create snort.stats if user chooses Suricata:
+-# http://code.google.com/p/security-onion/issues/detail?id=257
+-#
+-# 20120508 - Fix the following issues:
+-# Issue 239: autossh should use OpenSSH ServerAliveInterval and ServerAliveCountMax options
+-# http://code.google.com/p/security-onion/issues/detail?id=239
+-# 
+-# 20120910 - Numerous fixes for BDR
+-# 20121116 - /etc/network/interfaces configuration by Matt Gregory
+ 
+ #########################################
+ # Variables

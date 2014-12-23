@@ -1,0 +1,272 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion107) precise; urgency=low
+ .
+   * Issue 527:	Setup: when choosing sensor-only and entering server name, do not allow the hostname or IP address of the sensor itself
+   * Issue 546:	Setup: change true/false options to yes/no
+   * Issue 543:	Setup: if no Internet access, notify user that we're setting LOCAL_NIDS_RULE_TUNING=yes
+   * Issue 538:	sosetup: add references to sostat, sostat-redacted and sostat-quick
+   * Issue 545:	Setup: add comments to /etc/nsm/securityonion.conf
+   * Issue 525:	Setup: configure all available sniffing interfaces and prompt for which interfaces to enable
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -27,6 +27,7 @@
+ DEBUG="0"
+ # Window title
+ HOSTNAME=`hostname`
++IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+ TITLE="Security Onion Setup ($HOSTNAME)"
+ # File locations
+ CONF="/etc/nsm/securityonion.conf"
+@@ -40,6 +41,7 @@ SGUIL_SERVER_NAME="securityonion"
+ IDS_ENGINE="snort"
+ IDS_RULESET="ETGPL"
+ INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
++ALL_INTERFACES="$INTERFACES"
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
+ SENSORTAB="/etc/nsm/sensortab"
+ UPDATE_ELSA_SERVER="NO"
+@@ -242,15 +244,26 @@ Otherwise, choose Standalone to configur
+ 		while [ $SERVERNAME_CONFIRMED = "no" ]; do
+ 			SERVERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
+ 			[ x$SERVERNAME = "x" ] && exit
+-			# nc will result in OSSEC Active Response blocking the IP address
+-			# nc -vz $SERVERNAME 22 -w 5 2>&1 | grep "succeeded\!" >/dev/null 2>&1 && SERVERNAME_CONFIRMED="yes"
+-			# so use ssh instead:
+-			ssh $SERVERNAME -o ConnectTimeout=5 -o BatchMode=yes 2>&1 | egrep 'Connection timed out|Could not resolve hostname' >/dev/null 2>&1 || SERVERNAME_CONFIRMED="yes"
+-			if [ $SERVERNAME_CONFIRMED = "no" ]; then
+-				zenity --error --text="Couldn't connect to $SERVERNAME on port 22\!\r \
++			# Did the user enter the hostname or IP address of the local box?
++			if [ "$SERVERNAME" = "$HOSTNAME" ]; then
++				zenity --error --text="That is the hostname of this box\!\r \
++\r \
++Since you chose a sensor-only installation, the Sguil server should be a separate box."
++			elif [ "$SERVERNAME" = "$IP" ]; then
++				zenity --error --text="That is the IP address of this box\!\r \
++\r \
++Since you chose a sensor-only installation, the Sguil server should be a separate box."
++			else
++				# nc will result in OSSEC Active Response blocking the IP address
++				# nc -vz $SERVERNAME 22 -w 5 2>&1 | grep "succeeded\!" >/dev/null 2>&1 && SERVERNAME_CONFIRMED="yes"
++				# so use ssh instead:
++				ssh $SERVERNAME -o ConnectTimeout=5 -o BatchMode=yes 2>&1 | egrep 'Connection timed out|Could not resolve hostname' >/dev/null 2>&1 || SERVERNAME_CONFIRMED="yes"
++				if [ $SERVERNAME_CONFIRMED = "no" ]; then
++					zenity --error --text="Couldn't connect to $SERVERNAME on port 22\!\r \
+ \r \
+ Please double-check hostname or IP address and\r\
+ firewall rules."
++				fi
+ 			fi
+ 		done
+ 		TEXT="Please enter a username that can SSH to the Sguil server and execute sudo."
+@@ -1066,7 +1079,7 @@ if [ "$SERVERNAME" != "localhost" ]; the
+ fi
+ 
+ # NIDS sensor(s)
+-for INTERFACE in $INTERFACES; do	
++for INTERFACE in $ALL_INTERFACES; do	
+ 	SENSORNAME="$HOSTNAME-$INTERFACE"
+ 	echo "# Please wait while creating Sguil sensor: $SENSORNAME..." | tee -a $LOG
+         [ $DEBUG -eq 1 ] && echo "DEBUG: Adding Sensor $INTERFACE."
+@@ -1156,6 +1169,17 @@ for INTERFACE in $INTERFACES; do
+ 
+ done
+ 
++# We just enabled all available interfaces in /etc/nsm/sensortab.
++# Now we need to go back and disable any unwanted interfaces.
++for INTERFACE in $ALL_INTERFACES; do
++	if echo $INTERFACES | grep $INTERFACE >/dev/null 2>&1; then
++		echo "Leaving $INTERFACE as-is (enabled)." >> $LOG 2>&1
++	else
++		echo "$INTERFACE not found in selected interfaces.  Disabling." >> $LOG 2>&1
++		sed -i 's|^$INTERFACE|#$INTERFACE|g' /etc/nsm/sensortab
++	fi
++done
++
+ # Bro
+ if grep -v "^#" $SENSORTAB > /dev/null; then
+ 	# If user selected Quick Setup, do standalone config.
+@@ -1183,9 +1207,12 @@ host=localhost
+ EOF
+                 IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+                 sed -i "s|host=localhost|host=$IP|g" /opt/bro/etc/node.cfg
+-                grep -v "^#" $SENSORTAB | awk '{print $1}' |while read SENSOR
+-                do
+-                        INTERFACE=`grep $SENSOR $SENSORTAB|awk '{print $4}'`
++
++		# Go ahead and populate the file with all available interfaces
++		# Comment out inactive interfaces
++                # grep -v "^#" $SENSORTAB | awk '{print $1}' |while read SENSOR
++		for INTERFACE in $ALL_INTERFACES; do
++			if echo $INTERFACES |grep $INTERFACE >/dev/null 2>&1; then
+                         echo "* Configuring Bro to monitor $INTERFACE" >> $LOG 2>&1
+                         cat << EOF >> /opt/bro/etc/node.cfg
+ [$SENSOR]   
+@@ -1196,7 +1223,19 @@ lb_method=pf_ring
+ lb_procs=$BRO_LB_PROCS
+ 
+ EOF
++			else
++                        cat << EOF >> /opt/bro/etc/node.cfg
++#[$SENSOR]   
++#type=worker
++#host=$IP
++#interface=$INTERFACE
++#lb_method=pf_ring
++#lb_procs=$BRO_LB_PROCS
++
++EOF
++			fi
+                 done
++
+ 		# Bro 2.2 should support PF_RING on multiple interfaces properly now, so comment this out.
+ 		# If monitoring more than one interface, disable PF_RING:
+ 		# http://securityonion.blogspot.com/2013/02/important-note-for-those-monitoring.html
+@@ -1251,14 +1290,54 @@ fi
+ echo "55"
+ echo "# Please wait while configuring $CONF..." | tee -a $LOG
+ IDS_ENGINE_LOWER=`echo ${IDS_ENGINE,,}`
+-echo "ENGINE=$IDS_ENGINE_LOWER" 			> $CONF
+-echo "DAYSTOKEEP=$DAYSTOKEEP" 				>> $CONF
+-echo "DAYSTOREPAIR=$DAYSTOREPAIR" 			>> $CONF
+-echo "WARN_DISK_USAGE=$WARN_DISK_USAGE" 		>> $CONF
+-echo "CRIT_DISK_USAGE=$CRIT_DISK_USAGE" 		>> $CONF
+-echo "BRO_ENABLED=$BRO_ENABLED" 			>> $CONF
+-echo "OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED" 	>> $CONF
+-echo "LOCAL_HIDS_RULE_TUNING=false"			>> $CONF
++cat << EOF > $CONF
++# ENGINE
++# Which IDS engine would you like to run?  snort/suricata
++ENGINE=$IDS_ENGINE_LOWER
++
++# DAYSTOKEEP
++# This is the number of days that will be kept in the Sguil database archive.
++DAYSTOKEEP=$DAYSTOKEEP
++
++# DAYSTOREPAIR
++# This is the number of days worth of tables that will be repaired every day.
++DAYSTOREPAIR=$DAYSTOREPAIR
++
++# WARN_DISK_USAGE
++# The NSM scripts will warn you whenever disk usage exceeds this value.
++WARN_DISK_USAGE=$WARN_DISK_USAGE
++
++# CRIT_DISK_USAGE
++# The NSM scripts will begin purging old data whenever disk usage exceeds this value.
++CRIT_DISK_USAGE=$CRIT_DISK_USAGE
++
++# BRO_ENABLED
++# Do you want to run Bro?  yes/no
++BRO_ENABLED=$BRO_ENABLED
++
++# OSSEC_AGENT_ENABLED
++# The OSSEC agent sends OSSEC HIDS alerts into the Sguil database.
++# Do you want to run the OSSEC Agent?  yes/no
++OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED
++
++# LOCAL_HIDS_RULE_TUNING
++# If set to no (default), sensor will copy OSSEC rules from master server as-is (no changes).
++# If set to yes, sensor will keep its own copy of the OSSEC rules.
++LOCAL_HIDS_RULE_TUNING=no
++
++# LOCAL_NIDS_RULE_TUNING
++# The effect of this option is different depending on whether this box is a server or not.
++# SERVER
++# LOCAL_NIDS_RULE_TUNING=yes
++# rule-update will operate on a local copy of the rules instead of downloading rules from the Internet
++# LOCAL_NIDS_RULE_TUNING=no
++# rule-update will try to download rules from the Internet
++# SENSOR-ONLY
++# LOCAL_NIDS_RULE_TUNING=yes
++# rule-update will copy rules from master server and then try to run PulledPork locally for tuning
++# LOCAL_NIDS_RULE_TUNING=no
++# rule-update will copy rules from master server as-is (no changes)
++EOF
+ 
+ #########################################
+ # Download rules using Pulledpork
+@@ -1326,11 +1405,13 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+ 		mkdir -p /var/log/nsm/
+ 		/usr/bin/pulledpork.pl -c $PP_CONF >> /var/log/nsm/pulledpork.log
+-		echo "LOCAL_NIDS_RULE_TUNING=false" >> $CONF
++		LOCAL_NIDS_RULE_TUNING="no"
++		echo "LOCAL_NIDS_RULE_TUNING=no" >> $CONF
+ 	else
+ 		#zenity --error --text="Rule download sites appear to be down.  Skipping rule update."
+-		echo "LOCAL_NIDS_RULE_TUNING=true" >> $CONF
+-		echo "Rule download sites appear to be down.  Setting LOCAL_NIDS_RULE_TUNING to true." >> $LOG 2>&1
++		LOCAL_NIDS_RULE_TUNING="yes"
++		echo "LOCAL_NIDS_RULE_TUNING=yes" >> $CONF
++		echo "Rule download sites appear to be down.  Setting LOCAL_NIDS_RULE_TUNING to yes." >> $LOG 2>&1
+ 	fi
+ fi
+ 
+@@ -1369,6 +1450,15 @@ else
+         # Pivot from Snorby to ELSA
+         [ "$ELSA" = "YES" ] && mysql -uroot -Dsnorby -e "INSERT INTO lookups (title,value) VALUES('ELSA Search By IP Address','https://$IP:3154/?query_string=\"\${ip}\"%20groupby:program')"
+ fi
++
++#########################################
++# Final interface activation
++#########################################
++# /etc/nsm/sensortab
++
++#########################################
++# Start services
++#########################################
+ echo "75"
+ echo "# Please wait while starting all Security Onion services..." | tee -a $LOG
+ start securityonion >> $LOG 2>&1
+@@ -1571,6 +1661,23 @@ Bro logs can be found in ELSA (if enable
+ /nsm/bro/"
+ zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+ 
++TEXT="You can check the status of your running services with the sostat utilites.\n \
++\n \
++'sudo sostat-quick' will give you quick SUMMARY information about your service status.\n \
++\n \
++'sudo sostat' will give you DETAILED information about your service status.\n \
++\n \
++'sudo sostat-redacted' will give you REDACTED information to share with our mailing list if you have questions."
++zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++
++if [ "$LOCAL_NIDS_RULE_TUNING" = "yes" ] ; then
++TEXT="Setup was not able to download rules from the Internet.\n \
++LOCAL_NIDS_RULE_TUNING has been set to 'yes' in /etc/nsm/securityonion.conf.\n \
++\n \
++If you do have Internet access and want to download rules from the Internet,\n \
++you'll need to change this option to 'no'."
++zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++else
+ TEXT="Rules downloaded by Pulledpork are stored in: \n \
+ /etc/nsm/rules/downloaded.rules \n \
+ \n \
+@@ -1588,6 +1695,7 @@ You can manually update them by running:
+ Sensors can be tuned by modifying the files in: \n \
+ /etc/nsm/NAME-OF-SENSOR/"
+ zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++fi
+ 
+ TEXT='If you have any questions or problems,\
+ please visit our website where you can find\

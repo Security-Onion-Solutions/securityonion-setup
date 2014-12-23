@@ -1,0 +1,113 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion110) precise; urgency=low
+ .
+   * Issue 539: sosetup: support more network card naming stuff
+   * Issue 522: sosetup should handle more than 10 interfaces correctly
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -72,7 +72,7 @@ fi
+ # Choose management interface
+ #########################################
+ # Get a list of all possible interfaces
+-MGMT_INTERFACE=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | 
++MGMT_INTERFACE=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | 
+ 	awk '{print $1}' | cut -d\: -f1 | sort `
+ # If there's only one interface, then MGMT_INTERFACE will have the right one
+ # Otherwise, let the user select
+@@ -89,7 +89,7 @@ elif [ $NUM_MGMT_INTERFACES -eq 1 ]; the
+     zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+ elif [ $NUM_MGMT_INTERFACES -gt 1 ]; then
+ 	TEXT='Which network interface should be the management interface?'
+-	INPUT=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort | while read INT; do echo -n "FALSE $INT "; done`
++	INPUT=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort | while read INT; do echo -n "FALSE $INT "; done`
+ 	MGMT_INTERFACE=`zenity --list --radiolist --column "1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" $INPUT 2>/dev/null`
+ 	if [ "$MGMT_INTERFACE" = "" ]; then
+ 		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+@@ -204,7 +204,7 @@ fi
+ # Sniffing interfaces
+ #########################################
+ # Get potential monitor interfaces (i.e., additional interfaces other than previously configured management interface)
+-MON_INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | 
++MON_INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | 
+     awk '{print $1}' | cut -d\: -f1 | sort |sed "s|$MGMT_INTERFACE||g"`
+ 
+ NUM_MON_INTERFACES=0
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -40,7 +40,7 @@ VRT_URL="www.snort.org"
+ SGUIL_SERVER_NAME="securityonion"
+ IDS_ENGINE="snort"
+ IDS_RULESET="ETGPL"
+-INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
++INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
+ ALL_INTERFACES="$INTERFACES"
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
+ SENSORTAB="/etc/nsm/sensortab"
+@@ -174,7 +174,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
+ 
+ #	if [ $NUM_INTERFACES -gt 1 ]; then
+ #	        TEXT="Which network interface should be monitored?"
+-#	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort |zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" 2>/dev/null`
++#	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort |zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" 2>/dev/null`
+ #	        if [ "$INTERFACES" = "" ]
+ #	        then
+ #	                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+@@ -184,7 +184,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
+ 
+         if [ $NUM_INTERFACES -gt 1 ]; then
+                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
+-                INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
++                INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
+                 if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+                         CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
+                         INPUT=`for i in $INTERFACES; do 
+@@ -460,7 +460,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSO
+ 	# Ask which interface(s) to listen on
+         if [ $NUM_INTERFACES -gt 1 ]; then
+ 		TEXT="Which network interface(s) should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your monitor interfaces are already selected."
+-		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
++		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
+ 		if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+ 			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`
+ 			INPUT=`for i in $INTERFACES; do 
+@@ -1174,8 +1174,9 @@ done
+ 
+ # We just enabled all available interfaces in /etc/nsm/sensortab.
+ # Now we need to go back and disable any unwanted interfaces.
++INTERFACES_CSV=`for i in $INTERFACES; do echo -n "$i,"; done`
+ for INTERFACE in $ALL_INTERFACES; do
+-	if echo $INTERFACES | grep $INTERFACE >/dev/null 2>&1; then
++	if echo $INTERFACES_CSV | grep "$INTERFACE," >/dev/null 2>&1; then
+ 		echo "Leaving $INTERFACE as-is (enabled)." >> $LOG 2>&1
+ 	else
+ 		echo "$INTERFACE not found in selected interfaces.  Disabling." >> $LOG 2>&1
+@@ -1215,7 +1216,7 @@ EOF
+ 		# Comment out inactive interfaces
+                 # grep -v "^#" $SENSORTAB | awk '{print $1}' |while read SENSOR
+ 		for INTERFACE in $ALL_INTERFACES; do
+-			if echo $INTERFACES |grep $INTERFACE >/dev/null 2>&1; then
++			if echo $INTERFACES_CSV |grep "$INTERFACE," >/dev/null 2>&1; then
+                         echo "* Configuring Bro to monitor $INTERFACE" >> $LOG 2>&1
+                         cat << EOF >> /opt/bro/etc/node.cfg
+ [$HOSTNAME-$INTERFACE]   

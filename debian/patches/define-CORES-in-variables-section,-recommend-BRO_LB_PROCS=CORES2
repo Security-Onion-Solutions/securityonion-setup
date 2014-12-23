@@ -1,0 +1,55 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion22) precise; urgency=low
+ .
+   * define CORES in variables section, recommend BRO_LB_PROCS=CORES/2
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -88,6 +88,9 @@ INTERFACES=`cat "/proc/net/dev" | egrep
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
+ SENSORTAB="/etc/nsm/sensortab"
+ UPDATE_ELSA_SERVER="NO"
++# CORES is the number of CPU cores in the box
++# This is used for limiting IDS_LB_PROCS and BRO_LB_PROCS
++CORES=`grep -c ^processor /proc/cpuinfo`
+ # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
+ IDS_LB_PROCS=1
+ IDS_LB_PROCS_CONFIRM="- Run a single IDS process per interface.\n"
+@@ -245,7 +248,7 @@ You may select multiple interfaces using
+ 	SENSOR_CONFIRM_2="$INTERFACES\n"
+ 
+ 	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
+-	CORES=`grep -c ^processor /proc/cpuinfo`; LIST=`seq 1 $CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
++	LIST=`seq 1 $CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
+ 	
+ 	if [ "$CORES" -gt 1 ]; then
+ 	# IDS_LB_PROCS
+@@ -267,7 +270,7 @@ If you need to change this setting later
+ 	# BRO_LB_PROCS
+ 	TEXT="How many Bro processes would you like to run?\n\
+ 	\n\
+-This is limited by the number of CPU cores on your system.\n\
++This is limited by the number of CPU cores on your system, but you should probably choose no more than HALF your number of CPU cores.\n\
+ \n\
+ If you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
+ 	BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`

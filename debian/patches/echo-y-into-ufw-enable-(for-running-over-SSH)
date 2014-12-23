@@ -1,0 +1,66 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion15) precise; urgency=low
+ .
+   * echo "y" | ufw enable (for running over SSH)
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -87,6 +87,7 @@ IDS_RULESET="ETGPL"
+ INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
+ SENSORTAB="/etc/nsm/sensortab"
++UPDATE_ELSA_SERVER="NO"
+ # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
+ IDS_LB_PROCS=1
+ IDS_LB_PROCS_CONFIRM="- Run a single IDS process per interface.\n"
+@@ -518,12 +519,19 @@ pkill -f snort
+ # Delete all nsm configuration (make sure MySQL is running so the DB gets deleted)
+ [ $SERVER -eq 1 ] && service mysql start >> $LOG 2>&1
+ /usr/sbin/nsm_all_del_quick >> $LOG 2>&1
+-# Enable ufw if not already enabled
+-ufw enable >> $LOG 2>&1
++
++#########################################
++# Firewall
++# When enabling ufw over SSH, it says it might disrupt the SSH
++# connection and asks for confirmation, so we put in the "allow 22" first, 
++# then echo "y" into the "ufw enable", and hope for the best!
++#########################################
+ # Open port 22 for remote administration
+ ufw allow 22/tcp >> $LOG 2>&1
+ # Open port 1514/udp for OSSEC agents
+ ufw allow 1514/udp >> $LOG 2>&1
++# Enable ufw if not already enabled
++echo "y" | ufw enable >> $LOG 2>&1
+ 
+ #########################################
+ # Add the Sguil server if necessary
+@@ -544,7 +552,7 @@ ufw allow 443/tcp >> $LOG 2>&1
+ ufw allow 444/tcp >> $LOG 2>&1
+ # Open port 7734 for Sguil clients
+ ufw allow 7734/tcp >> $LOG 2>&1
+-# Open port 7734 for Sguil sensors
++# Open port 7736 for Sguil sensors
+ ufw allow 7736/tcp >> $LOG 2>&1
+ 
+ echo "30"

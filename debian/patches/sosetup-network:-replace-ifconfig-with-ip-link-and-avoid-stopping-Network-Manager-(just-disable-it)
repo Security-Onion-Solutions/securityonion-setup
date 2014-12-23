@@ -1,0 +1,53 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion90) precise; urgency=low
+ .
+   * sosetup-network: replace ifconfig with ip link and avoid stopping Network Manager (just disable it)
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -276,10 +276,9 @@ fi
+ # Create the log directory
+ mkdir -p $LOGDIR
+ 
+-# Stop Network Manager, if it exists (i.e., running Ubuntu Desktop rather than Ubuntu Server), 
+-# and prevent it from starting on reboot
++# If Network Manager exists, disable it
+ if [ -e "/etc/init.d/network-manager" ]; then
+-  /etc/init.d/network-manager stop >> $LOG 2>&1
++  #/etc/init.d/network-manager stop >> $LOG 2>&1
+   [ -f /etc/init/network-manager.conf ] && mv /etc/init/network-manager.conf /etc/init/network-manager.conf.DISABLED
+ fi
+ 
+@@ -341,10 +340,8 @@ do
+ cat << EOF >> $FILE
+ auto $INTERFACE
+ iface $INTERFACE inet manual
+-  up ifconfig \$IFACE -arp up
+-  up ip link set \$IFACE promisc on
+-  down ip link set \$IFACE promisc off
+-  down ifconfig \$IFACE down
++  up ip link set \$IFACE promisc on arp off up
++  down ip link set \$IFACE promisc off down
+   post-up ethtool -G \$IFACE rx $MAX_RX; for i in rx tx sg tso ufo gso gro lro; do ethtool -K \$IFACE \$i off; done
+   post-up echo 1 > /proc/sys/net/ipv6/conf/\$IFACE/disable_ipv6
+ 

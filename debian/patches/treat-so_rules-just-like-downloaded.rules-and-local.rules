@@ -1,0 +1,41 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion19) precise; urgency=low
+ .
+   * treat so_rules just like downloaded.rules and local.rules
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -608,9 +608,11 @@ then
+ 	mkdir -p /etc/nsm/rules/backup/
+ 	cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+ 	cp /etc/nsm/rules/local.rules /etc/nsm/rules/backup/local.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
++	cp /etc/nsm/rules/so_rules.rules /etc/nsm/rules/backup/so_rules.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+ 	# Copy rules from server
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/downloaded.rules /etc/nsm/rules/downloaded.rules
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/local.rules /etc/nsm/rules/local.rules
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/downloaded.rules /etc/nsm/rules/downloaded.rules >> $LOG 2>&1
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/local.rules /etc/nsm/rules/local.rules >> $LOG 2>&1
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/so_rules.rules /etc/nsm/rules/so_rules.rules >> $LOG 2>&1
+ 	# Save configuration
+ 	echo "SSH_USERNAME=$SSH_USERNAME" > $SSH_CONF
+ 	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF

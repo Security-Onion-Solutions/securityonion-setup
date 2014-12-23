@@ -1,0 +1,95 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion56) precise; urgency=low
+ .
+   * Add PCAP_SIZE selection screen to Advanced Setup
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -90,6 +90,9 @@ NUM_INTERFACES=`echo $INTERFACES | wc -w
+ SENSORTAB="/etc/nsm/sensortab"
+ UPDATE_ELSA_SERVER="NO"
+ PCAP_OPTIONS="-c"
++# PCAP_SIZE is the size at which we rotate to a new pcap file
++# Default to 150MB, but user can choose if running Advanced Setup
++PCAP_SIZE=150
+ # CORES is the number of CPU cores in the box
+ # This is used for limiting IDS_LB_PROCS and BRO_LB_PROCS
+ CORES=`grep -c ^processor /proc/cpuinfo`
+@@ -165,7 +168,7 @@ if [ $ADVANCED_SETUP -eq 0 ]
+ then
+ 	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Performing Quick Setup."
+ 	if [ $NUM_INTERFACES -gt 1 ]; then
+-	        TEXT="Which network interface should $IDS_ENGINE listen on?"
++	        TEXT="Which network interface should be monitored?"
+ 	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort |zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" 2>/dev/null`
+ 	        if [ "$INTERFACES" = "" ]
+ 	        then
+@@ -238,6 +241,7 @@ Otherwise, choose Standalone to configur
+ 	# SENSOR-SPECIFIC
+ 	#########################################
+ 	if [ $SENSOR -eq 1 ]; then
++	
+ 	#########################################
+ 	# Ask which interface to listen on
+ 	#########################################
+@@ -255,6 +259,24 @@ Otherwise, choose Standalone to configur
+ 	SENSOR_CONFIRM_1="- Monitor each of the following interfaces:\n"
+ 	SENSOR_CONFIRM_2="$INTERFACES\n"
+ 
++	#########################################
++	# Ask for PCAP_SIZE
++	#########################################
++	PCAP_SIZE_CONFIRMED="no"
++	while [ $PCAP_SIZE_CONFIRMED = "no" ]; do
++		PCAP_SIZE=`zenity --entry --title "$TITLE" --text="How big do you want your pcap files to be? \nEnter an integer in Megabytes (MB). \nThe default is 150 MB." --entry-text=150`
++		[ x$PCAP_SIZE = "x" ] && exit
++		COMPRESSED="$(echo $PCAP_SIZE | sed -e 's/[^[:digit:]]//g')"
++		if [ "$COMPRESSED" != "$PCAP_SIZE" ]; then
++			zenity --error --text "Invalid MB Value! Please use integers only." 
++		else
++			PCAP_SIZE_CONFIRMED="yes"
++		fi
++	done
++
++	#########################################
++	# Ask for number of IDS/Bro processes
++	#########################################
+ 	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
+ 	LIST=`seq 1 $CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
+ 	
+@@ -734,11 +756,10 @@ do
+ 	done
+ 	cd - >/dev/null
+ 
+-	# Add IDS_LB_PROCS to sensor.conf
+-	echo "IDS_LB_PROCS=$IDS_LB_PROCS" >> /etc/nsm/"$SENSORNAME"/sensor.conf
+-
+-	# Add PCAP_OPTIONS to sensor.conf
+-	echo "PCAP_OPTIONS=\"$PCAP_OPTIONS\"" >> /etc/nsm/"$SENSORNAME"/sensor.conf
++	# Add options to sensor.conf
++	echo "PCAP_OPTIONS=\"$PCAP_OPTIONS\"" 	>> /etc/nsm/"$SENSORNAME"/sensor.conf
++	echo "PCAP_SIZE=${PCAP_SIZE}MiB" 	>> /etc/nsm/"$SENSORNAME"/sensor.conf
++	echo "IDS_LB_PROCS=$IDS_LB_PROCS" 	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 
+ 	# Create symbolic link for sensor rules directory on server
+ 	if [ "$SERVERNAME" = "localhost" ]; then

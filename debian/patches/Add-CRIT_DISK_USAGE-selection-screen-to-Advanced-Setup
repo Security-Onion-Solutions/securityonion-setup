@@ -1,0 +1,79 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion57) precise; urgency=low
+ .
+   * Add CRIT_DISK_USAGE selection screen to Advanced Setup
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -93,6 +93,10 @@ PCAP_OPTIONS="-c"
+ # PCAP_SIZE is the size at which we rotate to a new pcap file
+ # Default to 150MB, but user can choose if running Advanced Setup
+ PCAP_SIZE=150
++# WARN_DISK_USAGE is the percentage of disk usage at which the NSM scripts warn the disk is getting full
++WARN_DISK_USAGE=80
++# CRIT_DISK_USAGE is the percentage of disk usage at which the NSM scripts begin purging old files
++CRIT_DISK_USAGE=90
+ # CORES is the number of CPU cores in the box
+ # This is used for limiting IDS_LB_PROCS and BRO_LB_PROCS
+ CORES=`grep -c ^processor /proc/cpuinfo`
+@@ -264,7 +268,7 @@ Otherwise, choose Standalone to configur
+ 	#########################################
+ 	PCAP_SIZE_CONFIRMED="no"
+ 	while [ $PCAP_SIZE_CONFIRMED = "no" ]; do
+-		PCAP_SIZE=`zenity --entry --title "$TITLE" --text="How big do you want your pcap files to be? \nEnter an integer in Megabytes (MB). \nThe default is 150 MB." --entry-text=150`
++		PCAP_SIZE=`zenity --entry --title "$TITLE" --text="How big do you want your pcap files to be? \nPlease enter an integer in Megabytes (MB). \nThe default is 150 MB." --entry-text=150`
+ 		[ x$PCAP_SIZE = "x" ] && exit
+ 		COMPRESSED="$(echo $PCAP_SIZE | sed -e 's/[^[:digit:]]//g')"
+ 		if [ "$COMPRESSED" != "$PCAP_SIZE" ]; then
+@@ -275,6 +279,22 @@ Otherwise, choose Standalone to configur
+ 	done
+ 
+ 	#########################################
++	# Ask for CRIT_DISK_USAGE
++	#########################################
++	CRIT_DISK_USAGE_CONFIRMED="no"
++	while [ $CRIT_DISK_USAGE_CONFIRMED = "no" ]; do
++		CRIT_DISK_USAGE=`zenity --entry --title "$TITLE" --text="At what percent of disk usage would you like to begin purging old logs? \nPlease enter an integer between 10 and 100. \nThe default is 90." --entry-text=90`
++		[ x$CRIT_DISK_USAGE = "x" ] && exit
++		COMPRESSED="$(echo $CRIT_DISK_USAGE | sed -e 's/[^[:digit:]]//g')"
++		[ "$COMPRESSED" == "$CRIT_DISK_USAGE" ] && 
++		[ $CRIT_DISK_USAGE -gt 10 ] && 
++		[ $CRIT_DISK_USAGE -lt 100 ] && 
++		CRIT_DISK_USAGE_CONFIRMED="yes" || 
++		zenity --error --text "Invalid percentage! Please use integers between 0 and 100." 
++	done
++	let WARN_DISK_USAGE=${CRIT_DISK_USAGE}-10
++
++	#########################################
+ 	# Ask for number of IDS/Bro processes
+ 	#########################################
+ 	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
+@@ -867,6 +887,8 @@ echo "# Please wait while setting IDS En
+ IDS_ENGINE_LOWER=`echo ${IDS_ENGINE,,}`
+ echo "ENGINE=$IDS_ENGINE_LOWER" > $CONF
+ echo "DAYSTOKEEP=365" >> $CONF
++echo "WARN_DISK_USAGE=$WARN_DISK_USAGE" >> $CONF
++echo "CRIT_DISK_USAGE=$CRIT_DISK_USAGE" >> $CONF
+ 
+ #########################################
+ # Download rules using Pulledpork

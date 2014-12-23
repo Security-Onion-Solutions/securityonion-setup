@@ -1,0 +1,114 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion73) precise; urgency=low
+ .
+   * add netsniff-ng ring-buffer and mmap options
+   * Issue 391:Setup should write log file to /tmp and then copy to /var/log/nsm/sosetup.log when done
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -75,7 +75,7 @@ HOSTNAME=`hostname`
+ TITLE="Security Onion Setup ($HOSTNAME)"
+ # File locations
+ CONF="/etc/nsm/securityonion.conf"
+-LOG="/var/log/nsm/sosetup.log"
++LOG="/tmp/sosetup.log"
+ PP_CONF="/etc/nsm/pulledpork/pulledpork.conf"
+ # URLs
+ ET_URL="rules.emergingthreats.net"
+@@ -101,6 +101,9 @@ PCAP_OPTIONS="-c"
+ # PCAP_SIZE is the size at which we rotate to a new pcap file
+ # Default to 150MB, but user can choose if running Advanced Setup
+ PCAP_SIZE=150
++# PCAP_RING_SIZE is the RX_RING size for buffering packets
++# Default is 64MB
++PCAP_RING_SIZE="64"
+ # WARN_DISK_USAGE is the percentage of disk usage at which the NSM scripts warn the disk is getting full
+ WARN_DISK_USAGE=80
+ # CRIT_DISK_USAGE is the percentage of disk usage at which the NSM scripts begin purging old files
+@@ -569,6 +572,8 @@ Would you like to enable full packet cap
+ 
+ 	# Ask for PCAP_SIZE
+ 	if [ "$PCAP_ENABLED" == "yes" ]; then
++
++		# Ask for PCAP_SIZE        
+ 		PCAP_SIZE_CONFIRMED="no"
+ 		while [ $PCAP_SIZE_CONFIRMED = "no" ]; do
+ 			PCAP_SIZE=`zenity --entry --title "$TITLE" --text="How big do you want your pcap files to be?\n\nPlease enter an integer in Megabytes (MB).  The default is 150 MB." --entry-text=150`
+@@ -580,6 +585,36 @@ Would you like to enable full packet cap
+ 				PCAP_SIZE_CONFIRMED="yes"
+ 			fi
+ 		done
++
++		# Ask about MMAP
++		TEXT="netsniff-ng defaults to using scatter/gather pcap file I/O.\n\
++\n\
++For higher performance, you can enable mmap I/O, but this requires more RAM.\n\
++\n\
++Would you like to enable mmap I/O?"
++		YES="Yes, enable mmap I/O!"
++		NO="No, use default scatter/gather I/O."
++		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++		ANSWER="$?"
++		if [ $ANSWER -eq 1 ]; then
++	        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
++		else
++	        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
++			PCAP_OPTIONS="--mmap"
++		fi
++
++		# Ask for PCAP_RING_SIZE        
++		PCAP_RING_SIZE_CONFIRMED="no"
++		while  [ $PCAP_RING_SIZE_CONFIRMED = "no" ]; do
++			PCAP_RING_SIZE=`zenity --entry --title "$TITLE" --text="How large do you want your PCAP ring buffer?\n\nEach monitoring interface will have the specified amount allocated from RAM\nso be sure your system has enough memory. In the case of 4 sensor interfaces\nand a specified ring buffer of 1GB, 4GB of total RAM will be allocated for packet\nbuffering. For busy networks a ring buffer of at least 256MB is recommended.\n\nPlease enter an integer in Megabytes (MB). The default is 64 MB." --entry-text=64`
++			[ x$PCAP_RING_SIZE = "x" ] && exit
++			COMPRESSED="$(echo $PCAP_RING_SIZE | sed -e 's/[^[:digit:]]//g')"
++			if [ "$COMPRESSED" != "$PCAP_RING_SIZE" ]; then
++				zenity --error --text "Invalid MB Value! Please use integers only." 
++			else
++				PCAP_RING_SIZE_CONFIRMED="yes"
++			fi
++		done
+ 	fi
+ 
+ 	# Ask for CRIT_DISK_USAGE
+@@ -944,6 +979,7 @@ for INTERFACE in $INTERFACES; do
+ 	# Add options to sensor.conf
+ 	echo "PCAP_OPTIONS=\"$PCAP_OPTIONS\"" 			>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 	echo "PCAP_SIZE=${PCAP_SIZE}MiB" 			>> /etc/nsm/"$SENSORNAME"/sensor.conf
++	echo "PCAP_RING_SIZE=${PCAP_RING_SIZE}MiB"		>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 	echo "IDS_LB_PROCS=$IDS_LB_PROCS" 			>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 	echo "PCAP_ENABLED=\"$PCAP_ENABLED\""			>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 	echo "PCAP_AGENT_ENABLED=\"$PCAP_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+@@ -1303,6 +1339,12 @@ dpkg -l |grep "securityonion-onionsalt"
+ zenity --progress --title="$TITLE" --text="Please wait while making changes to the system..." --percentage=0 --auto-close
+ 
+ #########################################
++# Move log file from /tmp/ to /var/log/nsm/
++#########################################
++mv $LOG /var/log/nsm/sosetup.log
++LOG="/var/log/nsm/sosetup.log"
++
++#########################################
+ # If this is a server, populate ip2c table
+ #########################################
+ if [ -d /var/lib/mysql/securityonion_db/ ]; then

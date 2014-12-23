@@ -1,0 +1,92 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion91) precise; urgency=low
+ .
+   * push logic down to nsm_server_add
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -881,10 +881,31 @@ rm -f /root/.ssh/securityonion_ssh.conf
+ echo "20"
+ echo "# Please wait while creating the Sguil server..." | tee -a $LOG
+ /usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
++
++# MOVED TO /usr/sbin/nsm_server_add
+ # Create /etc/sguild symlink - http://securityonion.blogspot.com/2011/11/security-onion-20111130-now-available.html
+-if [ ! -e /etc/sguild ]; then 
+-	ln -f -s /etc/nsm/"$SGUIL_SERVER_NAME"/ /etc/sguild
+-fi
++#if [ ! -e /etc/sguild ]; then 
++#	ln -f -s /etc/nsm/"$SGUIL_SERVER_NAME"/ /etc/sguild
++#fi
++# We keep all our rules in /etc/nsm/rules, so symlink all other rules locations to here
++#rm -rf /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
++#ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
++# Sensors will try to scp bpf.conf and threshold.conf from master, so let's create them if they don't already exist
++#if [ ! -f /etc/nsm/rules/bpf.conf ]; then touch /etc/nsm/rules/bpf.conf; fi
++#if [ ! -f /etc/nsm/rules/threshold.conf ]; then cp /etc/nsm/templates/snort/threshold.conf /etc/nsm/rules/; fi
++
++# MOVED TO /usr/lib/nsmnow/lib-nsm-server-utils
++#cat /var/www/squert/.scripts/squert.sql | mysql -uroot -U securityonion_db  >> $LOG 2>&1
++#mysql -N -B --user=root -e "GRANT SELECT ON securityonion_db.* TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
++#mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.mappings TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
++#mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.ip2c TO 'readonly'@'localhost';" >> $LOG 2>&1
++#mysql -N -B --user=root -e "GRANT FILE ON *.* TO 'readonly'@'localhost';" >> $LOG 2>&1
++#mysql -N -B --user=root -e "GRANT INSERT,UPDATE,DELETE ON securityonion_db.filters TO 'readonly'@'localhost';" >> $LOG 2>&1
++#mysql -N -B --user=root -e "CREATE INDEX comment ON securityonion_db.history (comment(50));" >> $LOG 2>&1
++#mysql -N -B --user=root -e "CREATE INDEX sid ON securityonion_db.history (sid);" >> $LOG 2>&1
++#mysql -N -B --user=root -e "CREATE INDEX cid ON securityonion_db.history (cid);" >> $LOG 2>&1
++#mysql -N -B --user=root -e "GRANT DELETE on securityonion_db.history to 'readonly'@'localhost';" >> $LOG 2>&1
++#mysql -N -B --user=root -e "GRANT UPDATE on securityonion_db.user_info TO 'readonly'@'localhost';" >> $LOG 2>&1
+ 
+ echo "25"
+ echo "# Please wait while configuring firewall..." | tee -a $LOG
+@@ -897,29 +918,6 @@ ufw allow 7734/tcp >> $LOG 2>&1
+ # Open port 7736 for Sguil sensors
+ ufw allow 7736/tcp >> $LOG 2>&1
+ 
+-echo "30"
+-echo "# Please wait while configuring Squert web interface to connect to Sguil database..." | tee -a $LOG
+-cat /var/www/squert/.scripts/squert.sql | mysql -uroot -U securityonion_db  >> $LOG 2>&1
+-mysql -N -B --user=root -e "GRANT SELECT ON securityonion_db.* TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
+-mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.mappings TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
+-mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.ip2c TO 'readonly'@'localhost';" >> $LOG 2>&1
+-mysql -N -B --user=root -e "GRANT FILE ON *.* TO 'readonly'@'localhost';" >> $LOG 2>&1
+-mysql -N -B --user=root -e "GRANT INSERT,UPDATE,DELETE ON securityonion_db.filters TO 'readonly'@'localhost';" >> $LOG 2>&1
+-mysql -N -B --user=root -e "CREATE INDEX comment ON securityonion_db.history (comment(50));" >> $LOG 2>&1
+-mysql -N -B --user=root -e "CREATE INDEX sid ON securityonion_db.history (sid);" >> $LOG 2>&1
+-mysql -N -B --user=root -e "CREATE INDEX cid ON securityonion_db.history (cid);" >> $LOG 2>&1
+-mysql -N -B --user=root -e "GRANT DELETE on securityonion_db.history to 'readonly'@'localhost';" >> $LOG 2>&1
+-mysql -N -B --user=root -e "GRANT UPDATE on securityonion_db.user_info TO 'readonly'@'localhost';" >> $LOG 2>&1
+-
+-echo "40"
+-echo "# Please wait while adjusting Sguil rule locations..." | tee -a $LOG
+-# We keep all our rules in /etc/nsm/rules, so symlink all other rules locations to here
+-rm -rf /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
+-ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
+-# Sensors will try to scp bpf.conf and threshold.conf from master, so let's create them if they don't already exist
+-if [ ! -f /etc/nsm/rules/bpf.conf ]; then touch /etc/nsm/rules/bpf.conf; fi
+-if [ ! -f /etc/nsm/rules/threshold.conf ]; then cp /etc/nsm/templates/snort/threshold.conf /etc/nsm/rules/; fi
+-
+ fi
+ 
+ #########################################

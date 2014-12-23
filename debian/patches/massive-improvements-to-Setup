@@ -1,0 +1,373 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion6) precise; urgency=low
+ .
+   * massive improvements to Setup wizard
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -85,6 +85,7 @@ SGUIL_SERVER_NAME="securityonion"
+ IDS_ENGINE="snort"
+ IDS_RULESET="ETGPL"
+ INTERFACES=`cat "/proc/net/dev" | egrep "eth[0-9]+" | awk '{print $1}' | cut -d\: -f1`
++NUM_INTERFACES=`echo $INTERFACES | wc -l`
+ SENSORTAB="/etc/nsm/sensortab"
+ # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
+ IDS_LB_PROCS=1
+@@ -117,7 +118,7 @@ This program will allow you to configure
+ Would you like to continue?"
+ YES="Yes, Continue!"
+ NO="No, Quit."
+-zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
++zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ ANSWER="$?"
+ if [ $ANSWER -eq 1 ]
+ then
+@@ -130,28 +131,41 @@ fi
+ #########################################
+ # Quick Setup
+ #########################################
+-TEXT="Quick Setup will automatically configure most details of your system, using Snort and Bro to monitor all network interfaces.\n\
++TEXT="Would you like to use Quick Setup or Advanced Setup?\n\
+ \n\
+-Advanced Setup gives you more control over the details of your system, including:\n\
+-- whether to install Sguil server, Sguil sensor, or both\n\
+-- which IDS engine to use (Snort or Suricata)\n\
+-- which IDS ruleset(s) to use (Emerging Threats, Snort VRT, or both)\n\
+-- which network interfaces should be monitored by the IDS Engine and Bro\n\
+-- how many processes to run for Snort/Suricata/Bro\n\
+-\n\
+-Quick Setup is recommended for first-time users and is NOT recommended for production deployments.  Would you like to use Quick Setup?"
+-YES="Yes, use Quick Setup!"
+-NO="No, use Advanced Setup."
+-zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
++Quick Setup is recommended for first-time users or standalone VMs:\n\
++- ideal for quickly evaluating Security Onion\n\
++- will automatically configure most details of your system\n\
++- configures Snort and Bro to monitor one network interface\n\
++\n\
++Advanced Setup is recommended for production deployments:\n\
++- gives you more control over the details of your system\n\
++- you choose Sguil server, Sguil sensor, or both\n\
++- you choose which IDS engine to use (Snort or Suricata)\n\
++- you choose which IDS ruleset(s) to use (Emerging Threats, Snort VRT, or both)\n\
++- you choose which network interfaces should be monitored by the IDS Engine and Bro\n\
++- you choose how many processes to run for Snort/Suricata/Bro"
++YES="Quick Setup"
++NO="Advanced Setup"
++zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ ADVANCED_SETUP="$?"
+ if [ $ADVANCED_SETUP -eq 0 ]
+ then
+ 	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Performing Quick Setup."
++	if [ $NUM_INTERFACES -gt 1 ]; then
++	        TEXT="Which network interface should $IDS_ENGINE listen on?"
++	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" `
++	        if [ "$INTERFACES" = "" ]
++	        then
++	                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++        	        exit
++	        fi
++	fi
+ 	SERVER=1
+ 	SENSOR=1
+         ELSA="YES"
+ 	SERVERNAME="localhost"
+-	SENSOR_CONFIRM_1="- Configure Snort and Bro to monitor each of the following interfaces:\n"
++	SENSOR_CONFIRM_1="- Configure Snort and Bro to monitor the following interface:\n"
+ 	SENSOR_CONFIRM_2="$INTERFACES\n"
+ else
+         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No. Performing Advanced Setup."
+@@ -202,29 +216,29 @@ else
+ 	#########################################
+ 	# SENSOR-SPECIFIC
+ 	#########################################
+-	if [ $SENSOR -eq 1 ]
+-	then
++	if [ $SENSOR -eq 1 ]; then
+ 	#########################################
+ 	# Ask which interface to listen on
+ 	#########################################
+-	TEXT="Which network interface(s) should $IDS_ENGINE listen on?\n\
+-	\n\
++        if [ $NUM_INTERFACES -gt 1 ]; then
++		TEXT="Which network interface(s) should $IDS_ENGINE listen on?\n\
++		\n\
+ You may select multiple interfaces using the Ctrl/Shift keys."
+-	INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" --multiple`
+-	if [ "$INTERFACES" = "" ]
+-	then
+-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+-	        exit
+-	fi
++		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" --multiple`
++		if [ "$INTERFACES" = "" ]; then
++	       		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++		        exit
++		fi
+ 
+-	# INTERFACES contains specified sensors pipe separated
+-	# Replace pipes with spaces
+-	INTERFACES=`echo $INTERFACES | sed 's/|/ /g'`
+-	[ $DEBUG -eq 1 ] &&  echo "DEBUG: Selected interfaces $INTERFACES."
++		# INTERFACES contains specified sensors pipe separated
++		# Replace pipes with spaces
++		INTERFACES=`echo $INTERFACES | sed 's/|/ /g'`
++		[ $DEBUG -eq 1 ] &&  echo "DEBUG: Selected interfaces $INTERFACES."
++	fi
+ 	SENSOR_CONFIRM_1="- Configure $IDS_ENGINE and Bro to monitor each of the following interfaces:\n"
+ 	SENSOR_CONFIRM_2="$INTERFACES\n"
+ 
+-	# Determine number of cores and use that a maximum value for IDS/Bro processes to run
++	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
+ 	CORES=`grep -c ^processor /proc/cpuinfo`; LIST=`seq 1 $CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
+ 	
+ 	if [ "$CORES" -gt 1 ]; then
+@@ -375,14 +389,15 @@ fi
+ #########################################
+ # Ask whether or not to use ELSA
+ #########################################
+-TEXT="ELSA (Enterprise Log Search and Archive) is a centralized syslog framework built on Syslog-NG, MySQL, and Sphinx full-text search.\n\
++TEXT="ELSA (Enterprise Log Search and Archive) is a centralized syslog framework\n\
++built on Syslog-NG, MySQL, and Sphinx full-text search.\n\
+ \n\
+-It gives you a nice web-based interface to hunt through your logs.\n\
++It provides a nice web-based interface to hunt through your logs.\n\
+ \n\
+ Would you like to enable ELSA?"
+ YES="Yes, enable ELSA!"
+ NO="No, disable ELSA."
+-zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
++zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ ANSWER="$?"
+ if [ $ANSWER -eq 0 ]; then
+     [ $DEBUG -eq 1 ] && echo "DEBUG: Enable ELSA."
+@@ -464,31 +479,31 @@ touch $SENSORTAB
+ # Set OS timezone to UTC
+ #########################################
+ echo "3"
+-echo "# Please wait...setting OS timezone to UTC..." | tee -a $LOG
++echo "# Please wait while setting OS timezone to UTC..." | tee -a $LOG
+ echo "Etc/UTC" > /etc/timezone
+ dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
+ date >> $LOG 2>&1
+ 
+ if pgrep rsyslog>/dev/null; then 
+ 	echo "4"
+-	echo "# Please wait...restarting rsyslog..." | tee -a $LOG
++	echo "# Please wait while restarting rsyslog..." | tee -a $LOG
+ 	service rsyslog restart >> $LOG 2>&1
+ fi
+ 
+ echo "5"
+-echo "# Please wait...setting OSSEC timezone to UTC..." | tee -a $LOG
++echo "# Please wait while setting OSSEC timezone to UTC..." | tee -a $LOG
+ cp /etc/localtime /var/ossec/etc/localtime
+ chown root:ossec /var/ossec/etc/localtime
+ 
+ echo "7"
+-echo "# Please wait...restarting OSSEC..." | tee -a $LOG
++echo "# Please wait while restarting OSSEC..." | tee -a $LOG
+ service ossec-hids-server restart >> $LOG 2>&1
+ 
+ #########################################
+ # Stop all Sguil services and delete config
+ #########################################
+ echo "10"
+-echo "# Please wait...stopping all NSM services..." | tee -a $LOG
++echo "# Please wait while stopping all NSM services..." | tee -a $LOG
+ service nsm stop >> $LOG 2>&1
+ /opt/bro/bin/broctl stop >> $LOG 2>&1
+ # terminate any extra processes
+@@ -512,11 +527,11 @@ then
+ # If this box was previously a slave, we need to remove securityonion_ssh.conf
+ rm -f /root/.ssh/securityonion_ssh.conf
+ echo "20"
+-echo "# Please wait...creating the Sguil server..." | tee -a $LOG
++echo "# Please wait while creating the Sguil server..." | tee -a $LOG
+ /usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
+ 
+ echo "25"
+-echo "# Please wait...configuring firewall..." | tee -a $LOG
++echo "# Please wait while configuring firewall..." | tee -a $LOG
+ # Open port 443 for https web interface
+ ufw allow 443/tcp >> $LOG 2>&1
+ # Open port 444 for Snorby web interface
+@@ -527,7 +542,7 @@ ufw allow 7734/tcp >> $LOG 2>&1
+ ufw allow 7736/tcp >> $LOG 2>&1
+ 
+ echo "30"
+-echo "# Please wait...configuring Squert web interface to connect to Sguil database..." | tee -a $LOG
++echo "# Please wait while configuring Squert web interface to connect to Sguil database..." | tee -a $LOG
+ mysql -N -B --user=root -e "GRANT SELECT ON securityonion_db.* TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
+ mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.mappings TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
+ mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.ip2c TO 'readonly'@'localhost';" >> $LOG 2>&1
+@@ -536,7 +551,7 @@ cat /var/www/squert/.scripts/db/squert.s
+ cat /var/www/squert/.scripts/db/v0.8.sql | mysql -uroot -U securityonion_db  >> $LOG 2>&1
+ 
+ echo "40"
+-echo "# Please wait...adjusting Sguil rule locations..." | tee -a $LOG
++echo "# Please wait while adjusting Sguil rule locations..." | tee -a $LOG
+ # We keep all our rules in /etc/nsm/rules, so symlink all other rules locations to here
+ rm -rf /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
+ ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
+@@ -546,7 +561,7 @@ fi
+ # IDS Engine
+ #########################################
+ echo "43"
+-echo "# Please wait...setting IDS Engine to $IDS_ENGINE..." | tee -a $LOG
++echo "# Please wait while setting IDS Engine to $IDS_ENGINE..." | tee -a $LOG
+ IDS_ENGINE_LOWER=`echo ${IDS_ENGINE,,}`
+ echo "ENGINE=$IDS_ENGINE_LOWER" > $CONF
+ echo "DAYSTOKEEP=365" >> $CONF
+@@ -557,7 +572,7 @@ echo "DAYSTOKEEP=365" >> $CONF
+ if [ $SENSOR -eq 1 ]
+ then
+ echo "47"
+-echo "# Please wait...creating Sguil sensor(s)..." | tee -a $LOG
++echo "# Please wait while creating Sguil sensor(s)..." | tee -a $LOG
+ BY2PORT=8000
+ HOSTNAME=`hostname`
+ 
+@@ -606,7 +621,7 @@ fi
+ for INTERFACE in $INTERFACES
+ do	
+ 	SENSORNAME="$HOSTNAME-$INTERFACE"
+-	echo "# Please wait...creating Sguil sensor: $SENSORNAME..." | tee -a $LOG
++	echo "# Please wait while creating Sguil sensor: $SENSORNAME..." | tee -a $LOG
+         [ $DEBUG -eq 1 ] && echo "DEBUG: Adding Sensor $INTERFACE."
+ 
+ 	# Add the sensor
+@@ -670,10 +685,9 @@ done
+ # Bro
+ if grep -v "^#" $SENSORTAB > /dev/null
+ then
+-	# If single interface, do standalone config.
++	# If user selected Quick Setup, do standalone config.
+ 	# Otherwise, do cluster config.
+-	if [ `grep -v "^#" $SENSORTAB|wc -l` -eq 1 ]
+-	then
++	if [ $ADVANCED_SETUP -eq 0 ]; then
+ 		# standalone config
+ 		INTERFACE=`grep -v "^#" $SENSORTAB | awk '{print $4}'`
+ 		cat << EOF > /opt/bro/etc/node.cfg
+@@ -683,14 +697,13 @@ host=localhost
+ interface=$INTERFACE
+ EOF
+ 	else
+-		# cluster config
+-                #cp /opt/bro/etc/node.cfg.securityonion /opt/bro/etc/node.cfg
++		# User selected Advanced Setup, so do cluster config
+ 		cat << EOF > /opt/bro/etc/node.cfg
+ [manager]
+ type=manager
+ host=localhost
+ 
+-[proxy-1]
++[proxy]
+ type=proxy
+ host=localhost
+ 
+@@ -744,10 +757,9 @@ fi
+ #########################################
+ # Download rules using Pulledpork
+ #########################################
+-if [ "$SERVERNAME" = "localhost" ]
+-then
++if [ "$SERVERNAME" = "localhost" ]; then
+ 	echo "60"
+-	echo "# Please wait...configuring IDS Ruleset..." | tee -a $LOG
++	echo "# Please wait while configuring IDS Ruleset..." | tee -a $LOG
+ 	# Start from a clean slate (pulledpork.conf.master)
+ 	# Here are the rule_url directives in pulledpork.conf.master:
+ 	# (note that the ET ruleset is uncommented and the other two are commented)
+@@ -799,10 +811,9 @@ then
+ 		;;
+ 	esac
+ 
+-	if [ $INTERNET = "UP" ]
+-	then
++	if [ $INTERNET = "UP" ]; then
+ 		echo "65"
+-		echo "# Please wait...executing PulledPork to download rules..." | tee -a $LOG
++		echo "# Please wait while executing PulledPork to download rules..." | tee -a $LOG
+ 		mkdir -p /etc/nsm/rules/backup/
+ 		cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+ 		mkdir -p /var/log/nsm/
+@@ -819,14 +830,13 @@ fi
+ SSH_DIR="/root/.ssh"
+ SSH_CONF="$SSH_DIR/securityonion_ssh.conf"
+ echo "60"
+-if [ -f $SSH_CONF ]
+-then
++if [ -f $SSH_CONF ]; then
+         # We are a SENSOR  
+-	echo "# Please wait...killing existing SSH tunnel to MASTER..." | tee -a $LOG
++	echo "# Please wait while killing existing SSH tunnel to MASTER..." | tee -a $LOG
+ 	pkill -f autossh
+ else
+ 	# We are the MASTER.
+-	echo "# Please wait...initializing Snorby database..." | tee -a $LOG
++	echo "# Please wait while initializing Snorby database..." | tee -a $LOG
+ 	# Kill any existing Snorby processes.
+ 	pkill -f delayed_job
+ 	# Delete any existing Snorby data.
+@@ -843,7 +853,7 @@ else
+ 	shred -u /opt/snorby/db/seeds.rb >> $LOG 2>&1
+ fi
+ echo "75"
+-echo "# Please wait...starting all Security Onion services..." | tee -a $LOG
++echo "# Please wait while starting all Security Onion services..." | tee -a $LOG
+ start securityonion >> $LOG 2>&1
+ 
+ #########################################
+@@ -851,7 +861,7 @@ start securityonion >> $LOG 2>&1
+ #########################################
+ if [ "$ELSA" = "YES" ]; then
+     echo "90"
+-    echo "# Please wait...configuring ELSA..." | tee -a $LOG
++    echo "# Please wait while configuring ELSA..." | tee -a $LOG
+     #check if there is an ELSA directive already
+     ELSA=$(grep "ELSA=" $CONF)
+     if [ ! $? -eq 0 ]; then
+@@ -884,13 +894,12 @@ fi
+ # END Zenity Progress window
+ #########################################
+ ) |
+-zenity --progress --title="$TITLE" --text="Please wait...making changes to the system..." --percentage=0 --auto-close
++zenity --progress --title="$TITLE" --text="Please wait while making changes to the system..." --percentage=0 --auto-close
+ 
+ #########################################
+ # If this is a server, populate ip2c table
+ #########################################
+-if [ -d /var/lib/mysql/securityonion_db/ ]
+-then
++if [ -d /var/lib/mysql/securityonion_db/ ]; then
+ 	/usr/bin/sguild-add-user "$SGUIL_CLIENT_USERNAME" "$SGUIL_CLIENT_PASSWORD_1" >/dev/null
+ 	cd /var/www/squert/.scripts/Ip2c/
+ 	# Setup needs to delete /var/www/squert/.scripts/Ip2c/*.md5 before running ip2c.tcl
+@@ -934,4 +943,4 @@ Sensors can be tuned by modifying the fi
+ Enjoy! \n \
+ \n \
+ http://securityonion.blogspot.com"
+-zenity --info --title="$TITLE" --text="$TEXT"
++zenity --info --title="$TITLE" --text="$TEXT" --no-wrap

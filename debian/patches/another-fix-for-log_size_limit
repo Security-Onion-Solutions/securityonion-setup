@@ -1,0 +1,49 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion95) precise; urgency=low
+ .
+   * another fix for log_size_limit
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -794,7 +794,7 @@ fi
+ if [ "$ELSA" = "YES" ]; then
+ 	LOG_SIZE_LIMIT_CONFIRMED="no"
+ 	while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
+-		LOG_SIZE_LIMIT=`zenity --entry --title "$TITLE" --text="How much disk space (in bytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is 200000000000 (200GB).\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=200000000000`
++		LOG_SIZE_LIMIT=`zenity --entry --title "$TITLE" --text="How much disk space (in bytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is 200000000000 (200GB).\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=200000000000`
+ 		[ x$LOG_SIZE_LIMIT = "x" ] && exit
+ 		COMPRESSED="$(echo $LOG_SIZE_LIMIT | sed -e 's/[^[:digit:]]//g')"
+ 		[ "$COMPRESSED" == "$LOG_SIZE_LIMIT" ] && 
+@@ -1435,10 +1435,10 @@ if [ "$ELSA" = "YES" ]; then
+     echo "# Please wait while configuring ELSA..." | tee -a $LOG
+ 
+     # update LOG_SIZE_LIMIT
+-    sed -i 's|"log_size_limit" :.*$|"log_size_limit" : $LOG_SIZE_LIMIT,|g' /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-node.conf
++    sed -i "s|\"log_size_limit\" :.*$|\"log_size_limit\" : $LOG_SIZE_LIMIT,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-node.conf
+ 
+     # update query_timeout
+-    sed -i 's|"query_timeout":.*$|"query_timeout": 10000,|g' /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-web.conf
++    sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-web.conf
+ 
+     # check if there is an ELSA directive already
+     ELSA_USE=$(grep "ELSA=" $CONF)

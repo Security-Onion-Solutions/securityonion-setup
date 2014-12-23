@@ -1,0 +1,36 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion122) precise; urgency=low
+ .
+   * cosmetic fix
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-fix-ppconf
++++ securityonion-setup-20120912/bin/sosetup-fix-ppconf
+@@ -25,7 +25,7 @@ else
+ 				STRING="rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community"
+ 				echo "$STRING" | tee -a $FILE
+ 			else
+-				echo "Uncommenting the Snort Community line in $FILE:"
++				echo "Uncommenting the Snort Community line in $FILE."
+ 				sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $FILE
+ 			fi
+ 		fi

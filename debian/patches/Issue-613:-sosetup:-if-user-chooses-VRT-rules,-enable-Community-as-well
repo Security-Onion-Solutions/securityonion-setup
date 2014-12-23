@@ -1,0 +1,76 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion120) precise; urgency=low
+ .
+   * Issue 613: sosetup: if user chooses VRT rules, enable Community as well
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1396,6 +1396,8 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\#rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\g' $PP_CONF >> $LOG 2>&1
+ 		# Enable Snort.
+ 		sed -i "s\#rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|<oinkcode>\rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
++		# Enable Snort Community ruleset.
++		sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $PP_CONF >> $LOG 2>&1
+ 		# Set VRT Policy.
+ 		sed -i "s|# ips_policy=security|ips_policy=$VRT_POLICY|g" $PP_CONF >> $LOG 2>&1
+ 		# Test Internet access
+@@ -1405,6 +1407,8 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		echo "Configuring for Snort VRT and Emerging Threats NoGPL rulesets" >> $LOG 2>&1
+ 		# Enable Snort.
+ 		sed -i "s\#rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|<oinkcode>\rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
++		# Enable Snort Community ruleset.
++		sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $PP_CONF >> $LOG 2>&1
+ 		# Change open to open-nogpl
+ 		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open-nogpl\g' $PP_CONF >> $LOG 2>&1
+ 		# Test Internet access
+--- /dev/null
++++ securityonion-setup-20120912/bin/sosetup-fix-ppconf
+@@ -0,0 +1,28 @@
++#!/bin/sh
++
++FILE="/etc/nsm/pulledpork/pulledpork.conf"
++
++echo "Checking to see if $FILE exists."
++if [ ! -f $FILE ]; then
++	echo "$FILE doesn't exist, so no changes necessary."
++else
++	echo "Checking $FILE to see if Snort VRT ruleset is enabled."
++	if ! grep "^rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz" $FILE >/dev/null 2>&1; then
++		echo "Snort VRT ruleset is NOT enabled in $FILE, so no changes necessary."
++	else
++		echo "Snort VRT ruleset is enabled in $FILE."
++		echo "Checking to see if Snort VRT Community ruleset is enabled."
++		if grep "^rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
++			echo "/etc/nsm/pulledpork/pulledpork.conf already has Snort VRT Community ruleset enabled."
++			echo "No changes necessary."
++		else
++			echo "$FILE doesn't already have Snort VRT Community ruleset enabled."
++			DATE=`date +%Y%m%d`
++			echo "Backing up $FILE to $FILE.$DATE."
++			cp $FILE $FILE.$DATE
++			echo "Appending the following to $FILE:"
++			STRING="rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community"
++			echo "$STRING" | tee -a $FILE
++		fi
++	fi
++fi

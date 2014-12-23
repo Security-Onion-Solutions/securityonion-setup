@@ -1,0 +1,181 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion92) precise; urgency=low
+ .
+   * Issues 435, 446, and 452
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -139,6 +139,8 @@ DAYSTOKEEP=30
+ DAYSTOREPAIR=7
+ # File extraction
+ EXTRACT_FILES="yes"
++# PF_RING min_num_slots
++PF_RING_SLOTS="4096"
+ 
+ #########################################
+ # Debug
+@@ -197,7 +199,7 @@ and allows you to build a distributed se
+ - Sguil server, Sguil sensor, or both\n\
+ - which IDS engine to use (Snort or Suricata)\n\
+ - which IDS ruleset(s) to use (Emerging Threats, Snort VRT, or both)\n\
+-- which network interfaces should be monitored by the IDS Engine and Bro\n\
++- which network interface(s) should be monitored by the IDS Engine and Bro\n\
+ - how many processes to run for Snort/Suricata/Bro\n\
+ - which sensor processes to enable/disable"
+ YES="Quick Setup"
+@@ -205,22 +207,47 @@ NO="Advanced Setup"
+ SETUP=""
+ SETUP=`zenity --list --radiolist \
+         --column "1" --column "2" --hide-header --title="$TITLE" \
+-        FALSE "Quick Setup" FALSE "Advanced Setup" --text="$TEXT"`
++        TRUE "Quick Setup" FALSE "Advanced Setup" --text="$TEXT"`
+ [ "$SETUP" == "" ] && exit
+ [ "$SETUP" == "Quick Setup" ] && ADVANCED_SETUP="0" || ADVANCED_SETUP="1"
+ #zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ #ADVANCED_SETUP="$?"
+ if [ $ADVANCED_SETUP -eq 0 ]; then
+ 	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Performing Quick Setup."
+-	if [ $NUM_INTERFACES -gt 1 ]; then
+-	        TEXT="Which network interface should be monitored?"
+-	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort |zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" 2>/dev/null`
+-	        if [ "$INTERFACES" = "" ]
+-	        then
+-	                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+-        	        exit
+-	        fi
+-	fi
++
++#	if [ $NUM_INTERFACES -gt 1 ]; then
++#	        TEXT="Which network interface should be monitored?"
++#	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort |zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" 2>/dev/null`
++#	        if [ "$INTERFACES" = "" ]
++#	        then
++#	                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++#        	        exit
++#	        fi
++#	fi
++
++        if [ $NUM_INTERFACES -gt 1 ]; then
++                TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
++                INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
++                if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
++                        CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
++                        INPUT=`for i in $INTERFACES; do 
++                                        if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
++                                                echo -n "TRUE $i "
++                                        else
++                                                echo -n "FALSE $i "
++                                        fi
++                                done`
++                else
++                        INPUT=`for i in $INTERFACES; do echo -n "FALSE $i "; done`
++                fi
++                INTERFACES=`zenity --list --radiolist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
++                if [ "$INTERFACES" = "" ]; then
++                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++                        exit
++                fi
++                [ $DEBUG -eq 1 ] &&  echo "DEBUG: Selected interfaces $INTERFACES."
++        fi
++
+ 	SERVER=1
+ 	SENSOR=1
+         ELSA="YES"
+@@ -436,11 +463,35 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSO
+ 	# Remove "-c" from PCAP_OPTIONS for better performance on production networks
+ 	PCAP_OPTIONS=""
+ 
++	# Ask for PF_RING_SLOTS        
++	PF_RING_SLOTS_CONFIRMED="no"
++	while [ $PF_RING_SLOTS_CONFIRMED = "no" ]; do
++		PF_RING_SLOTS=`zenity --entry --title "$TITLE" --text="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module." --entry-text=4096`
++		[ x$PF_RING_SLOTS = "x" ] && exit
++		COMPRESSED="$(echo $PF_RING_SLOTS | sed -e 's/[^[:digit:]]//g')"
++		if [ "$COMPRESSED" != "$PF_RING_SLOTS" ]; then
++			zenity --error --text "Invalid value! Please use integers only." 
++		else
++			PF_RING_SLOTS_CONFIRMED="yes"
++		fi
++	done
++
+ 	# Ask which interface(s) to listen on
+         if [ $NUM_INTERFACES -gt 1 ]; then
+-		TEXT="Which network interface(s) should be monitored?"
++		TEXT="Which network interface(s) should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your monitor interfaces are already selected."
+ 		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
+-		INPUT=`for i in $INTERFACES; do echo -n "FALSE $i "; done`
++		if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
++			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`
++			INPUT=`for i in $INTERFACES; do 
++					if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
++						echo -n "TRUE $i "
++					else
++						echo -n "FALSE $i "
++					fi
++				done`
++		else
++			INPUT=`for i in $INTERFACES; do echo -n "FALSE $i "; done`
++		fi
+ 		INTERFACES=`zenity --list --checklist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
+ 		if [ "$INTERFACES" = "" ]; then
+ 	       		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+@@ -849,6 +900,12 @@ pkill snort
+ /usr/sbin/nsm_all_del_quick >> $LOG 2>&1
+ 
+ #########################################
++# PF_RING
++#########################################
++rmmod pf_ring
++echo "options pf_ring transparent_mode=0 min_num_slots=$PF_RING_SLOTS" > /etc/modprobe.d/pf_ring.conf
++
++#########################################
+ # Firewall
+ # When enabling ufw over SSH, it says it might disrupt the SSH
+ # connection and asks for confirmation, so we put in the "allow 22" first, 
+@@ -1344,6 +1401,7 @@ fi
+ if [ "$ELSA" = "YES" ]; then
+     echo "90"
+     echo "# Please wait while configuring ELSA..." | tee -a $LOG
++
+     #check if there is an ELSA directive already
+     ELSA_USE=$(grep "ELSA=" $CONF)
+     if [ ! $? -eq 0 ]; then
+@@ -1351,6 +1409,7 @@ if [ "$ELSA" = "YES" ]; then
+     else
+         sed -i 's,ELSA=NO,ELSA=YES,' $CONF
+     fi
++
+     # Delete any existing ELSA databases.
+     if [ -d /var/lib/mysql/elsa_web/ ]; then
+ 	    mysql -e "drop database elsa_web" >> $LOG 2>&1
+@@ -1361,6 +1420,10 @@ if [ "$ELSA" = "YES" ]; then
+     if [ -d /var/lib/mysql/syslog_data/ ]; then
+     	mysql -e "drop database syslog_data" >> $LOG 2>&1
+     fi
++
++    # Delete sphinxsearch binlog files
++    rm -f /var/lib/sphinxsearch/data/binlog.*
++
+     # Configure all Log Node and Web Node functionality if we are a server
+     if [ $SERVER -eq 1 ]; then
+         /usr/bin/securityonion-elsa-config.sh -t WEB >> $LOG 2>&1

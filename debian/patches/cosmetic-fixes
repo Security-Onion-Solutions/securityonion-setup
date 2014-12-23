@@ -1,0 +1,54 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion79) precise; urgency=low
+ .
+   * cosmetic fixes
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -352,7 +352,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVE
+ 	# Ask for DAYSTOKEEP        
+ 	DAYSTOKEEP_CONFIRMED="no"
+ 	while [ $DAYSTOKEEP_CONFIRMED = "no" ]; do
+-		DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="How many days of data do you want to keep in your Sguil database?\n\nThis includes things like IDS alerts, PADS events, and PRADS session data.\n\nPlease enter an integer.  The default is 30 days." --entry-text=30`
++		DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="How many days of data do you want to keep in your Sguil database?\n\nThis includes things like IDS alerts, PADS events, and PRADS session data.\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days." --entry-text=30`
+ 		[ x$DAYSTOKEEP = "x" ] && exit
+ 		COMPRESSED="$(echo $DAYSTOKEEP | sed -e 's/[^[:digit:]]//g')"
+ 		if [ "$COMPRESSED" != "$DAYSTOKEEP" ]; then
+@@ -365,7 +365,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVE
+ 	# Ask for DAYSTOREPAIR        
+ 	DAYSTOREPAIR_CONFIRMED="no"
+ 	while [ $DAYSTOREPAIR_CONFIRMED = "no" ]; do
+-		DAYSTOREPAIR=`zenity --entry --title "$TITLE" --text="How many days of data do you want to repair in your Sguil database?\n\nA daily cronjob stops Sguil, repairs the MySQL tables for the last X days, and then starts Sguil back up.\n\nIf you choose a higher value, Sguil will be down for longer.\n\nPlease enter an integer.  The default is 7 days." --entry-text=7`
++		DAYSTOREPAIR=`zenity --entry --title "$TITLE" --text="How many days of data do you want to repair in your Sguil database?\n\nA daily cronjob stops Sguil, repairs the MySQL tables for the last X days, and then starts Sguil back up.\n\nIf you choose a higher value, Sguil will be down for longer.\n\nIf you need to change this later, you can change DAYSTOREPAIR in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 7 days." --entry-text=7`
+ 		[ x$DAYSTOREPAIR = "x" ] && exit
+ 		COMPRESSED="$(echo $DAYSTOREPAIR | sed -e 's/[^[:digit:]]//g')"
+ 		if [ "$COMPRESSED" != "$DAYSTOREPAIR" ]; then
+@@ -505,7 +505,7 @@ Would you like to enable Bro?"
+ 
+ 	# Bro file extraction
+ 	if [ "$BRO_ENABLED" == "yes" ]; then
+-		TEXT="Bro can extract EXEs from your network traffic.\n\nWould you like to enable file extraction?"
++		TEXT="Bro can extract files (EXEs by default) from your network traffic.\n\nIf enabled, EXEs will be stored in /nsm/bro/extracted/.\n\nWould you like to enable file extraction?"
+ 		YES="Yes, enable file extraction!"
+ 		NO="No, disable file extraction."
+ 		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap

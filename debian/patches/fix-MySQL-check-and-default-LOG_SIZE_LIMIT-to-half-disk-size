@@ -1,0 +1,71 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion98) precise; urgency=low
+ .
+   * fix MySQL check and default LOG_SIZE_LIMIT to half disk size
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -792,16 +792,24 @@ fi
+ 
+ # If user chose to enable ELSA, ask about log_size_limit
+ if [ "$ELSA" = "YES" ]; then
+-	LOG_SIZE_LIMIT_CONFIRMED="no"
+-	while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
+-		LOG_SIZE_LIMIT=`zenity --entry --title "$TITLE" --text="How much disk space (in bytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is 200000000000 (200GB).\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=200000000000`
+-		[ x$LOG_SIZE_LIMIT = "x" ] && exit
+-		COMPRESSED="$(echo $LOG_SIZE_LIMIT | sed -e 's/[^[:digit:]]//g')"
+-		[ "$COMPRESSED" == "$LOG_SIZE_LIMIT" ] && 
+-		[ $LOG_SIZE_LIMIT -gt 0 ] && 
+-		LOG_SIZE_LIMIT_CONFIRMED="yes" || 
+-		zenity --error --text "Invalid log size limit! Please use integers greater than 0." 
+-	done
++	# Calculate half of available disk space
++	DISK_SIZE_K=`df /nsm |grep -v "^Filesystem" | awk '{print $2}'`
++	let DISK_SIZE=DISK_SIZE_K*1000
++	let LOG_SIZE_LIMIT=DISK_SIZE/2
++	# If Advanced Setup, ask user
++	if [ $ADVANCED_SETUP -eq 1 ]; then
++		LOG_SIZE_LIMIT_CONFIRMED="no"
++		while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
++			LOG_SIZE_LIMIT=`zenity --entry --title "$TITLE" --text="How much disk space (in bytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is half your disk size.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=$LOG_SIZE_LIMIT`
++			[ x$LOG_SIZE_LIMIT = "x" ] && exit
++			COMPRESSED="$(echo $LOG_SIZE_LIMIT | sed -e 's/[^[:digit:]]//g')"
++			[ "$COMPRESSED" == "$LOG_SIZE_LIMIT" ] && 
++			[ $LOG_SIZE_LIMIT -gt 0 ] && 
++			[ $LOG_SIZE_LIMIT -lt $DISK_SIZE ] && 
++			LOG_SIZE_LIMIT_CONFIRMED="yes" || 
++			zenity --error --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size." 
++		done
++	fi
+ fi
+ 
+ # Set ELSA_ACTION_CONFIRM and ask about updating ELSA server if applicable
+@@ -958,7 +966,7 @@ innodb_file_per_table
+ EOF
+ 
+ # Restart mysql to make changes take effect
+-pgrep -lf mysql && service mysql restart >> $LOG 2>&1
++pgrep -lf mysqld >/dev/null && reload mysql >> $LOG 2>&1
+ 
+ #########################################
+ # PF_RING

@@ -1,0 +1,163 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion36) precise; urgency=low
+ .
+   * when configuring sensor, set ENGINE variable properly
+   * when configuring management interface, network address and broadcast address are optional
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -618,7 +618,7 @@ then
+         ssh-keygen -f "$KEY" -N '' >> $LOG 2>&1
+         chmod 600 "$KEY"*
+         xfce4-terminal -x ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME 
+-	# Backup existing rules
++	# Backup existing files in /etc/nsm/rules/
+ 	mkdir -p /etc/nsm/rules/backup/
+ 	cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+ 	cp /etc/nsm/rules/local.rules /etc/nsm/rules/backup/local.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+@@ -626,17 +626,23 @@ then
+ 	cp /etc/nsm/rules/sid-msg.map /etc/nsm/rules/backup/sid-msg.map.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+ 	cp /etc/nsm/rules/threshold.conf /etc/nsm/rules/backup/threshold.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+ 	cp /etc/nsm/rules/bpf.conf /etc/nsm/rules/backup/bpf.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+-	# Copy rules from server
++	# Copy files from server to /etc/nsm/rules
+ 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/downloaded.rules /etc/nsm/rules/downloaded.rules >> $LOG 2>&1
+ 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/local.rules /etc/nsm/rules/local.rules >> $LOG 2>&1
+ 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/so_rules.rules /etc/nsm/rules/so_rules.rules >> $LOG 2>&1
+ 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/sid-msg.map /etc/nsm/rules/sid-msg.map >> $LOG 2>&1
+ 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/threshold.conf /etc/nsm/rules/threshold.conf >> $LOG 2>&1
+ 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/bpf.conf /etc/nsm/rules/bpf.conf >> $LOG 2>&1
++	# Set IDS_ENGINE variable
++	# we were doing this:
++	# IDS_ENGINE=`ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME grep ENGINE /etc/nsm/securityonion.conf 2>/dev/null | cut -d\= -f2` >> $LOG 2>&1
++	# but it resulted in a ^M at the end of IDS_ENGINE
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/securityonion.conf /tmp/securityonion.conf >> $LOG 2>&1
++	IDS_ENGINE=`grep ENGINE /tmp/securityonion.conf 2>/dev/null | cut -d\= -f2`
++	rm -f /tmp/securityonion.conf	
+ 	# Save configuration
+ 	echo "SSH_USERNAME=$SSH_USERNAME" > $SSH_CONF
+ 	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF
+-	IDS_ENGINE=`ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME grep ENGINE /etc/nsm/securityonion.conf 2>/dev/null | cut -d\= -f2` >> $LOG 2>&1
+ fi
+ 
+ # NIDS sensor(s)
+@@ -1084,18 +1090,6 @@ else
+ 	is_ip $ADDRESS && VALID="yes"
+ 	done
+           
+-	# Enter gateway IP address
+-	VALID="no"
+-        while [ $VALID = "no" ]; do
+-	TEXT="Enter your gateway's IP address (e.g., 192.168.1.1):"
+-	GATEWAY=`zenity --title="$TITLE" --text="$TEXT" --entry`
+-	if [ "$GATEWAY" = "" ]; then
+-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+-        	exit
+-	fi
+-	is_ip $GATEWAY && VALID="yes"
+-	done
+-          
+ 	# Enter subnet mask
+ 	VALID="no"
+         while [ $VALID = "no" ]; do
+@@ -1108,29 +1102,43 @@ else
+ 	is_ip $NETMASK && VALID="yes"
+ 	done
+         
+-	# Enter network address
++	# Enter gateway IP address
+ 	VALID="no"
+         while [ $VALID = "no" ]; do
+-	TEXT="Enter your network address (e.g., 192.168.1.0):"
+-	NETWORK=`zenity --title="$TITLE" --text="$TEXT" --entry`
+-	if [ "$NETWORK" = "" ]; then
++	TEXT="Enter your gateway's IP address (e.g., 192.168.1.1):"
++	GATEWAY=`zenity --title="$TITLE" --text="$TEXT" --entry`
++	if [ "$GATEWAY" = "" ]; then
+ 		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+-	        exit
++        	exit
+ 	fi
+-	is_ip $NETWORK && VALID="yes"
++	is_ip $GATEWAY && VALID="yes"
+ 	done
++          
++	# Network address is optional
++	# Enter network address
++	#VALID="no"
++        #while [ $VALID = "no" ]; do
++	#TEXT="Enter your network address (e.g., 192.168.1.0):"
++	#NETWORK=`zenity --title="$TITLE" --text="$TEXT" --entry`
++	#if [ "$NETWORK" = "" ]; then
++	#	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++	#        exit
++	#fi
++	#is_ip $NETWORK && VALID="yes"
++	#done
+         
++	# Broadcast address is optional
+         # Enter broadcast address
+-	VALID="no"
+-        while [ $VALID = "no" ]; do
+-        TEXT="Enter your network's broadcast address (e.g., 192.168.1.255):"
+-          BROADCAST=`zenity --title="$TITLE" --text="$TEXT" --entry`
+-          if [ "$BROADCAST" = "" ]; then
+-            [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+-            exit
+-          fi
+-	is_ip $BROADCAST && VALID="yes"
+-	done
++	#VALID="no"
++        #while [ $VALID = "no" ]; do
++        #TEXT="Enter your network's broadcast address (e.g., 192.168.1.255):"
++        #  BROADCAST=`zenity --title="$TITLE" --text="$TEXT" --entry`
++        #  if [ "$BROADCAST" = "" ]; then
++        #    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++        #    exit
++        #  fi
++	#is_ip $BROADCAST && VALID="yes"
++	#done
+         
+         # Enter DNS server address
+ 	VALID="no"
+@@ -1149,10 +1157,8 @@ else
+           
+ 	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows: \n\
+           Set static IP address of $ADDRESS \n\
+-          Set the gateway IP address to $GATEWAY \n\
+           Set the network mask to $NETMASK \n\
+-          Set the network IP address to $NETWORK \n\
+-          Set the broadcast IP address to $BROADCAST\n\
++          Set the gateway IP address to $GATEWAY \n\
+           Set the DNS server(s) to $NAMESERVER"
+ fi
+ 
+@@ -1228,8 +1234,6 @@ iface $MGMT_INTERFACE inet static
+   address $ADDRESS
+   gateway $GATEWAY
+   netmask $NETMASK
+-  network $NETWORK
+-  broadcast $BROADCAST
+   dns-nameservers $NAMESERVER
+   post-up for i in rx tx sg tso ufo gso gro lro; do ethtool -K \$IFACE \$i off; done
+ 

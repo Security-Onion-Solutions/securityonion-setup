@@ -1,0 +1,28 @@
+#!/bin/sh
+
+FILE="/etc/nsm/pulledpork/pulledpork.conf"
+
+echo "Checking to see if $FILE exists."
+if [ ! -f $FILE ]; then
+	echo "$FILE doesn't exist, so no changes necessary."
+else
+	echo "Checking $FILE to see if Snort VRT ruleset is enabled."
+	if ! grep "^rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz" $FILE >/dev/null 2>&1; then
+		echo "Snort VRT ruleset is NOT enabled in $FILE, so no changes necessary."
+	else
+		echo "Snort VRT ruleset is enabled in $FILE."
+		echo "Checking to see if Snort VRT Community ruleset is enabled."
+		if grep "^rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
+			echo "/etc/nsm/pulledpork/pulledpork.conf already has Snort VRT Community ruleset enabled."
+			echo "No changes necessary."
+		else
+			echo "$FILE doesn't already have Snort VRT Community ruleset enabled."
+			DATE=`date +%Y%m%d`
+			echo "Backing up $FILE to $FILE.$DATE."
+			cp $FILE $FILE.$DATE
+			echo "Appending the following to $FILE:"
+			STRING="rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community"
+			echo "$STRING" | tee -a $FILE
+		fi
+	fi
+fi

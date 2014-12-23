@@ -1,0 +1,36 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion87) precise; urgency=low
+ .
+   * pivot from Snorby to ELSA
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1269,6 +1269,8 @@ else
+ 	su www-data -c "cd /opt/snorby; bundle exec rake snorby:setup RAILS_ENV=production" >> $LOG 2>&1
+ 	# Shred the Snorby password
+ 	shred -u /opt/snorby/db/seeds.rb >> $LOG 2>&1
++        # Pivot from Snorby to ELSA
++        [ "$ELSA" = "YES" ] && mysql -uroot -Dsnorby -e "INSERT INTO lookups (title,value) VALUES('ELSA','https://$IP:3154/?query_string=\${ip}')"
+ fi
+ echo "75"
+ echo "# Please wait while starting all Security Onion services..." | tee -a $LOG

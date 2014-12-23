@@ -1,0 +1,114 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion10) precise; urgency=low
+ .
+   * add support for Suricata
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -84,7 +84,7 @@ VRT_URL="www.snort.org"
+ SGUIL_SERVER_NAME="securityonion"
+ IDS_ENGINE="snort"
+ IDS_RULESET="ETGPL"
+-INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1`
++INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
+ SENSORTAB="/etc/nsm/sensortab"
+ # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
+@@ -154,7 +154,7 @@ then
+ 	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Performing Quick Setup."
+ 	if [ $NUM_INTERFACES -gt 1 ]; then
+ 	        TEXT="Which network interface should $IDS_ENGINE listen on?"
+-	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" `
++	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort |zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" `
+ 	        if [ "$INTERFACES" = "" ]
+ 	        then
+ 	                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+@@ -224,7 +224,7 @@ else
+ 		TEXT="Which network interface(s) should $IDS_ENGINE listen on?\n\
+ 		\n\
+ You may select multiple interfaces using the Ctrl/Shift keys."
+-		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" --multiple`
++		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort | zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" --multiple`
+ 		if [ "$INTERFACES" = "" ]; then
+ 	       		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+ 		        exit
+@@ -247,7 +247,9 @@ You may select multiple interfaces using
+ 	\n\
+ This is limited by the number of CPU cores on your system.\n\
+ \n\
+-If you need to change this later, you can change the IDS_LB_PROCS variable in /etc/nsm/HOSTNAME-INTERFACE/sensor.conf."
++If you need to change this setting later, it is set in the following places:\n\
++- IDS_LB_PROCS variable in /etc/nsm/HOSTNAME-INTERFACE/sensor.conf (for Snort)\n\
++- af_packet threads variable in /etc/nsm/HOSTNAME-INTERFACE/suricata.yaml (for Suricata)"
+ 	IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+ 	if [ "$IDS_LB_PROCS" = "" ]
+         then
+@@ -261,7 +263,7 @@ If you need to change this later, you ca
+ 	\n\
+ This is limited by the number of CPU cores on your system.\n\
+ \n\
+-If you need to change this later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
++If you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
+ 	BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+ 	if [ "$BRO_LB_PROCS" = "" ]
+         then
+@@ -643,9 +645,15 @@ do
+ 	sed -i "s|# threshold-file: /etc/suricata/threshold.config|threshold-file: /etc/nsm/$SENSORNAME/threshold.conf|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	sed -i "s|classification-file: @e_sysconfdir@classification.config|classification-file: /etc/nsm/$SENSORNAME/classification.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	sed -i "s|reference-config-file: @e_sysconfdir@reference.config|reference-config-file: /etc/nsm/$SENSORNAME/reference.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
++	sed -i "s|filename: unified2.alert|filename: snort.unified2|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
++	sed -i "s|threads: IDS_LB_PROCS|threads: $IDS_LB_PROCS|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
++	sed -i "s|# threshold-file: /etc/suricata/threshold.config|threshold-file: /etc/nsm/$SENSORNAME/threshold.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
++	sed -i "s|interface: eth0|interface: $INTERFACE|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
++	sed -i "s|cluster-id: 99|cluster-id: $BY2PORT|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	mkdir -p /usr/local/lib/snort_dynamicrules
+ 
+ 	# /etc/nsm/rules/
++	if [ ! -f /etc/nsm/rules/bpf.conf ]; then touch /etc/nsm/rules/bpf.conf; fi
+ 	if [ ! -f /etc/nsm/rules/threshold.conf ]; then cp /etc/nsm/templates/snort/threshold.conf /etc/nsm/rules/; fi
+ 	if [ ! -f /etc/nsm/rules/gen-msg.map ]; then cp /etc/nsm/templates/snort/gen-msg.map /etc/nsm/rules/; fi
+ 	if [ ! -f /etc/nsm/rules/classification.config ]; then
+@@ -655,13 +663,21 @@ do
+ 		grep -h -v "^#" /etc/nsm/templates/snort/reference.config /etc/nsm/templates/suricata/reference.config |sort -u > /etc/nsm/rules/reference.config
+ 	fi
+ 
+-        # Create symbolic links for threshold.conf, sid-msg.map, gen-msg.map, classification.config, and reference.config
+-	for FILENAME in threshold.conf sid-msg.map gen-msg.map classification.config reference.config
++        # Create symbolic links for bpf.conf, threshold.conf, sid-msg.map, gen-msg.map, classification.config, and reference.config
++	for FILENAME in bpf.conf threshold.conf sid-msg.map gen-msg.map classification.config reference.config
+ 	do
+         	rm -f /etc/nsm/"$SENSORNAME"/$FILENAME >> $LOG 2>&1
+ 	        ln -s /etc/nsm/rules/$FILENAME /etc/nsm/"$SENSORNAME"/$FILENAME >> $LOG 2>&1
+ 	done
+ 
++        # Create symbolic links for individual bpf-*.conf files pointing to the sensor bpf.conf (which points to the GLOBAL bpf.conf)
++	cd /etc/nsm/"$SENSORNAME"
++	for FILENAME in bpf-ids.conf bpf-pcap.conf bpf-prads.conf
++	do
++	        ln -s bpf.conf $FILENAME >> $LOG 2>&1
++	done
++	cd - >/dev/null
++
+ 	# Add IDS_LB_PROCS to sensor.conf
+ 	echo "IDS_LB_PROCS=$IDS_LB_PROCS" >> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 

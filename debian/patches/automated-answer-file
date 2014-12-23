@@ -1,0 +1,771 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion115) precise; urgency=low
+ .
+   * automated answer file
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -27,6 +27,7 @@ LOG=$LOGDIR/sosetup-network.log
+ HOSTNAME=`hostname`
+ TITLE="Security Onion Setup ($HOSTNAME)"
+ 
++function ASK_FOR_NETWORK_CONFIG() {
+ #########################################
+ # Check if we've already run
+ #########################################
+@@ -268,11 +269,12 @@ if [ $ANSWER -eq 1 ]; then
+ else
+         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes to proceed with all changes."
+ fi
++}
+ 
+ #########################################
+ # Make changes
+ #########################################
+-
++function CONFIGURE_NETWORK() {
+ # Create the log directory
+ mkdir -p $LOGDIR
+ 
+@@ -349,11 +351,53 @@ iface $INTERFACE inet manual
+ 
+ EOF
+ done
+-  
++} 
++
++# End of functions
++
++#########################################
++# Check to see if the user provided an answer file
++#########################################
++while getopts "hf:" OPTION
++do
++     case $OPTION in
++         h)
++                usage
++                exit 0
++                ;;
++         f)
++                ANSWERFILE="$OPTARG"
++                # Verify answerfile exists and then read it into memory
++                if [ -f "$ANSWERFILE" ]; then
++                        source "$ANSWERFILE"
++			# copy INTERFACES into MON_INTERFACES
++			MON_INTERFACES="$SNIFFING_INTERFACES"
++                        ADVANCED_SETUP="1"
++                else
++                        echo "Error accessing $ANSWERFILE"
++                        exit 1
++                fi
++             ;;
++     esac
++done
++
++# GUI or CLI?
++# Default to gui
++OUTPUT="gui"
++# If no X11, then fall back to cli
++[ -z "$DISPLAY" ] && OUTPUT="cli"
++# If user provided an answerfile, set to cli
++[ -f "$ANSWERFILE" ] && OUTPUT="cli"
++
++# If the user didn't provide an answerfile, then ask them the questions
++[ -f "$ANSWERFILE" ] || ASK_FOR_NETWORK_CONFIG
++
++CONFIGURE_NETWORK
++
+ #########################################
+ # Reboot dialog box
+ #########################################
+-TEXT="Configuration complete!\n\
++TEXT="Network configuration complete!\n\
+ \n\
+ You'll need to reboot before continuing to the second phase of Setup.\n\
+ \n\
+@@ -362,16 +406,26 @@ you can manually update /etc/network/int
+ \n\
+ Would you like to reboot now?"
+ 
+-YES="Yes, reboot!"
+-NO="No, do not reboot."
+-zenity --question --no-wrap --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
+-ANSWER="$?"
+-if [ $ANSWER -eq 1 ]; then
+-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No. Do not proceed."
+-        exit
++if [ "$OUTPUT" = "gui" ]; then
++
++	YES="Yes, reboot!"
++	NO="No, do not reboot."
++
++	zenity --question --no-wrap --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
++	ANSWER="$?"
++	if [ $ANSWER -eq 1 ]; then
++       	 [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No. Do not proceed."
++	        exit
++	else
++	        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes to proceed with all changes."
++		reboot
++		# If we don't sleep, then it will continue onto normal Setup before the actual reboot
++		sleep 100
++	fi
+ else
+-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes to proceed with all changes."
++	echo "$TEXT" | sed 's|\\n|\n|g' | sed 's|\\||g'
++	echo "Press Enter to reboot now or Ctrl-c to cancel."
++	read input
+ 	reboot
+-	# If we don't sleep, then it will continue onto normal Setup before the actual reboot
+ 	sleep 100
+ fi
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -88,7 +88,7 @@ SANCP_AGENT_ENABLED="yes"
+ PADS_AGENT_ENABLED="yes"
+ ARGUS_ENABLED="yes"
+ HTTP_AGENT_ENABLED="yes"
+-# Salt is disabled by default, as it's really only needed when you have more than 5 or 10 sensors
++# Salt is disabled by default
+ SALT="NO"
+ # Number of days to keep in Sguil database
+ DAYSTOKEEP=30
+@@ -113,6 +113,7 @@ if [[ $(/usr/bin/id -u) -ne 0 ]]; then
+     exit
+ fi
+ 
++function ask() {
+ #########################################
+ # Welcome screen
+ #########################################
+@@ -857,12 +858,12 @@ if [ $ANSWER -eq 1 ]; then
+ else
+         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes to proceed with all changes."
+ fi
++}
+ 
+ #########################################
+-# BEGIN Zenity Progress window
+-# http://library.gnome.org/users/zenity/stable/zenity-progress-options.html.en
++# Begin function CONFIGURE_SERVICES
+ #########################################
+-(
++function CONFIGURE_SERVICES() {
+ 
+ #########################################
+ # Remove any tmp files from previous run
+@@ -1053,7 +1054,12 @@ if [ "$SERVERNAME" != "localhost" ]; the
+ 	[ -f "$KEY" ] && mv $KEY $KEY.old
+         ssh-keygen -f "$KEY" -N '' >> $LOG 2>&1
+         chmod 600 "$KEY"*
+-        xfce4-terminal -x ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME 
++	if [ "$OUTPUT" = "gui" ]; then
++		xfce4-terminal -x ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
++	else
++		ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
++	fi
++
+ 	# Backup existing files
+ 	mkdir -p /etc/nsm/rules/backup/
+ 	cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+@@ -1371,7 +1377,7 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 	ETGPL)
+ 		echo "Already configured for Emerging Threats GPL ruleset." >> $LOG 2>&1
+ 		# Test Internet access
+-		curl -s $ET_URL && INTERNET="UP"
++		curl -s $ET_URL >/dev/null 2>&1 && INTERNET="UP"
+ 		;;
+ 	ETPRO)
+ 		echo "Configuring for ETPRO ruleset." >> $LOG 2>&1
+@@ -1381,7 +1387,7 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		# Enable ETPRO.
+ 		sed -i "s\#rule_url=https://rules.emergingthreatspro.com/|etpro.rules.tar.gz|<et oinkcode>\rule_url=https://rules.emergingthreatspro.com/|etpro.rules.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
+ 		# Test Internet access
+-		curl -s $ET_URL && INTERNET="UP"
++		curl -s $ET_URL >/dev/null 2>&1 && INTERNET="UP"
+ 		;;
+ 	VRT)
+ 		echo "Configuring for Snort VRT ruleset only and setting a VRT policy." >> $LOG 2>&1
+@@ -1392,7 +1398,7 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		# Set VRT Policy.
+ 		sed -i "s|# ips_policy=security|ips_policy=$VRT_POLICY|g" $PP_CONF >> $LOG 2>&1
+ 		# Test Internet access
+-		curl -s $VRT_URL && INTERNET="UP"
++		curl -s $VRT_URL >/dev/null 2>&1 && INTERNET="UP"
+ 		;;
+ 	VRTET)
+ 		echo "Configuring for Snort VRT and Emerging Threats NoGPL rulesets" >> $LOG 2>&1
+@@ -1401,7 +1407,7 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		# Change open to open-nogpl
+ 		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open-nogpl\g' $PP_CONF >> $LOG 2>&1
+ 		# Test Internet access
+-		curl -s $ET_URL && curl -s $VRT_URL && INTERNET="UP"
++		curl -s $ET_URL >/dev/null 2>&1 && curl -s $VRT_URL >/dev/null 2>&1 && INTERNET="UP"
+ 		;;
+ 	esac
+ 
+@@ -1590,7 +1596,11 @@ if [ "$SERVERNAME" != "localhost" ]; the
+ 	# Copy the script over
+ 	scp -i "$KEY" /tmp/sosetupscp $SSH_USERNAME@$SERVERNAME:/tmp/sosetupscp
+ 	# Run the script with sudo
+-	xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp
++	if [ "$OUTPUT" = "gui" ]; then
++		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp
++	else
++		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp
++	fi
+ 	# Cleanup
+ 	rm -f /tmp/sosetupscp
+ 	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f /tmp/sosetupscp >> $LOG 2>&1
+@@ -1626,22 +1636,27 @@ fi
+ # this minion, tell minion to update
+ #########################################
+ dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null && [ "$SALT" = "YES" ] && salt-call state.highstate >> $LOG 2>&1
++}
+ 
+ #########################################
+-# END Zenity Progress window
++# END OF CONFIGURE_SERVICES function
+ #########################################
+-) |
+-zenity --progress --title="$TITLE" --text="Please wait while making changes to the system..." --percentage=0 --auto-close
++
+ 
+ #########################################
+-# Move log file from /tmp/ to /var/log/nsm/
++# MOVELOG() function
+ #########################################
++function MOVELOG() {
++# Move log file from /tmp/ to /var/log/nsm/
+ mv $LOG /var/log/nsm/sosetup.log
+ LOG="/var/log/nsm/sosetup.log"
++}
+ 
+ #########################################
+-# If this is a server, populate ip2c table
++# IP2C() function
+ #########################################
++function IP2C() {
++# If this is a server, populate ip2c table
+ if [ -d /var/lib/mysql/securityonion_db/ ]; then
+ 	/usr/bin/sguild-add-user "$SGUIL_CLIENT_USERNAME" "$SGUIL_CLIENT_PASSWORD_1" >/dev/null
+ 	cd /var/www/squert/.scripts/
+@@ -1651,10 +1666,12 @@ if [ -d /var/lib/mysql/securityonion_db/
+ 	./ip2c.tcl >> $LOG 2>&1 &
+ 	cd - >/dev/null
+ fi
++}
+ 
+ #########################################
+-# FIN
++# FINAL (FIN) OUTPUT FUNCTIONS
+ #########################################
++function FIN1() {
+ TEXT="Security Onion Setup is now complete! \n \
+ \n \
+ Setup log can be found here:\n \
+@@ -1664,8 +1681,9 @@ You may view IDS alerts using Sguil, Squ
+ \n \
+ Bro logs can be found in ELSA (if enabled) and the following location: \n \
+ /nsm/bro/"
+-zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++}
+ 
++function FIN2() {
+ TEXT="You can check the status of your running services with the sostat utilites:\n \
+ \n \
+ 'sudo sostat' will give you DETAILED information about your service status.\n \
+@@ -1673,8 +1691,9 @@ TEXT="You can check the status of your r
+ 'sudo sostat-quick' will give you a guided tour of the sostat output.\n \
+ \n \
+ 'sudo sostat-redacted' will give you REDACTED information to share with our mailing list if you have questions."
+-zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++}
+ 
++function FIN3() {
+ if [ $SERVER -eq 1 ]; then
+ source /etc/nsm/securityonion.conf
+ if [ "$LOCAL_NIDS_RULE_TUNING" = "no" ] ; then
+@@ -1694,17 +1713,17 @@ You can manually update them by running:
+ \n \
+ Sensors can be tuned by modifying the files in: \n \
+ /etc/nsm/NAME-OF-SENSOR/"
+-zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+ else
+ TEXT="Setup was not able to download rules from the Internet.\n \
+ LOCAL_NIDS_RULE_TUNING has been set to 'yes' in /etc/nsm/securityonion.conf.\n \
+ \n \
+ If you do have Internet access and want to download rules from the Internet,\n \
+ you'll need to change this option to 'no'."
+-zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+ fi
+ fi
++}
+ 
++function FIN4() {
+ TEXT='If you have any questions or problems,\
+ please visit our website where you can find\
+ the following links:\
+@@ -1715,10 +1734,130 @@ IRC channel\
+ and more!\
+ \
+ http://securityonion.net'
+-zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++}
+ 
++function FIN5() {
+ TEXT='If you need commercial support or training,\
+ please see:\
+ \
+ http://securityonionsolutions.com'
+-zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++}
++
++
++#########################################
++# Options
++#########################################
++
++usage()
++{
++cat <<EOF
++
++Security Onion Setup
++
++     Options:
++
++        -h              This message
++        -f <file>       Configure using answer file <file>
++
++Usage: $0
++EOF
++}
++
++
++#########################################
++# Call functions
++#########################################
++
++# Check to see if the user provided an answer file
++while getopts "hf:" OPTION
++do
++     case $OPTION in
++         h)
++             	usage
++             	exit 0
++             	;;
++         f)
++             	ANSWERFILE="$OPTARG"
++		# Verify answer file exists and then read it into memory
++		if [ ! -f "$ANSWERFILE" ]; then
++			echo "Error accessing $ANSWERFILE"
++			exit 1
++		fi
++             ;;
++     esac
++done
++
++# GUI (Zenity) or CLI?
++# Default to zenity
++OUTPUT="gui"
++# If no X11, then fall back to cli
++[ -z "$DISPLAY" ] && OUTPUT="cli"
++# If user provided an answer file, set to cli
++[ -f "$ANSWERFILE" ] && OUTPUT="cli"
++
++# If the user didn't provide an answer file, then ask them the questions
++if [ ! -f "$ANSWERFILE" ]; then 
++	if [ "$OUTPUT" = "gui" ] ; then
++		ask
++	else
++		echo
++		echo "No X display found."
++		echo
++		echo "You'll need to either:"
++		echo
++		echo "- use SSH X-forwarding (ssh -X)"
++		echo
++		echo "OR"
++		echo
++		echo "- use an answer file (sudo sosetup -f sosetup.conf)"
++		echo
++		usage
++		exit 0
++	fi
++else
++	source "$ANSWERFILE"
++	# copy SNIFFING_INTERFACES into INTERFACES
++	INTERFACES="$SNIFFING_INTERFACES"
++	ADVANCED_SETUP="1"
++	echo
++	echo "Security Onion Setup"
++	echo
++	echo "Ready to configure system using parameters in $ANSWERFILE."
++	echo
++	echo "WARNING! Continuing will destroy any existing data/config."
++	echo "Are you sure you want to continue?"
++	echo "Type yes to continue or anything else to exit."
++	read INPUT
++	[ "$INPUT" != "yes" ] && exit 0
++	echo
++	# If /etc/network/interfaces has not been configured yet, then we need
++	# to run sosetup-network and pass it the answerfile
++	if ! grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1; then
++		/usr/bin/sosetup-network $@
++	fi
++fi
++
++# Perform the requested actions, handling output differently for gui vs cli
++if [ "$OUTPUT" = "gui" ]; then
++	CONFIGURE_SERVICES |
++	zenity --progress --title="$TITLE" --text="Please wait while making changes to the system..." --percentage=0 --auto-close
++else
++	echo "Please wait while..."
++	CONFIGURE_SERVICES | grep --line-buffered "^#" | sed 's|# Please wait while||g'
++fi
++
++# These functions have no output, so no special handling necessary
++MOVELOG
++IP2C
++
++# Final screens
++for i in FIN1 FIN2 FIN3 FIN4 FIN5; do
++	$i
++	if [ "$OUTPUT" = "gui" ]; then
++		zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++	else
++		echo
++		echo "$TEXT" | sed 's|\\n|\n|g' | sed 's|\\||g'
++		echo
++	fi
++done
+--- /dev/null
++++ securityonion-setup-20120912/share/sosetup.conf
+@@ -0,0 +1,307 @@
++################################
++# sosetup.conf
++################################
++# This file can be used to automate sosetup.
++#
++# Copy this example file to your home directory:
++# cp /usr/share/securityonion/sosetup.conf ~
++#
++# Edit your new sosetup.conf:
++# nano ~/sosetup.conf
++#
++# Run Setup with the -f switch and the path to this file:
++# sudo sosetup -f ~/sosetup.conf
++
++################################
++# Management Interface
++################################
++# MGMT_INTERFACE
++# Which network interface should be the management interface?
++# The management interface has an IP address and is NOT used for sniffing.
++# We recommend that you always make this eth0 if possible for consistency.
++MGMT_INTERFACE="eth0"
++
++# MGMT_CONFIG_TYPE
++# Should the management interface be configured using DHCP or static IP?
++# We recommend using static IP whenever possible.
++# MGMT_CONFIG_TYPE="static"
++MGMT_CONFIG_TYPE="DHCP"
++
++# If MGMT_CONFIG_TYPE=static, then provide the details here:
++ADDRESS="192.168.244.3"
++NETMASK="255.255.255.0"
++GATEWAY="192.168.244.1"
++NAMESERVER="192.168.244.2 192.168.244.3"
++DOMAIN="example.com"
++
++################################
++# Sniffing interface(s)
++################################
++# Which interface(s) will be sniffing network traffic?
++# For multiple interfaces, please separate them with spaces.
++# For example:
++# SNIFFING_INTERFACES="eth1 eth2"
++SNIFFING_INTERFACES="eth1"
++
++################################
++# Sguil Server
++################################
++
++# SERVER
++# If set to 1, then this box will be a Sguil server:
++# SERVER=1
++# If set to 0, then this box will connect to a separate Sguil server:
++# SERVER=0
++SERVER=1
++
++# SERVERNAME
++# If SERVER=1, then this should be "localhost":
++# SERVERNAME="localhost"
++# If SERVER=0, then this should be the name/IP of the separate Sguil server:
++# SERVERNAME="sguilserver.example.com"
++SERVERNAME="localhost"
++
++# SSH_USERNAME
++# If SERVER=0, then this should be the name of an
++# account on the separate Sguil server that has sudo privileges.
++# sudo privileges can be revoked after sosetup is complete.
++# SSH_USERNAME="sensor1"
++SSH_USERNAME=""
++
++# SGUIL_SERVER_NAME
++# If SERVER=1, then this is the name of the Sguil server we'll create.
++# You probably shouldn't change this value.
++SGUIL_SERVER_NAME="securityonion"
++
++# SGUIL_CLIENT_USERNAME
++# If SERVER=1, then this is the username that we'll create
++# for Sguil/Squert/ELSA.
++SGUIL_CLIENT_USERNAME="onionuser"
++
++# SGUIL_CLIENT_PASSWORD_1
++# If SERVER=1, then this is the password that we'll create
++# for Sguil/Squert/ELSA.
++SGUIL_CLIENT_PASSWORD_1="asdfasdf"
++
++# SNORBY_EMAIL
++# If SERVER=1, then this is the email address that we'll
++# create for logging into Snorby.
++SNORBY_EMAIL="onionuser@example.com"
++
++################################
++# ELSA
++################################
++
++# ELSA
++# If set to YES, then this box will run ELSA components:
++# ELSA=YES
++# If set to NO, then this box will not run ELSA components:
++# ELSA=NO
++# If you want to run ELSA, then you should enable this setting on every box in your deployment.
++ELSA=YES
++
++# UPDATE_ELSA_SERVER
++# If SERVER=0, then the server's elsa_web.conf will need
++# to be updated and Apache restarted for it to recognize
++# this new ELSA node.  Restarting Apache will interrupt
++# any running ELSA queries.
++# To automatically update the server's elsa_web.conf and 
++# restart Apache, set this option to "YES":
++# UPDATE_ELSA_SERVER="YES"
++# If you'd rather update the server's elsa_web.conf yourself
++# and manually restart Apache, set this option to "NO":
++# UPDATE_ELSA_SERVER="NO"
++UPDATE_ELSA_SERVER="NO"
++
++# LOG_SIZE_LIMIT
++# This setting controls how much disk space ELSA uses.
++LOG_SIZE_LIMIT=""
++
++################################
++# Enable/disable services
++################################
++
++# The OSSEC agent sends OSSEC HIDS alerts into the Sguil database.
++# Do you want to run the OSSEC Agent?  yes/no
++OSSEC_AGENT_ENABLED="yes"
++
++# Do you want to enable Salt?
++SALT="yes"
++
++################################
++# Enable/disable server services
++################################
++
++# Do you want to run the Snorby worker?  yes/no
++SNORBY_ENABLED="yes"
++
++# Do you want to run Xplico?  yes/no
++XPLICO_ENABLED="no"
++
++################################
++# Sensor components
++################################
++# SENSOR
++# If set to 1, then this box will run sensor components and sniff ethernet interfaces:
++# SENSOR=1
++# If set to 0, then this box will not run sensor components:
++# SENSOR=0
++SENSOR=1
++
++################################
++# Enable/disable sensor services
++################################
++
++# BRO_ENABLED
++# Do you want to run Bro?  yes/no
++BRO_ENABLED="yes"
++
++# IDS_ENGINE_ENABLED
++# Do you want to run an IDS engine (Snort/Suricata)?  yes/no
++IDS_ENGINE_ENABLED="yes"
++
++# SNORT_AGENT_ENABLED
++# Do you want to run the Snort agent?  yes/no
++# The Snort agent sends Snort IDS alerts to the Sguil database.
++SNORT_AGENT_ENABLED="yes"
++
++# BARNYARD2_ENABLED
++# Do you want to run Barnyard2?  yes/no
++# Barnyard2 sends IDS alerts from Snort/Suricata to
++# Sguil's Snort agent, syslog, and the Snorby database.
++BARNYARD2_ENABLED="yes"
++
++# PCAP_ENABLED
++# Do you want to run full packet capture?  yes/no
++PCAP_ENABLED="yes"
++
++# PCAP_AGENT_ENABLED
++# Do you want to run Sguil's pcap_agent?  yes/no
++# The pcap_agent allows Sguil to access the pcap store.
++PCAP_AGENT_ENABLED="yes"
++
++# PRADS_ENABLED
++# Do you want to run Prads?  yes/no
++# Prads writes session data and asset data.
++# Bro provides the same data types plus more, so most
++# folks don't run Prads.
++PRADS_ENABLED="no"
++
++# SANCP_AGENT_ENABLED
++# Do you want to run the sancp_agent?  yes/no
++# sancp_agent sends session data from Prads to Sguil.
++SANCP_AGENT_ENABLED="no"
++
++# PADS_AGENT_ENABLED
++# Do you want to run the pads_agent?  yes/no
++# pads_agent sends asset data from Prads to Sguil.
++PADS_AGENT_ENABLED="no"
++
++# HTTP_AGENT_ENABLED
++# Do you want to run the http_agent?  yes/no
++# http_agent sends http logs from Bro to Sguil.
++# If you're running ELSA, then you probably want to disable this.
++HTTP_AGENT_ENABLED="no"
++
++# ARGUS_ENABLED
++# Do you want to run Argus?  yes/no
++# Argus writes session data, also provided by Bro and Prads.
++# Most folks don't run Argus.
++ARGUS_ENABLED="no"
++
++################################
++# Rules
++################################
++
++# IDS_RULESET
++# Which IDS ruleset would you like to use?
++# Emerging Threats GPL (no oinkcode required):
++# ETGPL
++# Emerging Threats PRO (requires ETPRO oinkcode):
++# ETPRO
++# Sourcefire VRT (requires VRT oinkcode):
++# VRT
++# VRT and ET (requires VRT oinkcode):
++# VRTET
++IDS_RULES="ETGPL"
++
++# OINKCODE
++# If you're running VRT or ETPRO rulesets, you'll need to supply your
++# oinkcode here.
++OINKCODE=""
++
++################################
++# PF_RING Config
++################################
++
++# PF_RING_SLOTS
++# The default is 4096.
++# High traffic networks may need to increase this.
++PF_RING_SLOTS=4096
++
++################################
++# IDS Config
++################################
++
++# IDS_ENGINE
++# Which IDS engine would you like to run?  snort/suricata
++# To run Snort:
++# IDS_ENGINE="snort"
++# To run Suricata:
++# IDS_ENGINE="suricata"
++IDS_ENGINE="snort"
++
++# IDS_LB_PROCS
++# How many PF_RING load-balanced processes would you like to run?
++# This value should be lower than your number of CPU cores.
++IDS_LB_PROCS="1"
++
++################################
++# Bro Config
++################################
++
++# BRO_LB_PROCS
++# How many PF_RING load-balanced processes would you like Bro to run?
++# This value should be lower than your number of CPU cores.
++BRO_LB_PROCS="1"
++
++# EXTRACT_FILES
++# Do you want Bro to automatically extract Windows EXEs and write them to disk?  yes/no
++EXTRACT_FILES="yes"
++
++################################
++# PCAP Config
++################################
++
++# PCAP_SIZE
++# How large do you want your pcap files to be?
++# The default is 150MB.
++PCAP_SIZE="150"
++
++# PCAP_RING_SIZE
++# How big of a ring buffer should be allocated for netsniff-ng?
++# The default is 64MB.
++PCAP_RING_SIZE="64"
++
++# PCAP_OPTIONS
++PCAP_OPTIONS=""
++
++################################
++# Maintenance
++################################
++
++# WARN_DISK_USAGE
++# Begin warning when disk usage reaches this level
++WARN_DISK_USAGE="80"
++
++# CRIT_DISK_USAGE
++# Begin purging old files when disk usage reaches this level
++CRIT_DISK_USAGE="90"
++
++# DAYSTOKEEP
++# Only applies to Sguil database ("securityonion_db")
++DAYSTOKEEP="30"
++
++# DAYSTOREPAIR
++# Only applies to Sguil database ("securityonion_db")
++DAYSTOREPAIR="7"

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+FILE="/etc/nsm/pulledpork/pulledpork.conf"
+
+if [ -f $FILE ]; then
+	if grep "^rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz" $FILE >/dev/null 2>&1; then
+		if ! grep "^rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
+			echo "$FILE doesn't already have Snort Community ruleset enabled."
+			DATE=`date +%Y%m%d`
+			echo "Backing up $FILE to $FILE.$DATE."
+			cp $FILE $FILE.$DATE
+			if ! grep "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
+				echo "Appending the following to $FILE:"
+				STRING="rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community"
+				echo "$STRING" | tee -a $FILE
+			else
+				echo "Uncommenting the Snort Community line in $FILE."
+				sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $FILE
+			fi
+		fi
+	fi
+fi

@@ -127,3 +127,4 @@ Issue-660:-Setup:-add-OSSEC_AGENT_LEVEL-to-etcnsmsecurityonion.conf
 fix-SNORBY_ENABLED-and-XPLICO_ENABLED
 fix-quotes-in-sosetup.conf
 Issue-664:-sosetup:-run-Bro-as-non-root-user
+add-BRO_USER-and-BRO_GROUP-to-securityonion.conf

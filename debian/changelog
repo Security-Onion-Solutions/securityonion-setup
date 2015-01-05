@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion129) precise; urgency=low
+
+  * add BRO_USER and BRO_GROUP to securityonion.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 05 Jan 2015 18:23:59 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion128) precise; urgency=low
 
   * Issue 664: sosetup: run Bro as non-root user 

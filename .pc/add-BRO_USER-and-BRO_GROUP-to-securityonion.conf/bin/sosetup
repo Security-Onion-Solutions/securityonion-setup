@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2010-2015 Doug Burks and Security Onion
+# Copyright (C) 2010-2014 Doug Burks and Security Onion
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 as
@@ -1318,10 +1318,6 @@ CRIT_DISK_USAGE=$CRIT_DISK_USAGE
 
 # Do you want to run Bro?  yes/no
 BRO_ENABLED=$BRO_ENABLED
-
-# BRO_USER specifies the user account used to start Bro.
-BRO_USER=sguil
-BRO_GROUP=sguil
 
 # The OSSEC agent sends OSSEC HIDS alerts into the Sguil database.
 # Do you want to run the OSSEC Agent?  yes/no

@@ -77,9 +77,6 @@ BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
 # /etc/nsm/securityonion.conf services enabled by default
 BRO_ENABLED="yes"
 OSSEC_AGENT_ENABLED="yes"
-OSSEC_AGENT_LEVEL=5
-SNORBY_ENABLED="yes"
-XPLICO_ENABLED="yes"
 # /etc/nsm/HOSTNAME-INTERFACE/sensor.conf services enabled by default
 PCAP_ENABLED="yes"
 PCAP_AGENT_ENABLED="yes"
@@ -926,7 +923,7 @@ service ossec-hids-server restart >> $LOG 2>&1
 echo "10"
 echo "# Please wait while stopping all NSM services..." | tee -a $LOG
 service nsm stop >> $LOG 2>&1
-#/opt/bro/bin/broctl stop >> $LOG 2>&1
+/opt/bro/bin/broctl stop >> $LOG 2>&1
 # terminate any extra processes
 pkill suricata
 pkill snort
@@ -1286,6 +1283,14 @@ EOF
 		sed -i 's|^@load file-extraction|#@load file-extraction|g' /opt/bro/share/bro/site/local.bro
 	fi
 
+	# Disabling the Bro non-root stuff for now
+	#chown -R sguil:sguil /nsm/bro
+	# Allow Bro to run as non-root
+	#setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/bro
+	#setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/capstats
+
+	# Now tell Bro to install the new config and create the "current" symlink in /nsm/bro/logs
+	/opt/bro/bin/broctl install >> $LOG 2>&1
 fi
 
 fi
@@ -1323,14 +1328,11 @@ BRO_ENABLED=$BRO_ENABLED
 # Do you want to run the OSSEC Agent?  yes/no
 OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED
 
-# OSSEC_AGENT_LEVEL specifies the level at which OSSEC alerts are sent to sguild.
-OSSEC_AGENT_LEVEL=$OSSEC_AGENT_LEVEL
-
 # Do you want to run the Snorby worker?  yes/no
-SNORBY_ENABLED=$SNORBY_ENABLED
+SNORBY_ENABLED=yes
 
 # Do you want to run Xplico?  yes/no
-XPLICO_ENABLED=$XPLICO_ENABLED
+XPLICO_ENABLED=yes
 
 # LOCAL_HIDS_RULE_TUNING
 # If set to no (default), sensor will copy OSSEC rules from master server as-is (no changes).

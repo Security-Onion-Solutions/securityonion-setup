@@ -1,3 +1,21 @@
+securityonion-setup (20120912-0ubuntu0securityonion128) precise; urgency=low
+
+  * Issue 664: sosetup: run Bro as non-root user 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 05 Jan 2015 15:04:00 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion127) precise; urgency=low
+
+  * fix quotes in sosetup.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 26 Dec 2014 09:46:46 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion126) precise; urgency=low
+
+  * Issue 660: Setup: add OSSEC_AGENT_LEVEL to /etc/nsm/securityonion.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 26 Dec 2014 08:42:43 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion125) precise; urgency=low
 
   * fix sosetup-fix-ppconf 

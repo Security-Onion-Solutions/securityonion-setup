@@ -1,0 +1,51 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion128) precise; urgency=low
+ .
+   * Issue 664: sosetup: run Bro as non-root user
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -926,7 +926,7 @@ service ossec-hids-server restart >> $LO
+ echo "10"
+ echo "# Please wait while stopping all NSM services..." | tee -a $LOG
+ service nsm stop >> $LOG 2>&1
+-/opt/bro/bin/broctl stop >> $LOG 2>&1
++#/opt/bro/bin/broctl stop >> $LOG 2>&1
+ # terminate any extra processes
+ pkill suricata
+ pkill snort
+@@ -1286,14 +1286,6 @@ EOF
+ 		sed -i 's|^@load file-extraction|#@load file-extraction|g' /opt/bro/share/bro/site/local.bro
+ 	fi
+ 
+-	# Disabling the Bro non-root stuff for now
+-	#chown -R sguil:sguil /nsm/bro
+-	# Allow Bro to run as non-root
+-	#setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/bro
+-	#setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/capstats
+-
+-	# Now tell Bro to install the new config and create the "current" symlink in /nsm/bro/logs
+-	/opt/bro/bin/broctl install >> $LOG 2>&1
+ fi
+ 
+ fi

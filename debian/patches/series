@@ -122,3 +122,8 @@ cosmetic-fix
 Issue-626:-Update-Setup-for-Sguil-0.9
 removing-verbose-echo-statements-from-sosetup-fix-ppconf
 fix-sosetup-fix-ppconf
+Issue-660:-Setup:-add-OSSEC_AGENT_LEVEL-to-etcnsmsecurityonion.conf
+#-OSSEC_AGENT_LEVEL-specifies-the-level-at-which-OSSEC-alerts-are-sent-to-sguild.
+fix-SNORBY_ENABLED-and-XPLICO_ENABLED
+fix-quotes-in-sosetup.conf
+Issue-664:-sosetup:-run-Bro-as-non-root-user

@@ -926,7 +926,7 @@ service ossec-hids-server restart >> $LOG 2>&1
 echo "10"
 echo "# Please wait while stopping all NSM services..." | tee -a $LOG
 service nsm stop >> $LOG 2>&1
-#/opt/bro/bin/broctl stop >> $LOG 2>&1
+/opt/bro/bin/broctl stop >> $LOG 2>&1
 # terminate any extra processes
 pkill suricata
 pkill snort
@@ -1286,6 +1286,14 @@ EOF
 		sed -i 's|^@load file-extraction|#@load file-extraction|g' /opt/bro/share/bro/site/local.bro
 	fi
 
+	# Disabling the Bro non-root stuff for now
+	#chown -R sguil:sguil /nsm/bro
+	# Allow Bro to run as non-root
+	#setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/bro
+	#setcap cap_net_raw,cap_net_admin=eip /opt/bro/bin/capstats
+
+	# Now tell Bro to install the new config and create the "current" symlink in /nsm/bro/logs
+	/opt/bro/bin/broctl install >> $LOG 2>&1
 fi
 
 fi

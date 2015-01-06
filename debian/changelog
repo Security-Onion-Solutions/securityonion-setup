@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion130) precise; urgency=low
+
+  * Issue 663: sosetup: sosetup.conf SGUIL_CLIENT_PASSWORD_1 should say Sguil/Squert/ELSA/Snorby 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 06 Jan 2015 13:15:56 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion129) precise; urgency=low
 
   * add BRO_USER and BRO_GROUP to securityonion.conf 

@@ -1219,8 +1219,9 @@ type=proxy
 host=localhost
 
 EOF
-                IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
-                sed -i "s|host=localhost|host=$IP|g" /opt/bro/etc/node.cfg
+		# Don't need to change to IP address anymore
+                #IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+                #sed -i "s|host=localhost|host=$IP|g" /opt/bro/etc/node.cfg
 
 		# Go ahead and populate the file with all available interfaces
 		# Comment out inactive interfaces
@@ -1231,7 +1232,7 @@ EOF
                         cat << EOF >> /opt/bro/etc/node.cfg
 [$HOSTNAME-$INTERFACE]   
 type=worker
-host=$IP
+host=localhost
 interface=$INTERFACE
 lb_method=pf_ring
 lb_procs=$BRO_LB_PROCS
@@ -1241,7 +1242,7 @@ EOF
                         cat << EOF >> /opt/bro/etc/node.cfg
 #[$HOSTNAME-$INTERFACE]   
 #type=worker
-#host=$IP
+#host=localhost
 #inter#face=$INTERFACE
 #lb_method=pf_ring
 #lb_procs=$BRO_LB_PROCS

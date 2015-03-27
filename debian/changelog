@@ -1,3 +1,15 @@
+securityonion-setup (20120912-0ubuntu0securityonion132) precise; urgency=low
+
+  * Move from Google Code to Github #703 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 27 Mar 2015 03:17:06 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion131) precise; urgency=low
+
+  * Issue 700: Setup: Bro node.cfg host=localhost 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 08 Mar 2015 22:03:19 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion130) precise; urgency=low
 
   * Issue 663: sosetup: sosetup.conf SGUIL_CLIENT_PASSWORD_1 should say Sguil/Squert/ELSA/Snorby 

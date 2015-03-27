@@ -1,0 +1,57 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion131) precise; urgency=low
+ .
+   * Issue 700: Setup: Bro node.cfg host=localhost
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1219,8 +1219,9 @@ type=proxy
+ host=localhost
+ 
+ EOF
+-                IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+-                sed -i "s|host=localhost|host=$IP|g" /opt/bro/etc/node.cfg
++		# Don't need to change to IP address anymore
++                #IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
++                #sed -i "s|host=localhost|host=$IP|g" /opt/bro/etc/node.cfg
+ 
+ 		# Go ahead and populate the file with all available interfaces
+ 		# Comment out inactive interfaces
+@@ -1231,7 +1232,7 @@ EOF
+                         cat << EOF >> /opt/bro/etc/node.cfg
+ [$HOSTNAME-$INTERFACE]   
+ type=worker
+-host=$IP
++host=localhost
+ interface=$INTERFACE
+ lb_method=pf_ring
+ lb_procs=$BRO_LB_PROCS
+@@ -1241,7 +1242,7 @@ EOF
+                         cat << EOF >> /opt/bro/etc/node.cfg
+ #[$HOSTNAME-$INTERFACE]   
+ #type=worker
+-#host=$IP
++#host=localhost
+ #inter#face=$INTERFACE
+ #lb_method=pf_ring
+ #lb_procs=$BRO_LB_PROCS

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion134) precise; urgency=low
+
+  * Issue 504: Setup: avoid writing ELSA_PORT twice in SSH_CONF
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 26 Apr 2015 13:44:46 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion133) precise; urgency=low
 
   * Issue 500: Setup: restart starman 

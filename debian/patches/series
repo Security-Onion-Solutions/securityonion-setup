@@ -132,3 +132,4 @@ Issue-663:-sosetup:-sosetup.conf-SGUIL_CLIENT_PASSWORD_1-should-say-SguilSquertE
 Issue-700:-Setup:-Bro-node.cfg-host=localhost
 Move-from-Google-Code-to-Github-#703
 Issue-500:-Setup:-restart-starman
+Issue-504:-Setup:-avoid-writing-ELSA_PORT-twice-in-SSH_CONF

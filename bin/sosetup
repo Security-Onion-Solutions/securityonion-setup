@@ -1625,8 +1625,12 @@ if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
     ELSA_REGISTER_RESPONSE=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME $SSH_CMD`
     ELSA_PORT=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f1`
     ELSA_APIKEY=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f2`
-    # Copy the ELSA port back into the SSH config file for future use.
-    echo "ELSA_PORT=$ELSA_PORT" >> $SSH_CONF
+    # If ELSA_PORT is not already in SSH_CONF, then store it for future use.
+    if grep "ELSA_PORT=" $SSH_CONF >/dev/null 2>&1; then
+	echo "ELSA_PORT already exists in $SSH_CONF."
+    else
+	echo "ELSA_PORT=$ELSA_PORT" >> $SSH_CONF
+    fi
     # Update the local ELSA API key
     /usr/bin/securityonion_elsa_register.rb --update-apikey $ELSA_APIKEY
     # Restart starman for new API key

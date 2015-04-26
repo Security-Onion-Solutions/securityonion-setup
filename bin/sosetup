@@ -1627,7 +1627,7 @@ if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
     ELSA_APIKEY=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f2`
     # If ELSA_PORT is not already in SSH_CONF, then store it for future use.
     if grep "ELSA_PORT=" $SSH_CONF >/dev/null 2>&1; then
-	echo "ELSA_PORT already exists in $SSH_CONF."
+	echo "ELSA_PORT already exists in $SSH_CONF." >> $LOG 2>&1
     else
 	echo "ELSA_PORT=$ELSA_PORT" >> $SSH_CONF
     fi

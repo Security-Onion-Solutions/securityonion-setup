@@ -133,3 +133,4 @@ Issue-700:-Setup:-Bro-node.cfg-host=localhost
 Move-from-Google-Code-to-Github-#703
 Issue-500:-Setup:-restart-starman
 Issue-504:-Setup:-avoid-writing-ELSA_PORT-twice-in-SSH_CONF
+redirect-output-to-log-file

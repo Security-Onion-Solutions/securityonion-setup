@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion135) precise; urgency=low
+
+  * redirect output to log file 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 26 Apr 2015 13:49:22 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion134) precise; urgency=low
 
   * Issue 504: Setup: avoid writing ELSA_PORT twice in SSH_CONF

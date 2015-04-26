@@ -1629,6 +1629,9 @@ if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
     echo "ELSA_PORT=$ELSA_PORT" >> $SSH_CONF
     # Update the local ELSA API key
     /usr/bin/securityonion_elsa_register.rb --update-apikey $ELSA_APIKEY
+    # Restart starman for new API key
+    service starman stop
+    service starman start
     # Since the securityonion service started before we the ELSA ports
     # were determined, we need to tear down the SSH tunnel and restart it.
     # Kill autossh with SIGINT

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion133) precise; urgency=low
+
+  * Issue 500: Setup: restart starman 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 26 Apr 2015 13:26:51 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion132) precise; urgency=low
 
   * Move from Google Code to Github #703 

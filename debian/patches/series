@@ -131,3 +131,4 @@ add-BRO_USER-and-BRO_GROUP-to-securityonion.conf
 Issue-663:-sosetup:-sosetup.conf-SGUIL_CLIENT_PASSWORD_1-should-say-SguilSquertELSASnorby
 Issue-700:-Setup:-Bro-node.cfg-host=localhost
 Move-from-Google-Code-to-Github-#703
+Issue-500:-Setup:-restart-starman

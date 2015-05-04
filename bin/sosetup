@@ -1563,8 +1563,8 @@ if [ "$ELSA" = "YES" ]; then
     sed -i "s|\"log_size_limit\" :.*$|\"log_size_limit\" : $LOG_SIZE_LIMIT,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-node.conf
 
     # update query_timeout
-    sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-web.conf
-    sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-api.conf
+    #sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-web.conf
+    #sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-api.conf
 
     # check if there is an ELSA directive already
     ELSA_USE=$(grep "ELSA=" $CONF)

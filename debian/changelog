@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion136) precise; urgency=low
+
+  * keep ELSA query_timeout as is 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 04 May 2015 10:39:53 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion135) precise; urgency=low
 
   * redirect output to log file 

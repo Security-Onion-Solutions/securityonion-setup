@@ -1612,7 +1612,7 @@ if [ "$SERVERNAME" != "localhost" ]; then
 	if [ "$OUTPUT" = "gui" ]; then
 		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp
 	else
-		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp
+		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp >> $LOG 2>&1
 	fi
 	# Cleanup
 	rm -f /tmp/sosetupscp
@@ -1632,10 +1632,10 @@ if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
 	echo "ELSA_PORT=$ELSA_PORT" >> $SSH_CONF
     fi
     # Update the local ELSA API key
-    /usr/bin/securityonion_elsa_register.rb --update-apikey $ELSA_APIKEY
+    /usr/bin/securityonion_elsa_register.rb --update-apikey $ELSA_APIKEY >> $LOG 2>&1
     # Restart starman for new API key
-    service starman stop
-    service starman start
+    service starman stop >> $LOG 2>&1
+    service starman start >> $LOG 2>&1
     # Since the securityonion service started before we the ELSA ports
     # were determined, we need to tear down the SSH tunnel and restart it.
     # Kill autossh with SIGINT

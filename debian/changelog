@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion136ubuntu1) precise; urgency=low
+
+  * redirect output to log file when running Setup on a sensor 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 02 Jun 2015 10:08:47 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion136) precise; urgency=low
 
   * keep ELSA query_timeout as is 

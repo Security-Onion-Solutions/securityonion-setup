@@ -1526,9 +1526,11 @@ if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 			[ -f /etc/init/salt-master.conf ] && echo "manual" > /etc/init/salt-master.override
 			# Tell the salt-master that we are a sensor
 			cat << EOF >> /tmp/sosetupscp
+if ! grep "'$FQDN':" /opt/onionsalt/salt/top.sls >/dev/null 2>&1; then
 echo "   '$FQDN':"	>> /opt/onionsalt/salt/top.sls
 echo "      - sensor" 	>> /opt/onionsalt/salt/top.sls
 echo ""			>> /opt/onionsalt/salt/top.sls
+fi
 EOF
 		fi
 	
@@ -1646,7 +1648,12 @@ if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
     fi
     if [ "$UPDATE_ELSA_SERVER" = "YES" ]; then
         # Instruct the server to restart apache2.
-        ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME service apache2 restart >> $LOG 2>&1
+        # Run the script with sudo
+        if [ "$OUTPUT" = "gui" ]; then
+                xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart
+        else
+        	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart >> $LOG 2>&1
+	fi
     fi
 fi
 }

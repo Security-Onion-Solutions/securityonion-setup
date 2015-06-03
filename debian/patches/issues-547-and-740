@@ -1,0 +1,54 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion138) precise; urgency=low
+ .
+   * Issue 547: sosetup: if enabling salt on a sensor, check top.sls to make sure it doesn't already exist
+   * Issue 740: sosetup: sensor should use sudo to restart apache on master
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1526,9 +1526,11 @@ if dpkg -l |grep "securityonion-onionsal
+ 			[ -f /etc/init/salt-master.conf ] && echo "manual" > /etc/init/salt-master.override
+ 			# Tell the salt-master that we are a sensor
+ 			cat << EOF >> /tmp/sosetupscp
++if ! grep "'$FQDN':" /opt/onionsalt/salt/top.sls >/dev/null 2>&1; then
+ echo "   '$FQDN':"	>> /opt/onionsalt/salt/top.sls
+ echo "      - sensor" 	>> /opt/onionsalt/salt/top.sls
+ echo ""			>> /opt/onionsalt/salt/top.sls
++fi
+ EOF
+ 		fi
+ 	
+@@ -1646,7 +1648,12 @@ if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES
+     fi
+     if [ "$UPDATE_ELSA_SERVER" = "YES" ]; then
+         # Instruct the server to restart apache2.
+-        ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME service apache2 restart >> $LOG 2>&1
++        # Run the script with sudo
++        if [ "$OUTPUT" = "gui" ]; then
++                xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart
++        else
++        	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart >> $LOG 2>&1
++	fi
+     fi
+ fi
+ }

@@ -1,4 +1,11 @@
-securityonion-setup (20120912-0ubuntu0securityonion136ubuntu1) precise; urgency=low
+securityonion-setup (20120912-0ubuntu0securityonion138) precise; urgency=low
+
+  * Issue 547: sosetup: if enabling salt on a sensor, check top.sls to make sure it doesn't already exist
+  * Issue 740: sosetup: sensor should use sudo to restart apache on master 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 03 Jun 2015 13:29:26 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion137) precise; urgency=low
 
   * redirect output to log file when running Setup on a sensor 
 

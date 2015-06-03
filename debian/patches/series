@@ -137,3 +137,4 @@ redirect-output-to-log-file
 keep-ELSA-query_timeout-as-is
 redirect-output-to-log-file-when-running-Setup-on-a-sensor
 issues-547-and-740
+Issue-741:-sosetup:-sometimes-local-salt-minion-doesn't-check-in-with-local-salt-master-quickly-enough

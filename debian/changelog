@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion139) precise; urgency=low
+
+  * Issue 741: sosetup: sometimes local salt-minion doesn't check in with local salt-master quickly enough 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 03 Jun 2015 19:30:34 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion138) precise; urgency=low
 
   * Issue 547: sosetup: if enabling salt on a sensor, check top.sls to make sure it doesn't already exist

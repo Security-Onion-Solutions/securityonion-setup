@@ -1518,6 +1518,8 @@ if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 			# Start salt-master
 			service salt-master restart >> $LOG 2>&1
 			ufw allow salt >> $LOG 2>&1
+			echo "sleeping for 2 seconds to allow salt-master to initialize" >> $LOG
+			sleep 2s
 		else
 			# If this box is not a Master we need to disable salt-master
 			# Stop salt-master
@@ -1547,8 +1549,20 @@ EOF
 	
 		# salt-master needs to accept the key from salt-minion
 		if [ "$SERVERNAME" = "localhost" ]; then
-			salt-key -a $FQDN -y >> $LOG 2>&1
+			if salt-key -l accepted 2>&1 |grep "^$FQDN$" > /dev/null 2>&1; then
+				echo "salt-minion key already accepted" >> $LOG
+			elif salt-key -l unaccepted 2>&1 | grep "^$FQDN$" > /dev/null 2>&1; then
+				salt-key -a $FQDN -y >> $LOG 2>&1
+			else
+				echo "local salt-minion didn't check into salt-master within 10 seconds" >> $LOG
+				echo "restarting salt-minion and waiting another 10 seconds" >> $LOG
+				service salt-minion restart >> $LOG 2>&1
+				sleep 10s
+				echo "trying to accept salt-minion key again" >> $LOG
+				salt-key -a $FQDN -y >> $LOG 2>&1
+			fi
 		else
+			# this is a sensor-only box so we have to ask the master to accept the key via sosetupscp
 			echo "salt-key -a $FQDN -y" >> /tmp/sosetupscp
 		fi
 	fi

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion140) precise; urgency=low
+
+  * improve Setup performance 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 05 Jun 2015 07:12:54 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion139) precise; urgency=low
 
   * Issue 741: sosetup: sometimes local salt-minion doesn't check in with local salt-master quickly enough 

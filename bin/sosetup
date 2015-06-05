@@ -889,7 +889,7 @@ mkdir -p /var/log/nsm/
 #########################################
 # Set OS timezone to UTC
 #########################################
-echo "3"
+echo "2"
 echo "# Please wait while setting OS timezone to UTC..." | tee -a $LOG
 echo "Etc/UTC" > /etc/timezone
 dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
@@ -901,7 +901,7 @@ if pgrep rsyslog>/dev/null; then
 	service rsyslog restart >> $LOG 2>&1
 fi
 
-echo "5"
+echo "4"
 echo "# Please wait while setting OSSEC timezone to UTC..." | tee -a $LOG
 cp /etc/localtime /var/ossec/etc/localtime
 chown root:ossec /var/ossec/etc/localtime
@@ -916,14 +916,14 @@ grep "syslog_output" /var/ossec/etc/ossec.conf >/dev/null || sed -i 's|  <rules>
 /var/ossec/bin/ossec-control enable client-syslog
 fi
 
-echo "7"
+echo "6"
 echo "# Please wait while restarting OSSEC..." | tee -a $LOG
 service ossec-hids-server restart >> $LOG 2>&1
 
 #########################################
 # Stop all Sguil services and delete config
 #########################################
-echo "10"
+echo "8"
 echo "# Please wait while stopping all NSM services..." | tee -a $LOG
 service nsm stop >> $LOG 2>&1
 #/opt/bro/bin/broctl stop >> $LOG 2>&1
@@ -1001,7 +1001,7 @@ pkill -f ossec_agent
 if [ $SERVER -eq 1 ]; then
 # If this box was previously a slave, we need to remove securityonion_ssh.conf
 rm -f /root/.ssh/securityonion_ssh.conf
-echo "20"
+echo "10"
 echo "# Please wait while creating the Sguil server..." | tee -a $LOG
 /usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
 
@@ -1030,7 +1030,7 @@ echo "# Please wait while creating the Sguil server..." | tee -a $LOG
 #mysql -N -B --user=root -e "GRANT DELETE on securityonion_db.history to 'readonly'@'localhost';" >> $LOG 2>&1
 #mysql -N -B --user=root -e "GRANT UPDATE on securityonion_db.user_info TO 'readonly'@'localhost';" >> $LOG 2>&1
 
-echo "25"
+echo "15"
 echo "# Please wait while configuring firewall..." | tee -a $LOG
 # Open port 443 for https web interface
 ufw allow 443/tcp >> $LOG 2>&1
@@ -1047,7 +1047,7 @@ fi
 # Sguil Sensor(s) if necessary
 #########################################
 if [ $SENSOR -eq 1 ]; then
-echo "47"
+echo "20"
 echo "# Please wait while creating Sguil sensor(s)..." | tee -a $LOG
 BY2PORT=8000
 HOSTNAME=`hostname`
@@ -1294,7 +1294,7 @@ fi
 #########################################
 # /etc/nsm/securityonion.conf
 #########################################
-echo "55"
+echo "30"
 echo "# Please wait while configuring $CONF..." | tee -a $LOG
 DATE=`date`
 IDS_ENGINE_LOWER=`echo ${IDS_ENGINE,,}`
@@ -1360,7 +1360,7 @@ EOF
 # Download rules using Pulledpork
 #########################################
 if [ "$SERVERNAME" = "localhost" ]; then
-	echo "60"
+	echo "40"
 	echo "# Please wait while configuring IDS Ruleset..." | tee -a $LOG
 	# Start from a clean slate (pulledpork.conf.master)
 	# Here are the rule_url directives in pulledpork.conf.master:
@@ -1420,7 +1420,7 @@ if [ "$SERVERNAME" = "localhost" ]; then
 	esac
 
 	if [ "$INTERNET" = "UP" ]; then
-		echo "65"
+		echo "45"
 		echo "# Please wait while executing PulledPork to download rules..." | tee -a $LOG
 		mkdir -p /etc/nsm/rules/backup/
 		cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
@@ -1442,7 +1442,7 @@ fi
 #########################################
 SSH_DIR="/root/.ssh"
 SSH_CONF="$SSH_DIR/securityonion_ssh.conf"
-echo "70"
+echo "50"
 if [ -f $SSH_CONF ]; then
         # We are a SENSOR  
 	echo "# Please wait while killing existing SSH tunnel to MASTER..." | tee -a $LOG
@@ -1479,16 +1479,10 @@ else
 fi
 
 #########################################
-# Start services
-#########################################
-echo "75"
-echo "# Please wait while starting all Security Onion services..." | tee -a $LOG
-/sbin/start securityonion >> $LOG 2>&1
-sleep 10s
-
-#########################################
 # Configure Salt
 #########################################
+echo "70"
+echo "# Please wait while configuring salt..." | tee -a $LOG
 if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 	if [ "$SALT" = "no" ]; then
 		# Stop both running salt services
@@ -1518,8 +1512,6 @@ if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 			# Start salt-master
 			service salt-master restart >> $LOG 2>&1
 			ufw allow salt >> $LOG 2>&1
-			echo "sleeping for 2 seconds to allow salt-master to initialize" >> $LOG
-			sleep 2s
 		else
 			# If this box is not a Master we need to disable salt-master
 			# Stop salt-master
@@ -1555,9 +1547,9 @@ EOF
 				salt-key -a $FQDN -y >> $LOG 2>&1
 			else
 				echo "local salt-minion didn't check into salt-master within 10 seconds" >> $LOG
-				echo "restarting salt-minion and waiting another 10 seconds" >> $LOG
+				echo "restarting salt-minion and waiting another 20 seconds" >> $LOG
 				service salt-minion restart >> $LOG 2>&1
-				sleep 10s
+				sleep 20s
 				echo "trying to accept salt-minion key again" >> $LOG
 				salt-key -a $FQDN -y >> $LOG 2>&1
 			fi
@@ -1567,6 +1559,14 @@ EOF
 		fi
 	fi
 fi
+
+#########################################
+# Start services
+#########################################
+echo "80"
+echo "# Please wait while starting all Security Onion services..." | tee -a $LOG
+/sbin/start securityonion >> $LOG 2>&1
+sleep 10s
 
 #########################################
 # Configure ELSA
@@ -1673,7 +1673,7 @@ fi
 }
 
 function MINION() {
-dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null && [ "$SALT" = "yes" ] && salt-call state.highstate >> $LOG 2>&1
+dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null && [ "$SALT" = "yes" ] && salt-call state.highstate >> /var/log/nsm/sosetup_salt_call.log 2>&1 &
 }
 
 

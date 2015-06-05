@@ -1536,23 +1536,22 @@ EOF
 		[ -f /etc/init/salt-minion.override ] && rm -f /etc/init/salt-minion.override
 		service salt-minion restart >> $LOG 2>&1
 	
-		# Takes a few seconds for the minion to check in
-		sleep 10s
-	
 		# salt-master needs to accept the key from salt-minion
 		if [ "$SERVERNAME" = "localhost" ]; then
-			if salt-key -l accepted 2>&1 |grep "^$FQDN$" > /dev/null 2>&1; then
-				echo "salt-minion key already accepted" >> $LOG
-			elif salt-key -l unaccepted 2>&1 | grep "^$FQDN$" > /dev/null 2>&1; then
-				salt-key -a $FQDN -y >> $LOG 2>&1
-			else
-				echo "local salt-minion didn't check into salt-master within 10 seconds" >> $LOG
-				echo "restarting salt-minion and waiting another 20 seconds" >> $LOG
-				service salt-minion restart >> $LOG 2>&1
-				sleep 20s
-				echo "trying to accept salt-minion key again" >> $LOG
-				salt-key -a $FQDN -y >> $LOG 2>&1
-			fi
+			TIMER=60
+			while [ $TIMER -gt 0 ]; do
+				if salt-key -l accepted 2>&1 |grep "^$FQDN$" > /dev/null 2>&1; then
+					echo "salt-minion key already accepted" >> $LOG
+					TIMER=0
+				elif salt-key -l unaccepted 2>&1 | grep "^$FQDN$" > /dev/null 2>&1; then
+					salt-key -a $FQDN -y >> $LOG 2>&1
+					TIMER=0
+				else
+					let TIMER=TIMER-1
+					echo "salt-minion hasn't checked in yet, $TIMER seconds remaining until timeout" >> $LOG
+					sleep 1s
+				fi
+			done
 		else
 			# this is a sensor-only box so we have to ask the master to accept the key via sosetupscp
 			echo "salt-key -a $FQDN -y" >> /tmp/sosetupscp

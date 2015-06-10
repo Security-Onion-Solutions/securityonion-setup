@@ -140,3 +140,4 @@ issues-547-and-740
 Issue-741:-sosetup:-sometimes-local-salt-minion-doesn't-check-in-with-local-salt-master-quickly-enough
 improve-Setup-performance
 another-speed-improvement
+Issue-744:-sosetup:-Restart-Apache-to-activate-new-ELSA-apikey

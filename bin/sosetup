@@ -1608,6 +1608,8 @@ if [ "$ELSA" = "YES" ]; then
     # Configure all Log Node and Web Node functionality if we are a server
     if [ $SERVER -eq 1 ]; then
         /usr/bin/securityonion-elsa-config.sh -t WEB >> $LOG 2>&1
+	# restart apache to update ELSA APIKEY
+	service apache2 restart >> $LOG 2>&1
     else
         /usr/bin/securityonion-elsa-config.sh -t LOG >> $LOG 2>&1
         # Update the securityonion group

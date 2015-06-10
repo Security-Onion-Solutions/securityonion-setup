@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion142) precise; urgency=low
+
+  * Issue 744: sosetup: Restart Apache to activate new ELSA apikey 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 10 Jun 2015 14:14:28 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion141) precise; urgency=low
 
   * another speed improvement 

@@ -141,3 +141,4 @@ Issue-741:-sosetup:-sometimes-local-salt-minion-doesn't-check-in-with-local-salt
 improve-Setup-performance
 another-speed-improvement
 Issue-744:-sosetup:-Restart-Apache-to-activate-new-ELSA-apikey
+sosetup:-fix-typo-in-sosetup.conf-#764

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion143) precise; urgency=low
+
+  * sosetup: fix typo in sosetup.conf #764 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 03 Jul 2015 15:31:29 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion142) precise; urgency=low
 
   * Issue 744: sosetup: Restart Apache to activate new ELSA apikey 

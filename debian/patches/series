@@ -144,3 +144,4 @@ Issue-744:-sosetup:-Restart-Apache-to-activate-new-ELSA-apikey
 sosetup:-fix-typo-in-sosetup.conf-#764
 Issue-769:-Setup:-allow-user-to-enabledisable-Snorby
 sosetup:-improve-input-validation-for-email-address-#693
+when-disabling-Snorby,-also-disable-barnyard's-snorby-output

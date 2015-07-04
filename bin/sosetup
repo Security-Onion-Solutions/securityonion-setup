@@ -319,14 +319,14 @@ if [ $SERVER -eq 1 ] && [ "$SNORBY_ENABLED" == "yes" ]; then
 		TEXT="What is your email address?\r\rThis will be used when logging into Snorby."
 		SNORBY_EMAIL=`zenity --title="$TITLE" --text="$TEXT" --entry`
 		[ x$SNORBY_EMAIL = "x" ] && exit
-		if [[ "$SNORBY_EMAIL" != *?"@"?*.?* ]] ; then 
+		if [[ "$SNORBY_EMAIL" == *?"@"?*.?*[[:alpha:]] ]] ; then 
+			EMAIL_CONFIRMED="yes"
+			SNORBY_USER_CONFIRM="- Create a Snorby user named $SNORBY_EMAIL. \n"
+		else
 			zenity --error --text="Invalid email address\! \r \
 \r \
 Please ensure your email address is of the form: \r \
 user@example.com"
-		else
-			EMAIL_CONFIRMED="yes"
-			SNORBY_USER_CONFIRM="- Create a Snorby user named $SNORBY_EMAIL. \n"
 		fi
 	done
 fi

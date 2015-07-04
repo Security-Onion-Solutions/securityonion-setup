@@ -287,11 +287,54 @@ firewall rules."
 fi
 
 #########################################
-# If server is enabled, prompt for username/password
+# Snorby
+# Quick Setup automatically enables Snorby
+# Advanced Setup gives user the choice, but recommends disabling
+#########################################
+if [ $SERVER -eq 1 ] && [ $ADVANCED_SETUP -eq 1 ] ; then
+	TEXT="Snorby is a web interface that allows you to analyze your NIDS alerts.\n\
+NIDS alerts can also be found in Sguil, Squert, and ELSA\n\
+so you may want to consider disabling Snorby to\n\
+avoid duplication of effort.\n\
+\n\
+Would you like to enable Snorby?"
+	YES="Yes, enable Snorby!"
+	NO="No, disable Snorby."
+	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	ANSWER="$?"
+	if [ $ANSWER -eq 1 ]; then
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+		SNORBY_ENABLED="no"
+	else
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+	fi
+fi
+
+#########################################
+# If server is enabled and Snorby is enabled, ask for Snorby email address
+#########################################
+if [ $SERVER -eq 1 ] && [ "$SNORBY_ENABLED" == "yes" ]; then
+	EMAIL_CONFIRMED="no"
+	while [ $EMAIL_CONFIRMED = "no" ]; do
+		TEXT="What is your email address?\r\rThis will be used when logging into Snorby."
+		SNORBY_EMAIL=`zenity --title="$TITLE" --text="$TEXT" --entry`
+		[ x$SNORBY_EMAIL = "x" ] && exit
+		if [[ "$SNORBY_EMAIL" != *?"@"?*.?* ]] ; then 
+			zenity --error --text="Invalid email address\! \r \
+\r \
+Please ensure your email address is of the form: \r \
+user@example.com"
+		else
+			EMAIL_CONFIRMED="yes"
+			SNORBY_USER_CONFIRM="- Create a Snorby user named $SNORBY_EMAIL. \n"
+		fi
+	done
+fi
+
+#########################################
+# If server is enabled, ask for Sguil client username
 #########################################
 if [ $SERVER -eq 1 ]; then
-
-	# Ask for Sguil client username
 	USERNAME_CONFIRMED="no"
 	while [ $USERNAME_CONFIRMED = "no" ]; do
 		TEXT="What would you like your Sguil username to be?\r\rThis will be used when logging into Sguil, Squert, and ELSA.\r\rPlease use alphanumeric characters only."
@@ -306,24 +349,12 @@ Please use alphanumeric characters only."
 	    		USERNAME_CONFIRMED="yes"
 		fi
 	done
+fi
 
-	# Ask for email address for Snorby
-	EMAIL_CONFIRMED="no"
-	while [ $EMAIL_CONFIRMED = "no" ]; do
-		TEXT="What is your email address?\r\rThis will be used when logging into Snorby."
-		SNORBY_EMAIL=`zenity --title="$TITLE" --text="$TEXT" --entry`
-		[ x$SNORBY_EMAIL = "x" ] && exit
-		if [[ "$SNORBY_EMAIL" != *?"@"?*.?* ]] ; then 
-			zenity --error --text="Invalid email address\! \r \
-\r \
-Please ensure your email address is of the form: \r \
-user@example.com"
-		else
-			EMAIL_CONFIRMED="yes"
-		fi
-	done
-
-	# Ask for and confirm Sguil client password
+#########################################
+# If server is enabled, ask for and confirm password
+#########################################
+if [ $SERVER -eq 1 ]; then
 	SGUIL_CLIENT_PASSWORD_CONFIRMED="no"
 	while [ $SGUIL_CLIENT_PASSWORD_CONFIRMED = "no" ]; do
 		TEXT="What would you like to set your password to?\n\
@@ -357,7 +388,6 @@ Please use alphanumeric characters only."
 	done
 	SERVER_CONFIRM="- Create a Sguil server named $SGUIL_SERVER_NAME. \n"
 	SERVER_USER_CONFIRM="- Create a Sguil user named $SGUIL_CLIENT_USERNAME. \n"
-	SNORBY_USER_CONFIRM="- Create a Snorby user named $SNORBY_EMAIL. \n"
 fi
 
 #########################################
@@ -1035,7 +1065,7 @@ echo "# Please wait while configuring firewall..." | tee -a $LOG
 # Open port 443 for https web interface
 ufw allow 443/tcp >> $LOG 2>&1
 # Open port 444 for Snorby web interface
-ufw allow 444/tcp >> $LOG 2>&1
+[ "$SNORBY_ENABLED" == "yes" ] && ufw allow 444/tcp >> $LOG 2>&1
 # Open port 7734 for Sguil clients
 ufw allow 7734/tcp >> $LOG 2>&1
 # Open port 7736 for Sguil sensors
@@ -1449,32 +1479,38 @@ if [ -f $SSH_CONF ]; then
 	pkill autossh
 else
 	# We are the MASTER.
-	echo "# Please wait while initializing Snorby database..." | tee -a $LOG
-	# Kill any existing Snorby processes.
-	pkill delayed_job
-	# Delete any existing Snorby data.
-	if [ -d /var/lib/mysql/snorby ]; then
-		mysql -e "drop database snorby" >> $LOG 2>&1
-	fi
-	# Set email and password
-	cp /opt/snorby/db/seeds.rb.securityonion /opt/snorby/db/seeds.rb
-        sed -i "s|ReplaceWithDesiredEmail|$SNORBY_EMAIL|g" /opt/snorby/db/seeds.rb
-        sed -i "s|ReplaceWithDesiredPassword|$SGUIL_CLIENT_PASSWORD_1|g" /opt/snorby/db/seeds.rb
-        # Set FPC options
+
+	# Determine IP address to be used below in Squert and Snorby databases
         IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
-        sed -i "s|packet_capture_url, nil|packet_capture_url, 'https://$IP/capme/'|g" /opt/snorby/db/seeds.rb
-        sed -i "s|packet_capture, nil|packet_capture, 1|g" /opt/snorby/db/seeds.rb
-        sed -i "s|packet_capture_auto_auth, 1|packet_capture_auto_auth, nil|g" /opt/snorby/db/seeds.rb
-	# Initialize Snorby DB
-	su www-data -c "cd /opt/snorby; bundle exec rake snorby:setup RAILS_ENV=production" >> $LOG 2>&1
-	# Shred the Snorby password
-	shred -u /opt/snorby/db/seeds.rb >> $LOG 2>&1
-        # Pivot from Snorby to ELSA
-        [ "$ELSA" = "YES" ] && mysql -uroot -Dsnorby -e "INSERT INTO lookups (title,value) VALUES('ELSA Search By IP Address','https://$IP:3154/?query_string=\"\${ip}\"%20groupby:program')"
+
 	# Pivot from Squert to ELSA
 	URL="https://$IP:3154/?query_string=\"\${var}\"%20groupby:program"
 	HEXVAL=$(xxd -pu -c 256 <<< "$URL")
 	[ "$ELSA" = "YES" ] && mysql -uroot -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
+
+	if [ "$SNORBY_ENABLED" == "yes" ]; then
+		echo "# Please wait while initializing Snorby database..." | tee -a $LOG
+		# Kill any existing Snorby processes.
+		pkill delayed_job
+		# Delete any existing Snorby data.
+		if [ -d /var/lib/mysql/snorby ]; then
+			mysql -e "drop database snorby" >> $LOG 2>&1
+		fi
+		# Set email and password
+		cp /opt/snorby/db/seeds.rb.securityonion /opt/snorby/db/seeds.rb
+        	sed -i "s|ReplaceWithDesiredEmail|$SNORBY_EMAIL|g" /opt/snorby/db/seeds.rb
+	        sed -i "s|ReplaceWithDesiredPassword|$SGUIL_CLIENT_PASSWORD_1|g" /opt/snorby/db/seeds.rb
+        	# Set FPC options
+        	sed -i "s|packet_capture_url, nil|packet_capture_url, 'https://$IP/capme/'|g" /opt/snorby/db/seeds.rb
+	        sed -i "s|packet_capture, nil|packet_capture, 1|g" /opt/snorby/db/seeds.rb
+        	sed -i "s|packet_capture_auto_auth, 1|packet_capture_auto_auth, nil|g" /opt/snorby/db/seeds.rb
+		# Initialize Snorby DB
+		su www-data -c "cd /opt/snorby; bundle exec rake snorby:setup RAILS_ENV=production" >> $LOG 2>&1
+		# Shred the Snorby password
+		shred -u /opt/snorby/db/seeds.rb >> $LOG 2>&1
+	        # Pivot from Snorby to ELSA
+        	[ "$ELSA" = "YES" ] && mysql -uroot -Dsnorby -e "INSERT INTO lookups (title,value) VALUES('ELSA Search By IP Address','https://$IP:3154/?query_string=\"\${ip}\"%20groupby:program')"
+	fi
 
 fi
 

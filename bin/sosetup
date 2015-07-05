@@ -1480,7 +1480,7 @@ if [ -f $SSH_CONF ]; then
 	SNORBY_OUTPUT=`grep -i SNORBY_ENABLED /tmp/securityonion.conf | cut -d= -f2`
 	if [ "$SNORBY_OUTPUT" == "no" ]; then
 		# Snorby is disabled, so disable the snorby output in all barnyard config files
-		sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf | tee -a $LOG 2>&1
+		sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
 	fi
 	rm -f /tmp/securityonion.conf	
 else
@@ -1496,7 +1496,7 @@ else
 
 	if [ "$SNORBY_ENABLED" == "no" ]; then
 		# Snorby is disabled, so disable the snorby output in all barnyard config files
-		sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf | tee -a $LOG 2>&1
+		sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
 	else
 		# Snorby is enabled, so prepare the database
 		echo "# Please wait while initializing Snorby database..." | tee -a $LOG

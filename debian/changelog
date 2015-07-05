@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion147) precise; urgency=low
+
+  * redirect sed output to log file 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 05 Jul 2015 15:26:41 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion146) precise; urgency=low
 
   * when disabling Snorby, also disable barnyard's snorby output 

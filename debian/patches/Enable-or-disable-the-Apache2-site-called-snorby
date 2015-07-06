@@ -1,0 +1,54 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion148) precise; urgency=low
+ .
+   * Enable or disable the Apache2 site called snorby
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1495,10 +1495,14 @@ else
+ 	[ "$ELSA" = "YES" ] && mysql -uroot -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
+ 
+ 	if [ "$SNORBY_ENABLED" == "no" ]; then
+-		# Snorby is disabled, so disable the snorby output in all barnyard config files
++		# Snorby is disabled, so disable the Apache2 site called "snorby" 
++		a2dissite snorby >> $LOG 2>&1
++		# Also disable the snorby output in all barnyard config files
+ 		sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
+ 	else
+-		# Snorby is enabled, so prepare the database
++		# Snorby is enabled, so enable the Apache2 site called "snorby"
++		a2ensite snorby >> $LOG 2>&1
++		# prepare the database
+ 		echo "# Please wait while initializing Snorby database..." | tee -a $LOG
+ 		# Kill any existing Snorby processes.
+ 		pkill delayed_job
+@@ -1521,7 +1525,8 @@ else
+ 	        # Pivot from Snorby to ELSA
+         	[ "$ELSA" = "YES" ] && mysql -uroot -Dsnorby -e "INSERT INTO lookups (title,value) VALUES('ELSA Search By IP Address','https://$IP:3154/?query_string=\"\${ip}\"%20groupby:program')"
+ 	fi
+-
++	# We either enabled or disabled the Apache2 site called "snorby" and this may require a restart of Apache2
++	service apache2 restart
+ fi
+ 
+ #########################################

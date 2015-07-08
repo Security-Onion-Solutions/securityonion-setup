@@ -147,3 +147,4 @@ sosetup:-improve-input-validation-for-email-address-#693
 when-disabling-Snorby,-also-disable-barnyard's-snorby-output
 redirect-sed-output-to-log-file
 Enable-or-disable-the-Apache2-site-called-snorby
+redirect-apache-output-to-log-file

@@ -1526,7 +1526,7 @@ else
         	[ "$ELSA" = "YES" ] && mysql -uroot -Dsnorby -e "INSERT INTO lookups (title,value) VALUES('ELSA Search By IP Address','https://$IP:3154/?query_string=\"\${ip}\"%20groupby:program')"
 	fi
 	# We either enabled or disabled the Apache2 site called "snorby" and this may require a restart of Apache2
-	service apache2 restart
+	service apache2 restart >> $LOG 2>&1
 fi
 
 #########################################

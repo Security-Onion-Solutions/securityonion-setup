@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion149) precise; urgency=low
+
+  * redirect apache output to log file 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 08 Jul 2015 13:51:49 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion148) precise; urgency=low
 
   * Enable or disable the Apache2 site called snorby 

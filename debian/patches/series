@@ -150,3 +150,4 @@ Enable-or-disable-the-Apache2-site-called-snorby
 redirect-apache-output-to-log-file
 Issue-596:-sosetup:-sensor-should-stopdisable-Apache-and-Snorby-worker
 pkill-autossh-before-using-mysql-and-also-replace-sosetupscp-with-mktemp
+replace-tmpsecurityonion.conf-with-$SECURITYONION_CONF_MASTER-using-mktemp

@@ -1684,16 +1684,16 @@ function SERVER_QUEUE() {
 #########################################
 if [ "$SERVERNAME" != "localhost" ]; then
 	# Copy the script over
-	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:/tmp/sosetupscp >> $LOG 2>&1
+	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
 	# Run the script on the master server using sudo
 	if [ "$OUTPUT" = "gui" ]; then
-		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp
+		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP
 	else
-		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp >> $LOG 2>&1
+		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP >> $LOG 2>&1
 	fi
 	# Cleanup
 	rm -f $SOSETUPSCP
-	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f /tmp/sosetupscp >> $LOG 2>&1
+	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f $SOSETUPSCP >> $LOG 2>&1
 fi
 
 if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion153) precise; urgency=low
+
+  * Issue 605: sosetup: replace tmp with mktemp 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 08 Jul 2015 16:38:16 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion152) precise; urgency=low
 
   * replace /tmp/securityonion.conf with $SECURITYONION_CONF_MASTER using mktemp 

@@ -105,6 +105,8 @@ PF_RING_SLOTS="4096"
 SSH_DIR="/root/.ssh"
 SSH_CONF="$SSH_DIR/securityonion_ssh.conf"
 KEY="$SSH_DIR/securityonion"
+# SOSETUPSCP is a file that will be copied to the master server and executed
+SOSETUPSCP=`mktemp`
 
 #########################################
 # Debug
@@ -957,10 +959,9 @@ service ossec-hids-server restart >> $LOG 2>&1
 echo "8"
 echo "# Please wait while stopping all NSM services..." | tee -a $LOG
 service nsm stop >> $LOG 2>&1
-#/opt/bro/bin/broctl stop >> $LOG 2>&1
-# terminate any extra processes
 pkill suricata
 pkill snort
+pkill autossh
 # Make sure MySQL is running so that we can fully delete the NSM databases
 [ $SERVER -eq 1 ] && service mysql start >> $LOG 2>&1
 # Uncomment any disabled sensors so that we can fully delete them
@@ -1197,9 +1198,9 @@ for INTERFACE in $ALL_INTERFACES; do
         	ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME" >> $LOG 2>&1
 		for i in `seq 1 $CORES`; do ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME"-$i >> $LOG 2>&1; done
 	else
-		echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME" >> /tmp/sosetupscp
+		echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME" >> $SOSETUPSCP
 		for i in `seq 1 $CORES`; do
-			echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME-$i" >> /tmp/sosetupscp
+			echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME-$i" >> $SOSETUPSCP
 		done
 	fi
 
@@ -1475,8 +1476,7 @@ SSH_CONF="$SSH_DIR/securityonion_ssh.conf"
 echo "50"
 if [ -f $SSH_CONF ]; then
         # We are a SENSOR  
-	echo "# Please wait while killing existing SSH tunnel to MASTER..." | tee -a $LOG
-	pkill autossh
+	echo "# Please wait while stopping and disabling Apache..." | tee -a $LOG
 	# Sensors don't need the Apache web server, so stop and disable it
 	service apache2 stop >> $LOG 2>&1
 	update-rc.d -f apache2 disable >> $LOG 2>&1
@@ -1577,7 +1577,7 @@ if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 			# Disable salt-master
 			[ -f /etc/init/salt-master.conf ] && echo "manual" > /etc/init/salt-master.override
 			# Tell the salt-master that we are a sensor
-			cat << EOF >> /tmp/sosetupscp
+			cat << EOF >> $SOSETUPSCP
 if ! grep "'$FQDN':" /opt/onionsalt/salt/top.sls >/dev/null 2>&1; then
 echo "   '$FQDN':"	>> /opt/onionsalt/salt/top.sls
 echo "      - sensor" 	>> /opt/onionsalt/salt/top.sls
@@ -1611,8 +1611,8 @@ EOF
 				fi
 			done
 		else
-			# this is a sensor-only box so we have to ask the master to accept the key via sosetupscp
-			echo "salt-key -a $FQDN -y" >> /tmp/sosetupscp
+			# this is a sensor-only box so we have to ask the master to accept the key via SOSETUPSCP
+			echo "salt-key -a $FQDN -y" >> $SOSETUPSCP
 		fi
 	fi
 fi
@@ -1671,7 +1671,7 @@ if [ "$ELSA" = "YES" ]; then
     else
         /usr/bin/securityonion-elsa-config.sh -t LOG >> $LOG 2>&1
         # Update the securityonion group
-        echo "usermod -a -G securityonion $SSH_USERNAME" >> /tmp/sosetupscp
+        echo "usermod -a -G securityonion $SSH_USERNAME" >> $SOSETUPSCP
     fi
 fi
 }
@@ -1682,15 +1682,15 @@ function SERVER_QUEUE() {
 #########################################
 if [ "$SERVERNAME" != "localhost" ]; then
 	# Copy the script over
-	scp -i "$KEY" /tmp/sosetupscp $SSH_USERNAME@$SERVERNAME:/tmp/sosetupscp
-	# Run the script with sudo
+	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:/tmp/sosetupscp >> $LOG 2>&1
+	# Run the script on the master server using sudo
 	if [ "$OUTPUT" = "gui" ]; then
 		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp
 	else
 		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash /tmp/sosetupscp >> $LOG 2>&1
 	fi
 	# Cleanup
-	rm -f /tmp/sosetupscp
+	rm -f $SOSETUPSCP
 	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f /tmp/sosetupscp >> $LOG 2>&1
 fi
 

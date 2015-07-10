@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion155) precise; urgency=low
+
+  * sosetup: comment out 2 examples in onionsalt's top.sls #771 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 10 Jul 2015 08:37:18 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion154) precise; urgency=low
 
   * replace /tmp/sosetup.log with mktemp 

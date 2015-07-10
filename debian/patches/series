@@ -152,3 +152,4 @@ Issue-596:-sosetup:-sensor-should-stopdisable-Apache-and-Snorby-worker
 pkill-autossh-before-using-mysql-and-also-replace-sosetupscp-with-mktemp
 replace-tmpsecurityonion.conf-with-$SECURITYONION_CONF_MASTER-using-mktemp
 Issue-605:-sosetup:-replace-tmp-with-mktemp
+replace-tmpsosetup.log-with-mktemp

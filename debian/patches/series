@@ -154,3 +154,4 @@ replace-tmpsecurityonion.conf-with-$SECURITYONION_CONF_MASTER-using-mktemp
 Issue-605:-sosetup:-replace-tmp-with-mktemp
 replace-tmpsosetup.log-with-mktemp
 sosetup:-comment-out-2-examples-in-onionsalt's-top.sls-#771
+sosetup:-change-rule-update-verbiage-#791

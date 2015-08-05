@@ -1803,9 +1803,9 @@ You can have PulledPork modify the downloaded rules \n \
 by modifying the files in: \n \
 /etc/nsm/pulledpork/ \n \
 \n \
-Rules will be updated every day at 7:01 AM UTC. \n \
+Rules will be updated every morning. \n \
 You can manually update them by running: \n \
-/usr/bin/rule-update \n \
+sudo rule-update \n \
 \n \
 Sensors can be tuned by modifying the files in: \n \
 /etc/nsm/NAME-OF-SENSOR/"

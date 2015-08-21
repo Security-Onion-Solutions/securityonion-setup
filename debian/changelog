@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion157) precise; urgency=low
+
+  * Setup: update SpoolDir and LogDir in broctl.cfg #800 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 21 Aug 2015 09:34:46 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion156) precise; urgency=low
 
   * sosetup: change rule-update verbiage #791 

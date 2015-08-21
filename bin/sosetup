@@ -1303,8 +1303,12 @@ EOF
 	if grep "nsm" /opt/bro/etc/broctl.cfg >/dev/null; then
 		echo "/opt/bro/etc/broctl.cfg already contains nsm" >> $LOG 2>&1
 	else
+		# Before Bro 2.4, broctl.cfg defaulted to /var/opt/bro/
 		sed -i 's|SpoolDir = /var/opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/bro/etc/broctl.cfg
 		sed -i 's|LogDir = /var/opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/bro/etc/broctl.cfg
+		# Starting with Bro 2.4, broctl.cfg defaults to /opt/bro/
+		sed -i 's|SpoolDir = /opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/bro/etc/broctl.cfg
+		sed -i 's|LogDir = /opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/bro/etc/broctl.cfg
 	fi
 	# Finished updating config files
 

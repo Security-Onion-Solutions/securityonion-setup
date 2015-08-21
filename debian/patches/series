@@ -155,3 +155,4 @@ Issue-605:-sosetup:-replace-tmp-with-mktemp
 replace-tmpsosetup.log-with-mktemp
 sosetup:-comment-out-2-examples-in-onionsalt's-top.sls-#771
 sosetup:-change-rule-update-verbiage-#791
+Setup:-update-SpoolDir-and-LogDir-in-broctl.cfg-#800

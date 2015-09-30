@@ -1056,6 +1056,7 @@ if [ "$SERVERNAME" != "localhost" ]; then
 	cp /etc/nsm/rules/sid-msg.map /etc/nsm/rules/backup/sid-msg.map.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
 	cp /etc/nsm/rules/threshold.conf /etc/nsm/rules/backup/threshold.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
 	cp /etc/nsm/rules/bpf.conf /etc/nsm/rules/backup/bpf.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+
 	# Copy files from server
 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/downloaded.rules /etc/nsm/rules/downloaded.rules >> $LOG 2>&1
 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/local.rules /etc/nsm/rules/local.rules >> $LOG 2>&1
@@ -1063,12 +1064,12 @@ if [ "$SERVERNAME" != "localhost" ]; then
 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/sid-msg.map /etc/nsm/rules/sid-msg.map >> $LOG 2>&1
 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/threshold.conf /etc/nsm/rules/threshold.conf >> $LOG 2>&1
 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/bpf.conf /etc/nsm/rules/bpf.conf >> $LOG 2>&1
+
 	# Set IDS_ENGINE variable
-	# we were doing this:
-	# IDS_ENGINE=`ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME grep ENGINE /etc/nsm/securityonion.conf 2>/dev/null | cut -d\= -f2` >> $LOG 2>&1
-	# but it resulted in a ^M at the end of IDS_ENGINE
 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/securityonion.conf $SECURITYONION_CONF_MASTER >> $LOG 2>&1
 	IDS_ENGINE=`grep ENGINE $SECURITYONION_CONF_MASTER 2>/dev/null | cut -d\= -f2`
+	rm -f $SECURITYONION_CONF_MASTER
+
 	# Save configuration
 	echo "SSH_USERNAME=$SSH_USERNAME" > $SSH_CONF
 	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF
@@ -1422,7 +1423,7 @@ if [ "$SERVERNAME" = "localhost" ]; then
 fi
 
 #########################################
-# Start all Sguil services
+# Apache configuration
 #########################################
 SSH_DIR="/root/.ssh"
 SSH_CONF="$SSH_DIR/securityonion_ssh.conf"
@@ -1433,9 +1434,6 @@ if [ -f $SSH_CONF ]; then
 	# Sensors don't need the Apache web server, so stop and disable it
 	service apache2 stop >> $LOG 2>&1
 	update-rc.d -f apache2 disable >> $LOG 2>&1
-	#disable the snorby output in all barnyard config files
-	sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
-	rm -f $SECURITYONION_CONF_MASTER
 else
 	# We are the MASTER.
 
@@ -1543,8 +1541,10 @@ EOF
 fi
 
 #########################################
-# Start services
+# Start securityonion services
 #########################################
+# disable the snorby output in all barnyard config files
+sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
 echo "80"
 echo "# Please wait while starting all Security Onion services..." | tee -a $LOG
 /sbin/start securityonion >> $LOG 2>&1

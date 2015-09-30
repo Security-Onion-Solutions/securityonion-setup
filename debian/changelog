@@ -1,3 +1,15 @@
+securityonion-setup (20120912-0ubuntu0securityonion159) trusty; urgency=medium
+
+  * remove snorby 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 30 Sep 2015 13:26:10 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion158) trusty; urgency=medium
+
+  * rebuild for trusty 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 22 Sep 2015 16:55:22 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion157) precise; urgency=low
 
   * Setup: update SpoolDir and LogDir in broctl.cfg #800 

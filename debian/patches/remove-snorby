@@ -1,0 +1,216 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion159) trusty; urgency=medium
+ .
+   * remove snorby
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -78,7 +78,6 @@ BRO_LB_PROCS_CONFIRM="- Run a single Bro
+ BRO_ENABLED="yes"
+ OSSEC_AGENT_ENABLED="yes"
+ OSSEC_AGENT_LEVEL=5
+-SNORBY_ENABLED="yes"
+ XPLICO_ENABLED="yes"
+ # /etc/nsm/HOSTNAME-INTERFACE/sensor.conf services enabled by default
+ PCAP_ENABLED="yes"
+@@ -227,7 +226,7 @@ else
+ 	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No. Performing Advanced Setup."
+ 	# Ask which components to configure
+ 	TEXT="If this is the first machine in a distributed deployment, choose Server.\n\
+-This machine will only run Sguil, Squert, Snorby, and ELSA and will not monitor any network interfaces.\n\
++This machine will only run Sguil, Squert, and ELSA and will not monitor any network interfaces.\n\
+ \n\
+ If this is a sensor for a distributed deployment (you've already installed the Server), choose Sensor.\n\
+ You will need to be able to SSH to the existing Server box with an account with sudo privileges.\n\
+@@ -251,7 +250,6 @@ Otherwise, choose Standalone to configur
+                 [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Sensor."
+ 		SERVER=0
+ 		SENSOR=1
+-		SNORBY_ENABLED="no"
+ 		TEXT="What is the hostname or IP address of the Sguil server that this sensor should connect to?"
+ 		SERVERNAME_CONFIRMED="no"
+ 		while [ $SERVERNAME_CONFIRMED = "no" ]; do
+@@ -292,51 +290,6 @@ firewall rules."
+ fi
+ 
+ #########################################
+-# Snorby
+-# Quick Setup automatically enables Snorby
+-# Advanced Setup gives user the choice, but recommends disabling
+-#########################################
+-if [ $SERVER -eq 1 ] && [ $ADVANCED_SETUP -eq 1 ] ; then
+-	TEXT="Snorby is a web interface that allows you to analyze your NIDS alerts.\n\
+-NIDS alerts can also be found in Sguil, Squert, and ELSA\n\
+-so you may want to consider disabling Snorby to\n\
+-avoid duplication of effort.\n\
+-\n\
+-Would you like to enable Snorby?"
+-	YES="Yes, enable Snorby!"
+-	NO="No, disable Snorby."
+-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+-	ANSWER="$?"
+-	if [ $ANSWER -eq 1 ]; then
+-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+-		SNORBY_ENABLED="no"
+-	else
+-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+-	fi
+-fi
+-
+-#########################################
+-# If server is enabled and Snorby is enabled, ask for Snorby email address
+-#########################################
+-if [ $SERVER -eq 1 ] && [ "$SNORBY_ENABLED" == "yes" ]; then
+-	EMAIL_CONFIRMED="no"
+-	while [ $EMAIL_CONFIRMED = "no" ]; do
+-		TEXT="What is your email address?\r\rThis will be used when logging into Snorby."
+-		SNORBY_EMAIL=`zenity --title="$TITLE" --text="$TEXT" --entry`
+-		[ x$SNORBY_EMAIL = "x" ] && exit
+-		if [[ "$SNORBY_EMAIL" == *?"@"?*.?*[[:alpha:]] ]] ; then 
+-			EMAIL_CONFIRMED="yes"
+-			SNORBY_USER_CONFIRM="- Create a Snorby user named $SNORBY_EMAIL. \n"
+-		else
+-			zenity --error --text="Invalid email address\! \r \
+-\r \
+-Please ensure your email address is of the form: \r \
+-user@example.com"
+-		fi
+-	done
+-fi
+-
+-#########################################
+ # If server is enabled, ask for Sguil client username
+ #########################################
+ if [ $SERVER -eq 1 ]; then
+@@ -366,9 +319,9 @@ if [ $SERVER -eq 1 ]; then
+ \n\
+ Password must be at least 6 characters.  Please use alphanumeric characters only!\n\
+ \n\
+-This password will be used for Sguil, Squert, Snorby, and ELSA.\n\
++This password will be used for Sguil, Squert, and ELSA.\n\
+ \n\
+-Once you've logged into these interfaces using this initial password, you can change it in Sguil and Snorby."
++Once you've logged into these interfaces using this initial password, you can change it in the Sguil client."
+ 		SGUIL_CLIENT_PASSWORD_1=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
+ 		[ "x$SGUIL_CLIENT_PASSWORD_1" = "x" ] && exit
+ 	        if [ "${#SGUIL_CLIENT_PASSWORD_1}" -lt "6" ]; then
+@@ -878,7 +831,6 @@ TEXT="We're about to do the following:\n
+ - Delete any existing NSM data/configuration. \n\
+ $SERVER_CONFIRM\
+ $SERVER_USER_CONFIRM\
+-$SNORBY_USER_CONFIRM\
+ $SENSOR_CONFIRM_1\
+ $SENSOR_CONFIRM_2\
+ $SENSOR_CONFIRM_3\
+@@ -1068,8 +1020,6 @@ echo "15"
+ echo "# Please wait while configuring firewall..." | tee -a $LOG
+ # Open port 443 for https web interface
+ ufw allow 443/tcp >> $LOG 2>&1
+-# Open port 444 for Snorby web interface
+-[ "$SNORBY_ENABLED" == "yes" ] && ufw allow 444/tcp >> $LOG 2>&1
+ # Open port 7734 for Sguil clients
+ ufw allow 7734/tcp >> $LOG 2>&1
+ # Open port 7736 for Sguil sensors
+@@ -1368,9 +1318,6 @@ OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED
+ # OSSEC_AGENT_LEVEL specifies the level at which OSSEC alerts are sent to sguild.
+ OSSEC_AGENT_LEVEL=$OSSEC_AGENT_LEVEL
+ 
+-# Do you want to run the Snorby worker?  yes/no
+-SNORBY_ENABLED=$SNORBY_ENABLED
+-
+ # Do you want to run Xplico?  yes/no
+ XPLICO_ENABLED=$XPLICO_ENABLED
+ 
+@@ -1486,12 +1433,8 @@ if [ -f $SSH_CONF ]; then
+ 	# Sensors don't need the Apache web server, so stop and disable it
+ 	service apache2 stop >> $LOG 2>&1
+ 	update-rc.d -f apache2 disable >> $LOG 2>&1
+-	# We previously scp'd securityonion.conf from the master server to /tmp, so let's check that for SNORBY_ENABLED
+-	SNORBY_OUTPUT=`grep -i SNORBY_ENABLED $SECURITYONION_CONF_MASTER | cut -d= -f2`
+-	if [ "$SNORBY_OUTPUT" == "no" ]; then
+-		# Snorby is disabled, so disable the snorby output in all barnyard config files
+-		sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
+-	fi
++	#disable the snorby output in all barnyard config files
++	sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
+ 	rm -f $SECURITYONION_CONF_MASTER
+ else
+ 	# We are the MASTER.
+@@ -1499,7 +1442,7 @@ else
+ 	# Make sure that the Apache web server is enabled
+ 	update-rc.d -f apache2 enable >> $LOG 2>&1
+ 
+-	# Determine IP address to be used below in Squert and Snorby databases
++	# Determine IP address to be used below in Squert database
+         IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+ 
+ 	# Pivot from Squert to ELSA
+@@ -1507,38 +1450,7 @@ else
+ 	HEXVAL=$(xxd -pu -c 256 <<< "$URL")
+ 	[ "$ELSA" = "YES" ] && mysql -uroot -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
+ 
+-	if [ "$SNORBY_ENABLED" == "no" ]; then
+-		# Snorby is disabled, so disable the Apache2 site called "snorby" 
+-		a2dissite snorby >> $LOG 2>&1
+-		# Also disable the snorby output in all barnyard config files
+-		sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
+-	else
+-		# Snorby is enabled, so enable the Apache2 site called "snorby"
+-		a2ensite snorby >> $LOG 2>&1
+-		# prepare the database
+-		echo "# Please wait while initializing Snorby database..." | tee -a $LOG
+-		# Kill any existing Snorby processes.
+-		pkill delayed_job
+-		# Delete any existing Snorby data.
+-		if [ -d /var/lib/mysql/snorby ]; then
+-			mysql -e "drop database snorby" >> $LOG 2>&1
+-		fi
+-		# Set email and password
+-		cp /opt/snorby/db/seeds.rb.securityonion /opt/snorby/db/seeds.rb
+-        	sed -i "s|ReplaceWithDesiredEmail|$SNORBY_EMAIL|g" /opt/snorby/db/seeds.rb
+-	        sed -i "s|ReplaceWithDesiredPassword|$SGUIL_CLIENT_PASSWORD_1|g" /opt/snorby/db/seeds.rb
+-        	# Set FPC options
+-        	sed -i "s|packet_capture_url, nil|packet_capture_url, 'https://$IP/capme/'|g" /opt/snorby/db/seeds.rb
+-	        sed -i "s|packet_capture, nil|packet_capture, 1|g" /opt/snorby/db/seeds.rb
+-        	sed -i "s|packet_capture_auto_auth, 1|packet_capture_auto_auth, nil|g" /opt/snorby/db/seeds.rb
+-		# Initialize Snorby DB
+-		su www-data -c "cd /opt/snorby; bundle exec rake snorby:setup RAILS_ENV=production" >> $LOG 2>&1
+-		# Shred the Snorby password
+-		shred -u /opt/snorby/db/seeds.rb >> $LOG 2>&1
+-	        # Pivot from Snorby to ELSA
+-        	[ "$ELSA" = "YES" ] && mysql -uroot -Dsnorby -e "INSERT INTO lookups (title,value) VALUES('ELSA Search By IP Address','https://$IP:3154/?query_string=\"\${ip}\"%20groupby:program')"
+-	fi
+-	# We either enabled or disabled the Apache2 site called "snorby" and this may require a restart of Apache2
++	# Restart web server
+ 	service apache2 restart >> $LOG 2>&1
+ fi
+ 
+@@ -1777,7 +1689,7 @@ TEXT="Security Onion Setup is now comple
+ Setup log can be found here:\n \
+ $LOG\n \
+ \n \
+-You may view IDS alerts using Sguil, Squert, Snorby, or ELSA (if enabled). \n \
++You may view IDS alerts using Sguil, Squert, or ELSA (if enabled). \n \
+ \n \
+ Bro logs can be found in ELSA (if enabled) and the following location: \n \
+ /nsm/bro/"

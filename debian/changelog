@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion161) trusty; urgency=medium
+
+  * Squert is now is /var/www/so/squert 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 02 Oct 2015 16:12:39 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion160) trusty; urgency=medium
 
   * disable snorby output in barnyard config 

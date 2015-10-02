@@ -1671,8 +1671,8 @@ function IP2C() {
 # If this is a server, populate ip2c table
 if [ -d /var/lib/mysql/securityonion_db/ ]; then
 	/usr/bin/sguild-add-user "$SGUIL_CLIENT_USERNAME" "$SGUIL_CLIENT_PASSWORD_1" >/dev/null
-	cd /var/www/squert/.scripts/
-	# Setup needs to delete /var/www/squert/.scripts/Ip2c/*.md5 before running ip2c.tcl
+	cd /var/www/so/squert/.scripts/
+	# Setup needs to delete /var/www/so/squert/.scripts/Ip2c/*.md5 before running ip2c.tcl
 	# http://code.google.com/p/security-onion/issues/detail?id=250
 	rm -f *.md5
 	./ip2c.tcl >> $LOG 2>&1 &

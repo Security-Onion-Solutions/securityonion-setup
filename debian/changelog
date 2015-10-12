@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion162) trusty; urgency=medium
+
+  * add gksu as a dependency 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 12 Oct 2015 15:51:10 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion161) trusty; urgency=medium
 
   * Squert is now is /var/www/so/squert 

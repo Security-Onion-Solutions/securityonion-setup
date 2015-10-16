@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion164) trusty; urgency=medium
+
+  * remove snorby from sosetup.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 16 Oct 2015 16:43:42 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion163) trusty; urgency=medium
 
   * fix HOME issue when sensor tries to ssh-copy-id to server 

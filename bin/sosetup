@@ -1043,9 +1043,11 @@ if [ "$SERVERNAME" != "localhost" ]; then
         ssh-keygen -f "$KEY" -N '' >> $LOG 2>&1
         chmod 600 "$KEY"*
 	if [ "$OUTPUT" = "gui" ]; then
-		xfce4-terminal -x ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
+		# Need to get new HOME directory using sudo -i
+		sudo -i xfce4-terminal -x ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME 
 	else
-		ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
+		# Need to get new HOME directory using sudo -i
+		sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
 	fi
 
 	# Backup existing files

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion163) trusty; urgency=medium
+
+  * fix HOME issue when sensor tries to ssh-copy-id to server 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 16 Oct 2015 13:45:10 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion162) trusty; urgency=medium
 
   * add gksu as a dependency 

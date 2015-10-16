@@ -159,3 +159,4 @@ Setup:-update-SpoolDir-and-LogDir-in-broctl.cfg-#800
 remove-snorby
 disable-snorby-output-in-barnyard-config
 Squert-is-now-is-varwwwsosquert
+fix-HOME-issue-when-sensor-tries-to-ssh-copy-id-to-server

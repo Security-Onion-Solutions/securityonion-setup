@@ -187,7 +187,11 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
         while [ $VALID = "no" ]; do
 		TEXT="Enter your local domain name (e.g., example.com):"
 		DOMAIN=`zenity --title="$TITLE" --text="$TEXT" --entry`
-		[ "$DOMAIN" != "" ] && VALID="yes"
+		if [ "$DOMAIN" = "" ]; then
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+			exit
+		fi
+		VALID="yes"
 	done
           
 	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows: \n\

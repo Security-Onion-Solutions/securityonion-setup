@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion165) trusty; urgency=medium
+
+  * when asking for domain name, allow user to click Cancel to exit 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 19 Oct 2015 16:03:23 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion164) trusty; urgency=medium
 
   * remove snorby from sosetup.conf 

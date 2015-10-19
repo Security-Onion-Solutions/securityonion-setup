@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion166) trusty; urgency=medium
+
+  * Issue 822: Setup: remove alphanumeric password requirement 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 19 Oct 2015 16:11:07 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion165) trusty; urgency=medium
 
   * when asking for domain name, allow user to click Cancel to exit 

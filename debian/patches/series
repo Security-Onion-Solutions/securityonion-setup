@@ -162,3 +162,4 @@ Squert-is-now-is-varwwwsosquert
 fix-HOME-issue-when-sensor-tries-to-ssh-copy-id-to-server
 remove-snorby-from-sosetup.conf
 when-asking-for-domain-name,-allow-user-to-click-Cancel-to-exit
+Issue-822:-Setup:-remove-alphanumeric-password-requirement

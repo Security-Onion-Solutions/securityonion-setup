@@ -317,7 +317,7 @@ if [ $SERVER -eq 1 ]; then
 	while [ $SGUIL_CLIENT_PASSWORD_CONFIRMED = "no" ]; do
 		TEXT="What would you like to set your password to?\n\
 \n\
-Password must be at least 6 characters.  Please use alphanumeric characters only!\n\
+Password must be at least 6 characters.\n\
 \n\
 This password will be used for Sguil, Squert, and ELSA.\n\
 \n\
@@ -327,20 +327,13 @@ Once you've logged into these interfaces using this initial password, you can ch
 	        if [ "${#SGUIL_CLIENT_PASSWORD_1}" -lt "6" ]; then
 			zenity --error --text="Password must be at least 6 characters\!"
 		else
-			COMPRESSED="$(echo $SGUIL_CLIENT_PASSWORD_1 | sed -e 's/[^[:alnum:]]//g')"
-               		if [ "$COMPRESSED" != "$SGUIL_CLIENT_PASSWORD_1" ] ; then
-                       		zenity --error --text="Invalid password\! \r \
-\r \
-Please use alphanumeric characters only."
+			TEXT="Please confirm what you would like to set your password to."
+			SGUIL_CLIENT_PASSWORD_2=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
+			[ "x$SGUIL_CLIENT_PASSWORD_2" = "x" ] && exit
+			if [ "$SGUIL_CLIENT_PASSWORD_1" = "$SGUIL_CLIENT_PASSWORD_2" ]; then
+				SGUIL_CLIENT_PASSWORD_CONFIRMED="yes"
 			else
-				TEXT="Please confirm what you would like to set your password to."
-				SGUIL_CLIENT_PASSWORD_2=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
-				[ "x$SGUIL_CLIENT_PASSWORD_2" = "x" ] && exit
-				if [ "$SGUIL_CLIENT_PASSWORD_1" = "$SGUIL_CLIENT_PASSWORD_2" ]; then
-					SGUIL_CLIENT_PASSWORD_CONFIRMED="yes"
-				else
-				        zenity --error --text="Passwords didn't match\!"
-				fi
+			        zenity --error --text="Passwords didn't match\!"
 			fi
 		fi
 	done

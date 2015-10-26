@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion167) trusty; urgency=medium
+
+  * Apache is going to proxy to port 3154, so we won't connect directly to that port anymore 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 26 Oct 2015 11:52:54 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion166) trusty; urgency=medium
 
   * Issue 822: Setup: remove alphanumeric password requirement 

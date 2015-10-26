@@ -1435,6 +1435,12 @@ else
 	# Make sure that the Apache web server is enabled
 	update-rc.d -f apache2 enable >> $LOG 2>&1
 
+	# Enable new securityonion site
+	a2ensite securityonion >> $LOG 2>&1
+
+	# Disable old default-ssl site
+	a2dissite default-ssl >> $LOG 2>&1
+
 	# Determine IP address to be used below in Squert database
         IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
 

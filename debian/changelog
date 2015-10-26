@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion169) trusty; urgency=medium
+
+  * configure and start Apache 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 26 Oct 2015 13:04:20 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion168) trusty; urgency=medium
 
   * remove ufw delete 3154 from postinst, needs to be done in securityonion-elsa-extras postinst 

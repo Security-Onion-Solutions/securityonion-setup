@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion168) trusty; urgency=medium
+
+  * remove ufw delete 3154 from postinst, needs to be done in securityonion-elsa-extras postinst 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 26 Oct 2015 11:59:11 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion167) trusty; urgency=medium
 
   * Apache is going to proxy to port 3154, so we won't connect directly to that port anymore 

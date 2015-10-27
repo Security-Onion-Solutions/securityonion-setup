@@ -1,0 +1,82 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion171) trusty; urgency=medium
+ .
+   * if master/standalone, create desktop shortcuts
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1554,6 +1554,54 @@ echo "# Please wait while starting all S
+ sleep 10s
+ 
+ #########################################
++# Create icons
++#########################################
++if [ $SERVER -eq 1 ]; then
++
++	# Add launchers to /etc/skel/ for new users
++	DIR="/etc/skel/Desktop"
++	mkdir -p $DIR
++
++	# Create README launcher
++	README="$DIR/securityonion-readme.desktop"
++	cat << EOF > $README
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=README
++Comment=
++Exec=/etc/alternatives/x-www-browser https://localhost
++Icon=web-browser
++Path=
++Terminal=false
++StartupNotify=false
++EOF
++
++	# Use README launcher as template to create SQUERT launcher
++	SQUERT="$DIR/securityonion-squert.desktop"
++	cp $README $SQUERT
++	sed -i 's|https://localhost|https://localhost/squert|g' $SQUERT
++
++	# Use README launcher as template to create ELSA launcher (if enabled)
++	if [ "$ELSA" = "YES" ]; then
++		ELSA="$DIR/securityonion-elsa.desktop"
++		cp $README $ELSA
++		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA
++	fi
++
++	# Copy launchers from /etc/skel to existing users
++        for i in `ls /home/`; do
++		mkdir -p /home/$i/Desktop
++		cp /etc/skel/Desktop/securityonion-*.desktop /home/$i/Desktop/
++        done
++
++	# Make launchers executable
++	chmod +x /etc/skel/Desktop/*.desktop
++	chmod +x /home/*/Desktop/securityonion-*.desktop
++
++fi
++
++#########################################
+ # Configure ELSA
+ #########################################
+ if [ "$ELSA" = "YES" ]; then

@@ -1554,6 +1554,54 @@ echo "# Please wait while starting all Security Onion services..." | tee -a $LOG
 sleep 10s
 
 #########################################
+# Create icons
+#########################################
+if [ $SERVER -eq 1 ]; then
+
+	# Add launchers to /etc/skel/ for new users
+	DIR="/etc/skel/Desktop"
+	mkdir -p $DIR
+
+	# Create README launcher
+	README="$DIR/securityonion-readme.desktop"
+	cat << EOF > $README
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=README
+Comment=
+Exec=/etc/alternatives/x-www-browser https://localhost
+Icon=web-browser
+Path=
+Terminal=false
+StartupNotify=false
+EOF
+
+	# Use README launcher as template to create SQUERT launcher
+	SQUERT="$DIR/securityonion-squert.desktop"
+	cp $README $SQUERT
+	sed -i 's|https://localhost|https://localhost/squert|g' $SQUERT
+
+	# Use README launcher as template to create ELSA launcher (if enabled)
+	if [ "$ELSA" = "YES" ]; then
+		ELSA="$DIR/securityonion-elsa.desktop"
+		cp $README $ELSA
+		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA
+	fi
+
+	# Copy launchers from /etc/skel to existing users
+        for i in `ls /home/`; do
+		mkdir -p /home/$i/Desktop
+		cp /etc/skel/Desktop/securityonion-*.desktop /home/$i/Desktop/
+        done
+
+	# Make launchers executable
+	chmod +x /etc/skel/Desktop/*.desktop
+	chmod +x /home/*/Desktop/securityonion-*.desktop
+
+fi
+
+#########################################
 # Configure ELSA
 #########################################
 if [ "$ELSA" = "YES" ]; then

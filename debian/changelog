@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion171) trusty; urgency=medium
+
+  * if master/standalone, create desktop shortcuts 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 27 Oct 2015 12:44:56 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion170) trusty; urgency=medium
 
   * pivot from Squert to ELSA using a relative hyperlink now that Apache is proxying 

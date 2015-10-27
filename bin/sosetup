@@ -1591,7 +1591,11 @@ EOF
 		sed -i 's|Name=README|Name=ELSA|g' $SQUERT
 	fi
 
-	# Copy launchers from /etc/skel to existing users
+	# Copy Sguil launcher from /usr/share/applications/
+	SGUIL="$DIR/securityonion-sguil.desktop"
+	cp /usr/share/applications/securityonion-sguil.desktop $SGUIL
+
+	# Copy launchers from /etc/skel to existing user Desktop directories
         for i in `ls /home/`; do
 		mkdir -p /home/$i/Desktop
 		cp /etc/skel/Desktop/securityonion-*.desktop /home/$i/Desktop/

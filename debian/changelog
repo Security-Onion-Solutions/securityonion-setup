@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion174) trusty; urgency=medium
+
+  * fix label on ELSA launcher 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 27 Oct 2015 14:02:12 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion173) trusty; urgency=medium
 
   * copy Sguil launcher from /usr/share/applications/ 

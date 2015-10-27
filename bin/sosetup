@@ -1588,7 +1588,7 @@ EOF
 		ELSA="$DIR/securityonion-elsa.desktop"
 		cp $README $ELSA
 		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA
-		sed -i 's|Name=README|Name=ELSA|g' $SQUERT
+		sed -i 's|Name=README|Name=ELSA|g' $ELSA
 	fi
 
 	# Copy Sguil launcher from /usr/share/applications/

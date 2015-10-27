@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion175) trusty; urgency=medium
+
+  * create Setup launcher in postinst
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 27 Oct 2015 14:44:04 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion174) trusty; urgency=medium
 
   * fix label on ELSA launcher 

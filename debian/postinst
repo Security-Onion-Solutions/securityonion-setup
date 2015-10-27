@@ -6,10 +6,30 @@ case "$1" in
     configure)
 
 	# Make sure scripts are executable        
-	chmod +x /usr/bin/sosetup*        
+	chmod +x /usr/bin/sosetup* || echo "Error making sosetup scripts executable."
 
 	# Fix PulledPork config
 	/usr/bin/sosetup-fix-ppconf || echo "Error running /usr/bin/sosetup-fix-ppconf"
+
+	# Create desktop launcher
+	FILE="/usr/share/applications/securityonion-setup.desktop"
+	if [ -f $FILE ]; then
+
+		# Copy Setup launcher to existing user accounts
+	        for i in `ls /home/`; do
+			mkdir -p /home/$i/Desktop || echo "Error creating Desktop directory."
+			cp $FILE /home/$i/Desktop/ || echo "Error copying $FILE to Desktop directory."
+			chown $i:$i /home/$i/Desktop/securityonion-setup.desktop || echo "Error setting ownership of launcher."
+       		done
+
+		# Copy Setup launcher to /etc/skel/Desktop for new users
+		mkdir -p /etc/skel/Desktop || echo "Error creating /etc/skel/Desktop"
+		cp $FILE /etc/skel/Desktop/ || echo "Error copying $FILE to /etc/skel/Desktop"
+
+		# Make Setup launcher executable
+		chmod +x /etc/skel/Desktop/securityonion-setup.desktop || echo "Error making launcher executable"
+		chmod +x /home/*/Desktop/securityonion-setup.desktop || echo "Error making launchers executable"
+	fi
 
     ;;
 

@@ -1,0 +1,45 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion176) trusty; urgency=medium
+ .
+   * add new launchers to Security Onion menu
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1575,6 +1575,7 @@ Icon=web-browser
+ Path=
+ Terminal=false
+ StartupNotify=false
++Categories=SecurityOnion;
+ EOF
+ 
+ 	# Use README launcher as template to create SQUERT launcher
+@@ -1591,6 +1592,9 @@ EOF
+ 		sed -i 's|Name=README|Name=ELSA|g' $ELSA
+ 	fi
+ 
++	# Copy web launchers to /usr/share/applications
++	cp $DIR/securityonion-*.desktop /usr/share/applications/
++
+ 	# Copy Sguil launcher from /usr/share/applications/
+ 	SGUIL="$DIR/securityonion-sguil.desktop"
+ 	cp /usr/share/applications/securityonion-sguil.desktop $SGUIL

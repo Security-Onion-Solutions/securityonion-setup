@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion170) trusty; urgency=medium
+
+  * pivot from Squert to ELSA using a relative hyperlink now that Apache is proxying 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 27 Oct 2015 09:05:38 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion169) trusty; urgency=medium
 
   * configure and start Apache 

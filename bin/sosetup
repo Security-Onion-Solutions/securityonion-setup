@@ -1581,18 +1581,21 @@ EOF
 	SQUERT="$DIR/securityonion-squert.desktop"
 	cp $README $SQUERT
 	sed -i 's|https://localhost|https://localhost/squert|g' $SQUERT
+	sed -i 's|Name=README|Name=Squert|g' $SQUERT
 
 	# Use README launcher as template to create ELSA launcher (if enabled)
 	if [ "$ELSA" = "YES" ]; then
 		ELSA="$DIR/securityonion-elsa.desktop"
 		cp $README $ELSA
 		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA
+		sed -i 's|Name=README|Name=ELSA|g' $SQUERT
 	fi
 
 	# Copy launchers from /etc/skel to existing users
         for i in `ls /home/`; do
 		mkdir -p /home/$i/Desktop
 		cp /etc/skel/Desktop/securityonion-*.desktop /home/$i/Desktop/
+		chown $i:$i /home/$i/Desktop/securityonion-*.desktop
         done
 
 	# Make launchers executable

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion172) trusty; urgency=medium
+
+  * fix names and permissions of launchers 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 27 Oct 2015 13:23:49 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion171) trusty; urgency=medium
 
   * if master/standalone, create desktop shortcuts 

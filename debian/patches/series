@@ -167,3 +167,4 @@ Apache-is-going-to-proxy-to-port-3154,-so-we-won't-connect-directly-to-that-port
 configure-and-start-Apache
 pivot-from-Squert-to-ELSA-using-a-relative-hyperlink-now-that-Apache-is-proxying
 if-masterstandalone,-create-desktop-shortcuts
+fix-names-and-permissions-of-launchers

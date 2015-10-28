@@ -171,3 +171,4 @@ fix-names-and-permissions-of-launchers
 copy-Sguil-launcher-from-usrshareapplications
 fix-label-on-ELSA-launcher
 add-new-launchers-to-Security-Onion-menu
+use-ELSA_LAUNCHER-variable-name-to-avoid-namespace-collision-with-existing-ELSA-variable

@@ -1563,8 +1563,8 @@ if [ $SERVER -eq 1 ]; then
 	mkdir -p $DIR
 
 	# Create README launcher
-	README="$DIR/securityonion-readme.desktop"
-	cat << EOF > $README
+	README_LAUNCHER="$DIR/securityonion-readme.desktop"
+	cat << EOF > $README_LAUNCHER
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -1579,17 +1579,17 @@ Categories=SecurityOnion;
 EOF
 
 	# Use README launcher as template to create SQUERT launcher
-	SQUERT="$DIR/securityonion-squert.desktop"
-	cp $README $SQUERT
-	sed -i 's|https://localhost|https://localhost/squert|g' $SQUERT
-	sed -i 's|Name=README|Name=Squert|g' $SQUERT
+	SQUERT_LAUNCHER="$DIR/securityonion-squert.desktop"
+	cp $README_LAUNCHER $SQUERT_LAUNCHER
+	sed -i 's|https://localhost|https://localhost/squert|g' $SQUERT_LAUNCHER
+	sed -i 's|Name=README|Name=Squert|g' $SQUERT_LAUNCHER
 
 	# Use README launcher as template to create ELSA launcher (if enabled)
 	if [ "$ELSA" = "YES" ]; then
-		ELSA="$DIR/securityonion-elsa.desktop"
-		cp $README $ELSA
-		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA
-		sed -i 's|Name=README|Name=ELSA|g' $ELSA
+		ELSA_LAUNCHER="$DIR/securityonion-elsa.desktop"
+		cp $README_LAUNCHER $ELSA_LAUNCHER
+		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA_LAUNCHER
+		sed -i 's|Name=README|Name=ELSA|g' $ELSA_LAUNCHER
 	fi
 
 	# Copy web launchers to /usr/share/applications

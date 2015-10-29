@@ -19,4 +19,7 @@ if [ -f $FILE ]; then
 			fi
 		fi
 	fi
+	
+	# 2015-10-29 The URL has changed
+	sed -i 's\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\g' $FILE
 fi

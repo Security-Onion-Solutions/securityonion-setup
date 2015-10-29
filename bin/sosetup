@@ -1399,6 +1399,9 @@ if [ "$SERVERNAME" = "localhost" ]; then
 		;;
 	esac
 
+	# 2015-10-29 The Snort Community URL has changed
+	sed -i 's\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\g' $PP_CONF >> $LOG 2>&1
+
 	if [ "$INTERNET" = "UP" ]; then
 		echo "45"
 		echo "# Please wait while executing PulledPork to download rules..." | tee -a $LOG

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion178) trusty; urgency=medium
+
+  * Snort Community Ruleset has moved #831 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 29 Oct 2015 13:55:39 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion177) trusty; urgency=medium
 
   * use ELSA_LAUNCHER variable name to avoid namespace collision with existing ELSA variable 

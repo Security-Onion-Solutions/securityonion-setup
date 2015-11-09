@@ -1455,7 +1455,7 @@ else
 	[ "$ELSA" = "YES" ] && mysql -uroot -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
 
 	# Restart web server
-	service apache2 restart >> $LOG 2>&1
+	apache2ctl restart >> $LOG 2>&1
 fi
 
 #########################################
@@ -1657,7 +1657,7 @@ if [ "$ELSA" = "YES" ]; then
     if [ $SERVER -eq 1 ]; then
         /usr/bin/securityonion-elsa-config.sh -t WEB >> $LOG 2>&1
 	# restart apache to update ELSA APIKEY
-	service apache2 restart >> $LOG 2>&1
+	apache2ctl restart >> $LOG 2>&1
     else
         /usr/bin/securityonion-elsa-config.sh -t LOG >> $LOG 2>&1
         # Update the securityonion group

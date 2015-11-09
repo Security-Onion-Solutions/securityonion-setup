@@ -26,18 +26,22 @@ case "$1" in
 		mkdir -p /etc/skel/Desktop || echo "Error creating /etc/skel/Desktop"
 		cp $FILE /etc/skel/Desktop/ || echo "Error copying $FILE to /etc/skel/Desktop"
 
-		# Make Setup launcher executable
-		chmod +x /etc/skel/Desktop/elsa.desktop || echo "No ELSA launcher found in /etc/skel/Desktop/."
-		chmod +x /etc/skel/Desktop/securityonion*.desktop || echo "No securityonion launchers found in /etc/skel/Desktop/."
-		chmod +x /etc/skel/Desktop/squert.desktop || echo "No Squert launcher found in /etc/skel/Desktop/."
-		chmod +x /home/*/Desktop/elsa.desktop || echo "No ELSA launchers found in user Desktop directories."
-		chmod +x /home/*/Desktop/securityonion*.desktop || echo "No securityonion launchers found in user Desktop directories."
-		chmod +x /home/*/Desktop/squert.desktop || echo "No Squert launchers found in user Desktop directories."
+		# Make existing launchers executable
+		echo -n "Checking for existing Desktop launchers..."
+		chmod +x /etc/skel/Desktop/elsa.desktop >/dev/null 2>&1 || echo -n "."
+		chmod +x /etc/skel/Desktop/securityonion*.desktop >/dev/null 2>&1 || echo -n "."
+		chmod +x /etc/skel/Desktop/squert.desktop >/dev/null 2>&1 || echo -n "."
+		chmod +x /home/*/Desktop/elsa.desktop >/dev/null 2>&1 || echo -n "."
+		chmod +x /home/*/Desktop/securityonion*.desktop >/dev/null 2>&1 || echo -n "."
+		chmod +x /home/*/Desktop/squert.desktop >/dev/null 2>&1 || echo -n "."
+		echo
 	fi
 
 	# Remove old launchers
-	rm -f /etc/skel/Desktop/snorby.desktop || echo "No Snorby launcher found in /etc/skel/Desktop/."
-	rm -f /home/*/Desktop/snorby.desktop || echo "No Snorby launchers found in user Desktop directories."
+	echo -n "Checking for old Snorby launchers..."
+	rm -f /etc/skel/Desktop/snorby.desktop || echo -n "."
+	rm -f /home/*/Desktop/snorby.desktop || echo -n "."
+	echo
 
     ;;
 

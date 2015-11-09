@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion180) trusty; urgency=medium
+
+  * clean up postinst output 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 09 Nov 2015 15:24:04 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion179) trusty; urgency=medium
 
   * remove old launchers and make the rest executable 

@@ -35,6 +35,7 @@ case "$1" in
 		chmod +x /etc/skel/Desktop/squert.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /home/*/Desktop/chromium-browser.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /home/*/Desktop/elsa.desktop >/dev/null 2>&1 || echo -n "."
+		chmod +x /home/*/Desktop/exo-terminal-emulator.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /home/*/Desktop/securityonion*.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /home/*/Desktop/squert.desktop >/dev/null 2>&1 || echo -n "."
 		echo

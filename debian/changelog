@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion184) trusty; urgency=medium
+
+  * streamline Setup with new defaults and add new Custom option 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 28 Nov 2015 19:07:54 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion183) trusty; urgency=medium
 
   * fix exo-terminal launcher 

@@ -174,3 +174,4 @@ add-new-launchers-to-Security-Onion-menu
 use-ELSA_LAUNCHER-variable-name-to-avoid-namespace-collision-with-existing-ELSA-variable
 Snort-Community-Ruleset-has-moved-#831
 replace-"service-apache2-restart"-with-"apache2ctl-restart"
+streamline-Setup-with-new-defaults-and-add-new-Custom-option

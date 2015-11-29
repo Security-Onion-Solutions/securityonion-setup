@@ -78,18 +78,18 @@ BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
 BRO_ENABLED="yes"
 OSSEC_AGENT_ENABLED="yes"
 OSSEC_AGENT_LEVEL=5
-XPLICO_ENABLED="yes"
+XPLICO_ENABLED="no"
 # /etc/nsm/HOSTNAME-INTERFACE/sensor.conf services enabled by default
 PCAP_ENABLED="yes"
 PCAP_AGENT_ENABLED="yes"
 SNORT_AGENT_ENABLED="yes"
 IDS_ENGINE_ENABLED="yes"
 BARNYARD2_ENABLED="yes"
-PRADS_ENABLED="yes"
-SANCP_AGENT_ENABLED="yes"
-PADS_AGENT_ENABLED="yes"
-ARGUS_ENABLED="yes"
-HTTP_AGENT_ENABLED="yes"
+PRADS_ENABLED="no"
+SANCP_AGENT_ENABLED="no"
+PADS_AGENT_ENABLED="no"
+ARGUS_ENABLED="no"
+HTTP_AGENT_ENABLED="no"
 # Salt is disabled by default
 SALT="no"
 # Number of days to keep in Sguil database
@@ -108,6 +108,10 @@ KEY="$SSH_DIR/securityonion"
 SOSETUPSCP=`mktemp`
 # SECURITYONION_CONF_MASTER is the securityonion.conf from the master server
 SECURITYONION_CONF_MASTER=`mktemp`
+# ELSA is now enabled by default
+ELSA="YES"
+# CUSTOM gives access to all options
+CUSTOM=0
 
 #########################################
 # Debug
@@ -154,44 +158,29 @@ ANSWER="$?"
 #########################################
 # Quick Setup or Advanced Setup
 #########################################
-TEXT="Would you like to use Quick Setup or Advanced Setup?\n\
+TEXT="Evaluation Mode or Production Mode?\n\
 \n\
-Quick Setup is recommended for first-time users or standalone VMs:\n\
+Evaluation Mode is recommended for first-time users or standalone VMs:\n\
 - ideal for quickly evaluating Security Onion\n\
 - will automatically configure most details of your system\n\
 - configures Snort and Bro to monitor one network interface\n\
+- NOT intended for a production sensor\n\
 \n\
-Advanced Setup is recommended for production deployments\n\
+Production Mode is recommended for production deployments\n\
 as it gives you more control over the details of your system\n\
 and allows you to build a distributed sensor network.  You choose:\n\
 - Sguil server, Sguil sensor, or both\n\
 - which IDS engine to use (Snort or Suricata)\n\
 - which IDS ruleset(s) to use (Emerging Threats, Snort VRT, or both)\n\
-- which network interface(s) should be monitored by the IDS Engine and Bro\n\
-- how many processes to run for Snort/Suricata/Bro\n\
-- which sensor processes to enable/disable"
-YES="Quick Setup"
-NO="Advanced Setup"
+- how many processes to run for Snort/Suricata/Bro"
 SETUP=""
 SETUP=`zenity --list --radiolist \
         --column "1" --column "2" --hide-header --title="$TITLE" \
-        TRUE "Quick Setup" FALSE "Advanced Setup" --text="$TEXT"`
+        TRUE "Evaluation Mode" FALSE "Production Mode" --text="$TEXT"`
 [ "$SETUP" == "" ] && exit
-[ "$SETUP" == "Quick Setup" ] && ADVANCED_SETUP="0" || ADVANCED_SETUP="1"
-#zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-#ADVANCED_SETUP="$?"
+[ "$SETUP" == "Production Mode" ] && ADVANCED_SETUP="1" || ADVANCED_SETUP="0"
 if [ $ADVANCED_SETUP -eq 0 ]; then
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Performing Quick Setup."
-
-#	if [ $NUM_INTERFACES -gt 1 ]; then
-#	        TEXT="Which network interface should be monitored?"
-#	        INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort |zenity --list --column="Interface" --hide-header --title="$TITLE" --text="$TEXT" 2>/dev/null`
-#	        if [ "$INTERFACES" = "" ]
-#	        then
-#	                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-#        	        exit
-#	        fi
-#	fi
 
         if [ $NUM_INTERFACES -gt 1 ]; then
                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
@@ -287,6 +276,19 @@ firewall rules."
                 exit
                 ;;
         esac
+
+	TEXT="Best Practices or Custom?\n\
+\n\
+If you'd like to use the Best Practices defaults, please select Best Practices.\n\
+\n\
+If you'd like to see all options, choose Custom."
+	CUSTOM=""
+	CUSTOM=`zenity --list --radiolist \
+        --column "1" --column "2" --hide-header --title="$TITLE" \
+        TRUE "Best Practices" FALSE "Custom" --text="$TEXT"`
+	[ "$CUSTOM" == "" ] && exit
+	[ "$CUSTOM" == "Custom" ] && CUSTOM="1" || CUSTOM="0"
+
 fi
 
 #########################################
@@ -346,6 +348,7 @@ fi
 #########################################
 if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 
+	if [ $CUSTOM -eq 1 ]; then
 	# Ask for DAYSTOKEEP        
 	DAYSTOKEEP_CONFIRMED="no"
 	while [ $DAYSTOKEEP_CONFIRMED = "no" ]; do
@@ -371,6 +374,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 			DAYSTOREPAIR_CONFIRMED="yes"
 		fi
 	done
+	fi
 
 	# Ask which IDS engine to use.
 	TEXT="Which IDS Engine would you like to use?"
@@ -475,6 +479,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
 	LIST=`seq 1 $CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
 
+	if [ $CUSTOM -eq 1 ]; then
 	# IDS Engine
 	TEXT="The IDS Engine (Snort/Suricata) listens on the interfaces\n\
 specified on the previous screen and logs IDS alerts.\n\
@@ -492,6 +497,7 @@ Would you like to enable the IDS Engine?"
 	else
         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
 	fi
+	fi
 
 	# IDS Engine Procs
 	if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ]; then
@@ -508,6 +514,7 @@ If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNA
 		IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
 	fi
 
+	if [ $CUSTOM -eq 1 ]; then
 	# Bro
 	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\
 \n\
@@ -539,6 +546,7 @@ Would you like to enable Bro?"
 			EXTRACT_FILES="yes"
 		fi
 	fi
+	fi
 
 	# BRO_LB_PROCS
 	if [ "$BRO_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ]; then
@@ -556,6 +564,7 @@ If you need to change this setting later, you can change the lb_procs variable i
 		BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Bro processes per interface.\n"
 	fi
 
+	if [ $CUSTOM -eq 1 ]; then
 	# http_agent
 	if [ "$BRO_ENABLED" == "yes" ]; then
 		TEXT="http_agent sends Bro's http.log to the Sguil database.\n\
@@ -695,15 +704,17 @@ Would you like to enable mmap I/O?"
 		zenity --error --text "Invalid percentage! Please use integers between 0 and 100." 
 	done
 	let WARN_DISK_USAGE=${CRIT_DISK_USAGE}-10
+	fi # End of CUSTOM
 
-	# End of ADVANCED SETUP - SENSOR
-fi 
+fi # End of ADVANCED SETUP - SENSOR
 
 #########################################
 # Ask whether or not to use SALT
 #########################################
 # Check to see if the securityonion-onionsalt package is installed
 if [ $ADVANCED_SETUP -eq 1 ] && dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
+	SALT="yes"
+	if [ $CUSTOM -eq 1 ]; then
 TEXT="Salt can be enabled to help manage your entire sensor deployment.\n\
 \n\
 By default, Salt will automatically keep the following updated:\n\
@@ -715,16 +726,17 @@ Salt can also be used for remote execution, so you can run a command\n\
 and have it execute on all sensors across your deployment.\n\
 \n\
 Would you like to enable Salt?"
-	YES="Yes, enable Salt!"
-	NO="No, disable Salt"
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-	ANSWER="$?"
-	if [ $ANSWER -eq 0 ]; then
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Enable ELSA."
-        	SALT="yes"
-	else
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Disable ELSA."
-        	SALT="no"
+		YES="Yes, enable Salt!"
+		NO="No, disable Salt"
+		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+		ANSWER="$?"
+		if [ $ANSWER -eq 0 ]; then
+	        	[ $DEBUG -eq 1 ] && echo "DEBUG: Enable Salt."
+        		SALT="yes"
+		else
+        		[ $DEBUG -eq 1 ] && echo "DEBUG: Disable Salt."
+        		SALT="no"
+		fi
 	fi
 fi
 
@@ -733,6 +745,7 @@ fi
 #########################################
 # Ask whether or not to use ELSA
 #########################################
+if [ $CUSTOM -eq 1 ]; then
 TEXT="ELSA (Enterprise Log Search and Archive) is a centralized syslog framework\n\
 built on Syslog-NG, MySQL, and Sphinx full-text search.\n\
 \n\
@@ -748,42 +761,43 @@ you'll want to enable/disable ELSA on all boxes.  So if you want\n\
 to use ELSA, you should enable it on the master server and all sensors.\n\
 \n\
 Would you like to enable ELSA?"
-YES="Yes, enable ELSA!"
-NO="No, disable ELSA."
-zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-ANSWER="$?"
-if [ $ANSWER -eq 0 ]; then
-	[ $DEBUG -eq 1 ] && echo "DEBUG: Enable ELSA."
-	ELSA="YES"
-else
-	[ $DEBUG -eq 1 ] && echo "DEBUG: Disable ELSA."
-	ELSA="NO"
-fi
+	YES="Yes, enable ELSA!"
+	NO="No, disable ELSA."
+	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	ANSWER="$?"
+	if [ $ANSWER -eq 0 ]; then
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Enable ELSA."
+		ELSA="YES"
+	else
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Disable ELSA."
+		ELSA="NO"
+	fi
 
-# If user chose to enable ELSA, ask about log_size_limit
-if [ "$ELSA" = "YES" ]; then
-	# Create /nsm if it doesn't already exist
-	mkdir -p /nsm
-	# Calculate half of available disk space
-	DISK_SIZE_K=`df /nsm |grep -v "^Filesystem" | awk '{print $2}'`
-	let DISK_SIZE=DISK_SIZE_K*1000
-	let LOG_SIZE_LIMIT=DISK_SIZE/2
-	let LOG_SIZE_LIMIT_GB=LOG_SIZE_LIMIT/1000000000
-	let DISK_SIZE_GB=DISK_SIZE/1000000000
-	# If Advanced Setup, ask user
-	if [ $ADVANCED_SETUP -eq 1 ]; then
-		LOG_SIZE_LIMIT_CONFIRMED="no"
-		while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
-			LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="How much disk space (in GigaBytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is half your disk size.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=$LOG_SIZE_LIMIT_GB`
-			[ x$LOG_SIZE_LIMIT_GB = "x" ] && exit
-			COMPRESSED="$(echo $LOG_SIZE_LIMIT_GB | sed -e 's/[^[:digit:]]//g')"
-			[ "$COMPRESSED" == "$LOG_SIZE_LIMIT_GB" ] && 
-			[ $LOG_SIZE_LIMIT_GB -gt 0 ] && 
-			[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB ] && 
-			LOG_SIZE_LIMIT_CONFIRMED="yes" || 
-			zenity --error --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size." 
-		done
-		let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000
+	# If user chose to enable ELSA, ask about log_size_limit
+	if [ "$ELSA" = "YES" ]; then
+		# Create /nsm if it doesn't already exist
+		mkdir -p /nsm
+		# Calculate half of available disk space
+		DISK_SIZE_K=`df /nsm |grep -v "^Filesystem" | awk '{print $2}'`
+		let DISK_SIZE=DISK_SIZE_K*1000
+		let LOG_SIZE_LIMIT=DISK_SIZE/2
+		let LOG_SIZE_LIMIT_GB=LOG_SIZE_LIMIT/1000000000
+		let DISK_SIZE_GB=DISK_SIZE/1000000000
+		# If Advanced Setup, ask user
+		if [ $ADVANCED_SETUP -eq 1 ]; then
+			LOG_SIZE_LIMIT_CONFIRMED="no"
+			while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
+				LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="How much disk space (in GigaBytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is half your disk size.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=$LOG_SIZE_LIMIT_GB`
+				[ x$LOG_SIZE_LIMIT_GB = "x" ] && exit
+				COMPRESSED="$(echo $LOG_SIZE_LIMIT_GB | sed -e 's/[^[:digit:]]//g')"
+				[ "$COMPRESSED" == "$LOG_SIZE_LIMIT_GB" ] && 
+				[ $LOG_SIZE_LIMIT_GB -gt 0 ] && 
+				[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB ] && 
+				LOG_SIZE_LIMIT_CONFIRMED="yes" || 
+				zenity --error --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size." 
+			done
+			let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000
+		fi
 	fi
 fi
 

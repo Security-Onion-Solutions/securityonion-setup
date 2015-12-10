@@ -108,10 +108,19 @@ KEY="$SSH_DIR/securityonion"
 SOSETUPSCP=`mktemp`
 # SECURITYONION_CONF_MASTER is the securityonion.conf from the master server
 SECURITYONION_CONF_MASTER=`mktemp`
-# ELSA is now enabled by default
-ELSA="YES"
 # CUSTOM gives access to all options
 CUSTOM=0
+# ELSA is now enabled by default
+ELSA="YES"
+# Create /nsm if it doesn't already exist
+mkdir -p /nsm
+# Calculate half of available disk space for ELSA log_size_limit
+DISK_SIZE_K=`df /nsm |grep -v "^Filesystem" | awk '{print $2}'`
+let DISK_SIZE=DISK_SIZE_K*1000
+let LOG_SIZE_LIMIT=DISK_SIZE/2
+let LOG_SIZE_LIMIT_GB=LOG_SIZE_LIMIT/1000000000
+let DISK_SIZE_GB=DISK_SIZE/1000000000
+let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000
 
 #########################################
 # Debug
@@ -776,14 +785,6 @@ Would you like to enable ELSA?"
 
 	# If user chose to enable ELSA, ask about log_size_limit
 	if [ "$ELSA" = "YES" ]; then
-		# Create /nsm if it doesn't already exist
-		mkdir -p /nsm
-		# Calculate half of available disk space
-		DISK_SIZE_K=`df /nsm |grep -v "^Filesystem" | awk '{print $2}'`
-		let DISK_SIZE=DISK_SIZE_K*1000
-		let LOG_SIZE_LIMIT=DISK_SIZE/2
-		let LOG_SIZE_LIMIT_GB=LOG_SIZE_LIMIT/1000000000
-		let DISK_SIZE_GB=DISK_SIZE/1000000000
 		# If Advanced Setup, ask user
 		if [ $ADVANCED_SETUP -eq 1 ]; then
 			LOG_SIZE_LIMIT_CONFIRMED="no"

@@ -176,3 +176,4 @@ Snort-Community-Ruleset-has-moved-#831
 replace-"service-apache2-restart"-with-"apache2ctl-restart"
 streamline-Setup-with-new-defaults-and-add-new-Custom-option
 create-Xplico-launcher-in-Evaluation-Mode
+fix-ELSA-log_size_limit-issue

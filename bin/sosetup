@@ -180,7 +180,7 @@ SETUP=`zenity --list --radiolist \
 [ "$SETUP" == "" ] && exit
 [ "$SETUP" == "Production Mode" ] && ADVANCED_SETUP="1" || ADVANCED_SETUP="0"
 if [ $ADVANCED_SETUP -eq 0 ]; then
-	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Performing Quick Setup."
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes for Evaluation Mode."
 
         if [ $NUM_INTERFACES -gt 1 ]; then
                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
@@ -208,6 +208,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
 	SERVER=1
 	SENSOR=1
         ELSA="YES"
+	XPLICO_ENABLED="yes"
 	SERVERNAME="localhost"
 	SENSOR_CONFIRM_1="- Configure Snort and Bro to monitor the following interface:\n"
 	SENSOR_CONFIRM_2="$INTERFACES\n"
@@ -1607,6 +1608,14 @@ EOF
 		cp $README_LAUNCHER $ELSA_LAUNCHER
 		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA_LAUNCHER
 		sed -i 's|Name=README|Name=ELSA|g' $ELSA_LAUNCHER
+	fi
+
+	# Use README launcher as template to create Xplico launcher (if enabled)
+	if [ "$XPLICO_ENABLED" = "yes" ]; then
+		XPLICO_LAUNCHER="$DIR/securityonion-xplico.desktop"
+		cp $README_LAUNCHER $XPLICO_LAUNCHER
+		sed -i 's|https://localhost|http://localhost:9876|g' $XPLICO_LAUNCHER
+		sed -i 's|Name=README|Name=Xplico|g' $XPLICO_LAUNCHER
 	fi
 
 	# Copy web launchers to /usr/share/applications

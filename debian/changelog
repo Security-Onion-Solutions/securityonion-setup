@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion185) trusty; urgency=medium
+
+  * create Xplico launcher in Evaluation Mode 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 10 Dec 2015 16:26:16 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion184) trusty; urgency=medium
 
   * streamline Setup with new defaults and add new Custom option 

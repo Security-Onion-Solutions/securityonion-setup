@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion188) trusty; urgency=medium
+
+  * adding p#p# interfaces to align with biosdevname naming convention 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 12 Dec 2015 08:32:23 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion187) trusty; urgency=medium
 
   * adding p2p# interfaces 

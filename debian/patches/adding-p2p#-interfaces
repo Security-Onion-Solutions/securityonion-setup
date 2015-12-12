@@ -1,0 +1,54 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion187) trusty; urgency=medium
+ .
+   * adding p2p# interfaces
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -40,7 +40,7 @@ VRT_URL="www.snort.org"
+ SGUIL_SERVER_NAME="securityonion"
+ IDS_ENGINE="snort"
+ IDS_RULESET="ETGPL"
+-INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
++INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p2p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
+ ALL_INTERFACES="$INTERFACES"
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
+ SENSORTAB="/etc/nsm/sensortab"
+@@ -193,7 +193,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
+ 
+         if [ $NUM_INTERFACES -gt 1 ]; then
+                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
+-                INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
++                INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p2p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
+                 if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+                         CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
+                         INPUT=`for i in $INTERFACES; do 
+@@ -463,7 +463,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSO
+ 	# Ask which interface(s) to listen on
+         if [ $NUM_INTERFACES -gt 1 ]; then
+ 		TEXT="Which network interface(s) should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your monitor interfaces are already selected."
+-		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
++		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p2p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
+ 		if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+ 			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`
+ 			INPUT=`for i in $INTERFACES; do 

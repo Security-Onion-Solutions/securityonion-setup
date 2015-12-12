@@ -40,7 +40,7 @@ VRT_URL="www.snort.org"
 SGUIL_SERVER_NAME="securityonion"
 IDS_ENGINE="snort"
 IDS_RULESET="ETGPL"
-INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p2p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
+INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
 ALL_INTERFACES="$INTERFACES"
 NUM_INTERFACES=`echo $INTERFACES | wc -w`
 SENSORTAB="/etc/nsm/sensortab"
@@ -193,7 +193,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
 
         if [ $NUM_INTERFACES -gt 1 ]; then
                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
-                INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p2p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
+                INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
                 if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
                         CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
                         INPUT=`for i in $INTERFACES; do 
@@ -463,7 +463,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 	# Ask which interface(s) to listen on
         if [ $NUM_INTERFACES -gt 1 ]; then
 		TEXT="Which network interface(s) should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your monitor interfaces are already selected."
-		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p2p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
+		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
 		if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
 			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`
 			INPUT=`for i in $INTERFACES; do 

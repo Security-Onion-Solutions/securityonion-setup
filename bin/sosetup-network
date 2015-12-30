@@ -279,6 +279,7 @@ fi
 # Make changes
 #########################################
 function CONFIGURE_NETWORK() {
+
 # Create the log directory
 mkdir -p $LOGDIR
 
@@ -353,8 +354,19 @@ iface $INTERFACE inet manual
   post-up echo 1 > /proc/sys/net/ipv6/conf/\$IFACE/disable_ipv6
 
 EOF
+
 done
+
 } 
+
+function SET_UTC() {
+
+echo "Etc/UTC" > /etc/timezone
+dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
+cp /etc/localtime /var/ossec/etc/localtime
+chown root:ossec /var/ossec/etc/localtime
+
+}
 
 # End of functions
 
@@ -396,6 +408,8 @@ OUTPUT="gui"
 [ -f "$ANSWERFILE" ] || ASK_FOR_NETWORK_CONFIG
 
 CONFIGURE_NETWORK
+
+SET_UTC
 
 #########################################
 # Reboot dialog box

@@ -179,3 +179,4 @@ create-Xplico-launcher-in-Evaluation-Mode
 fix-ELSA-log_size_limit-issue
 adding-p2p#-interfaces
 adding-p#p#-interfaces-to-align-with-biosdevname-naming-convention
+update-check-for-network-manager

@@ -282,10 +282,9 @@ function CONFIGURE_NETWORK() {
 # Create the log directory
 mkdir -p $LOGDIR
 
-# If Network Manager exists, disable it
-if [ -e "/etc/init.d/network-manager" ]; then
-  #/etc/init.d/network-manager stop >> $LOG 2>&1
-  [ -f /etc/init/network-manager.conf ] && echo "manual" > /etc/init/network-manager.override
+# Disable network-manager
+if [ -f /etc/init/network-manager.conf ]; then
+	echo "manual" > /etc/init/network-manager.override
 fi
 
 # Remastersys deletes /etc/resolv.conf by default

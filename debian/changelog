@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion191) trusty; urgency=medium
+
+  * Setup: sosetup-network needs same interface regex as sosetup #844 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 21 Jan 2016 12:54:29 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion190) trusty; urgency=medium
 
   * set UTC before reboot 

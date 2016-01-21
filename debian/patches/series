@@ -181,3 +181,4 @@ adding-p2p#-interfaces
 adding-p#p#-interfaces-to-align-with-biosdevname-naming-convention
 update-check-for-network-manager
 set-UTC-before-reboot
+Setup:-sosetup-network-needs-same-interface-regex-as-sosetup-#844

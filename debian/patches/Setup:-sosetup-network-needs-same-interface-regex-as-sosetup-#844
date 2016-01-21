@@ -1,0 +1,54 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion191) trusty; urgency=medium
+ .
+   * Setup: sosetup-network needs same interface regex as sosetup #844
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -73,7 +73,7 @@ fi
+ # Choose management interface
+ #########################################
+ # Get a list of all possible interfaces
+-MGMT_INTERFACE=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | 
++MGMT_INTERFACE=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | 
+ 	awk '{print $1}' | cut -d\: -f1 | sort `
+ # If there's only one interface, then MGMT_INTERFACE will have the right one
+ # Otherwise, let the user select
+@@ -90,7 +90,7 @@ elif [ $NUM_MGMT_INTERFACES -eq 1 ]; the
+     zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+ elif [ $NUM_MGMT_INTERFACES -gt 1 ]; then
+ 	TEXT='Which network interface should be the management interface?'
+-	INPUT=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort | while read INT; do echo -n "FALSE $INT "; done`
++	INPUT=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort | while read INT; do echo -n "FALSE $INT "; done`
+ 	MGMT_INTERFACE=`zenity --list --radiolist --column "1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" $INPUT 2>/dev/null`
+ 	if [ "$MGMT_INTERFACE" = "" ]; then
+ 		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+@@ -209,7 +209,7 @@ fi
+ # Sniffing interfaces
+ #########################################
+ # Get potential monitor interfaces (i.e., additional interfaces other than previously configured management interface)
+-MON_INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em)[0-9]+" | 
++MON_INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | 
+     awk '{print $1}' | cut -d\: -f1 | sort |sed "s|$MGMT_INTERFACE||g"`
+ 
+ NUM_MON_INTERFACES=0

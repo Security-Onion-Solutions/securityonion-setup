@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion192) trusty; urgency=medium
+
+  * Setup: Production Mode - Custom - not enabling some services properly #845 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 23 Jan 2016 12:07:57 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion191) trusty; urgency=medium
 
   * Setup: sosetup-network needs same interface regex as sosetup #844 

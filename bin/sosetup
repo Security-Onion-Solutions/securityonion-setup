@@ -592,6 +592,7 @@ Would you like to enable http_agent?"
 			HTTP_AGENT_ENABLED="no"
 		else
 			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+			HTTP_AGENT_ENABLED="yes"
 		fi
 	fi
 
@@ -611,6 +612,7 @@ Would you like to enable Argus?"
 		ARGUS_ENABLED="no"
 	else
         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+		ARGUS_ENABLED="yes"
 	fi
 
 	# Prads
@@ -632,6 +634,9 @@ Would you like to enable Prads?"
 		SANCP_AGENT_ENABLED="no"
 	else
         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+		PRADS_ENABLED="yes"
+		PADS_AGENT_ENABLED="yes"
+		SANCP_AGENT_ENABLED="yes"
 	fi
 
 	# PCAP

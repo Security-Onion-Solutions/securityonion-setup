@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion193) trusty; urgency=medium
+
+  * Setup: X11 error when running via ssh -X #846 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 26 Jan 2016 17:10:58 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion192) trusty; urgency=medium
 
   * Setup: Production Mode - Custom - not enabling some services properly #845 

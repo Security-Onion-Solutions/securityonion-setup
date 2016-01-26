@@ -183,3 +183,4 @@ update-check-for-network-manager
 set-UTC-before-reboot
 Setup:-sosetup-network-needs-same-interface-regex-as-sosetup-#844
 Setup:-Production-Mode---Custom---not-enabling-some-services-properly-#845
+Setup:-X11-error-when-running-via-ssh--X-#846

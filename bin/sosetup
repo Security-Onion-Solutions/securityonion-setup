@@ -244,6 +244,8 @@ Otherwise, choose Standalone to configure both Server and Sensor components on t
 		SERVER=1
 		SENSOR=0
 		SERVERNAME="localhost"
+		IDS_LB_PROCS_CONFIRM=""
+		BRO_LB_PROCS_CONFIRM=""
 		;;
 	Sensor)
                 [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Sensor."

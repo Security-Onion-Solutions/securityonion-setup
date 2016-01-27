@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion194) trusty; urgency=medium
+
+  * Setup: master-only shouldn't show Snort/Bro in final confirmation screen #848 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 27 Jan 2016 13:54:59 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion193) trusty; urgency=medium
 
   * Setup: X11 error when running via ssh -X #846 

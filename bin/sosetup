@@ -1034,16 +1034,18 @@ echo "# Please wait while creating the Sguil server..." | tee -a $LOG
 #mysql -N -B --user=root -e "GRANT DELETE on securityonion_db.history to 'readonly'@'localhost';" >> $LOG 2>&1
 #mysql -N -B --user=root -e "GRANT UPDATE on securityonion_db.user_info TO 'readonly'@'localhost';" >> $LOG 2>&1
 
-echo "15"
-echo "# Please wait while configuring firewall..." | tee -a $LOG
+#echo "15"
+#echo "# Please wait while configuring firewall..." | tee -a $LOG
 # No longer opening 443 and 7734 by default
 # This is now done by so-allow
 # Open port 443 for https web interface
 #ufw allow 443/tcp >> $LOG 2>&1
 # Open port 7734 for Sguil clients
 #ufw allow 7734/tcp >> $LOG 2>&1
+# No longer opening port 7736 by default
+# This is now done when the sensor runs Setup
 # Open port 7736 for Sguil sensors
-ufw allow 7736/tcp >> $LOG 2>&1
+#ufw allow 7736/tcp >> $LOG 2>&1
 
 fi
 
@@ -1525,7 +1527,9 @@ if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 			[ -f /etc/init/salt-master.override ] && rm -f /etc/init/salt-master.override
 			# Start salt-master
 			service salt-master restart >> $LOG 2>&1
-			ufw allow salt >> $LOG 2>&1
+			# We no longer open the salt port by default
+			# This is now done when the sensor runs Setup
+			#ufw allow salt >> $LOG 2>&1
 		else
 			# If this box is not a Master we need to disable salt-master
 			# Stop salt-master
@@ -1706,6 +1710,9 @@ function SERVER_QUEUE() {
 # Send all queued commands to server
 #########################################
 if [ "$SERVERNAME" != "localhost" ]; then
+	# Server needs to open some ports to allow connections from sensor
+	echo "IPADDRESS=\`who am i | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
+	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
 	# Copy the script over
 	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
 	# Run the script on the master server using sudo

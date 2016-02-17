@@ -37,8 +37,9 @@ echo
 echo "What kind of device do you want to allow?"
 echo
 echo "[a] - analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
+echo "[l] - syslog device - port 514"
 echo "[o] - ossec agent - port 1514/udp"
-echo "[s] - syslog device - port 514"
+echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
 echo
 echo "If you need to add any ports other than those listed above,"
 echo "you can do so using the standard 'ufw' utility."
@@ -46,11 +47,16 @@ echo
 echo "For more information, please see the Firewall page on our Wiki:"
 echo "https://github.com/Security-Onion-Solutions/security-onion/wiki/Firewall"
 echo
-echo "Please enter your selection (a - analyst, o - ossec, or s - syslog):"
+echo "Please enter your selection (a - analyst, l - syslog, o - ossec, or s - Security Onion sensor):"
 read input
 
 case $input in
-	s)
+	a)
+		device="analyst"
+		proto="proto tcp"
+		port="22,443,7734"
+		;;
+	l)
 		device="syslog"
 		proto=""
 		port="514"
@@ -60,16 +66,16 @@ case $input in
 		proto="proto udp"
 		port="1514"
 		;;
-	a)
-		device="analyst"
+	s)
+		device="Security Onion sensor"
 		proto="proto tcp"
-		port="22,443,7734"
+		port="22,4505,4506,7736"
 		;;
 esac
 
 VALID="no"
 while [ $VALID = "no" ]; do
-	echo "Please enter the IP address you'd like to allow to connect to port(s) $port:"
+	echo "Please enter the IP address of the $device you'd like to allow to connect to port(s) $port:"
 	read address
 	is_ip $address && VALID="yes"
 done

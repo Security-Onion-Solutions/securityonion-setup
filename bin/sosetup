@@ -1072,6 +1072,21 @@ if [ "$SERVERNAME" != "localhost" ]; then
 		sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
 	fi
 
+	# Need to open ports in server firewall to allow connections from sensor
+	echo "IPADDRESS=\`who am i | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
+	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
+	# Copy the script over
+	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
+	# Run the script on the master server using sudo
+	if [ "$OUTPUT" = "gui" ]; then
+		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP
+	else
+		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP >> $LOG 2>&1
+	fi
+	# Cleanup
+	rm -f $SOSETUPSCP
+	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f $SOSETUPSCP >> $LOG 2>&1
+
 	# Backup existing files
 	mkdir -p /etc/nsm/rules/backup/
 	cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
@@ -1710,9 +1725,6 @@ function SERVER_QUEUE() {
 # Send all queued commands to server
 #########################################
 if [ "$SERVERNAME" != "localhost" ]; then
-	# Server needs to open some ports to allow connections from sensor
-	echo "IPADDRESS=\`who am i | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
-	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
 	# Copy the script over
 	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
 	# Run the script on the master server using sudo
@@ -1843,6 +1855,13 @@ fi
 }
 
 function FIN4() {
+TEXT='Please note that the local ufw firewall\
+has been locked down to only allow connections\
+to port 22.  If you need to connect over any\
+other port, then run "sudo so-allow".'
+}
+
+function FIN5() {
 TEXT='If you have any questions or problems,\
 please visit our website where you can find\
 the following links:\
@@ -1855,7 +1874,7 @@ and more!\
 http://securityonion.net'
 }
 
-function FIN5() {
+function FIN6() {
 TEXT='If you need commercial support or training,\
 please see:\
 \
@@ -1975,7 +1994,7 @@ MOVELOG
 IP2C
 
 # Final screens
-for i in FIN1 FIN2 FIN3 FIN4 FIN5; do
+for i in FIN1 FIN2 FIN3 FIN4 FIN5 FIN6; do
 	$i
 	if [ "$OUTPUT" = "gui" ]; then
 		zenity --info --title="$TITLE" --text="$TEXT" --no-wrap

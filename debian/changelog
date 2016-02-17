@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion198) trusty; urgency=medium
+
+  * open ports on master server earlier and display notice at end about so-allow 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 17 Feb 2016 16:46:18 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion197) trusty; urgency=medium
 
   * sensor setup should automatically open ports on master server as necessary 

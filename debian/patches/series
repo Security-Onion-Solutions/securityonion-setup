@@ -188,3 +188,4 @@ Setup:-master-only-shouldn't-show-SnortBro-in-final-confirmation-screen-#848
 add-new-script-so-allow
 setup-should-no-longer-open-ports-514,-1514,-443,-and-7734-by-default
 sensor-setup-should-automatically-open-ports-on-master-server-as-necessary
+open-ports-on-master-server-earlier-and-display-notice-at-end-about-so-allow

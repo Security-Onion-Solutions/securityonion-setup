@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2010-2015 Doug Burks and Security Onion
+# Copyright (C) 2010-2016 Doug Burks and Security Onion
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 as
@@ -1445,6 +1445,16 @@ if [ "$SERVERNAME" = "localhost" ]; then
 
 	# 2015-10-29 The Snort Community URL has changed
 	sed -i 's\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\g' $PP_CONF >> $LOG 2>&1
+
+	# Disable noisy Suricata rules
+	if ! grep "Security Onion Setup" /etc/nsm/pulledpork/disablesid.conf >/dev/null 2>&1; then
+cat << EOF >> /etc/nsm/pulledpork/disablesid.conf
+
+# Added by Security Onion Setup
+stream-events
+pcre:SURICATA\ ICMPv6
+EOF
+	fi
 
 	if [ "$INTERNET" = "UP" ]; then
 		echo "45"

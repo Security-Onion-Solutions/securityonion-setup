@@ -1,0 +1,57 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion196) trusty; urgency=medium
+ .
+   * setup should no longer open ports 514, 1514, 443, and 7734 by default
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -981,10 +981,12 @@ echo "options pf_ring transparent_mode=0
+ #########################################
+ # Open port 22 for remote administration
+ ufw allow 22/tcp >> $LOG 2>&1
++# No longer opening 514 and 1514 by default
++# This is now done by so-allow
+ # Open port 514 (tcp and udp) for syslog
+-ufw allow 514 >> $LOG 2>&1
++#ufw allow 514 >> $LOG 2>&1
+ # Open port 1514/udp for OSSEC agents
+-ufw allow 1514/udp >> $LOG 2>&1
++#ufw allow 1514/udp >> $LOG 2>&1
+ # Enable ufw if not already enabled
+ echo "y" | ufw enable >> $LOG 2>&1
+ 
+@@ -1034,10 +1036,12 @@ echo "# Please wait while creating the S
+ 
+ echo "15"
+ echo "# Please wait while configuring firewall..." | tee -a $LOG
++# No longer opening 443 and 7734 by default
++# This is now done by so-allow
+ # Open port 443 for https web interface
+-ufw allow 443/tcp >> $LOG 2>&1
++#ufw allow 443/tcp >> $LOG 2>&1
+ # Open port 7734 for Sguil clients
+-ufw allow 7734/tcp >> $LOG 2>&1
++#ufw allow 7734/tcp >> $LOG 2>&1
+ # Open port 7736 for Sguil sensors
+ ufw allow 7736/tcp >> $LOG 2>&1
+ 

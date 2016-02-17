@@ -981,10 +981,12 @@ echo "options pf_ring transparent_mode=0 min_num_slots=$PF_RING_SLOTS" > /etc/mo
 #########################################
 # Open port 22 for remote administration
 ufw allow 22/tcp >> $LOG 2>&1
+# No longer opening 514 and 1514 by default
+# This is now done by so-allow
 # Open port 514 (tcp and udp) for syslog
-ufw allow 514 >> $LOG 2>&1
+#ufw allow 514 >> $LOG 2>&1
 # Open port 1514/udp for OSSEC agents
-ufw allow 1514/udp >> $LOG 2>&1
+#ufw allow 1514/udp >> $LOG 2>&1
 # Enable ufw if not already enabled
 echo "y" | ufw enable >> $LOG 2>&1
 
@@ -1034,10 +1036,12 @@ echo "# Please wait while creating the Sguil server..." | tee -a $LOG
 
 echo "15"
 echo "# Please wait while configuring firewall..." | tee -a $LOG
+# No longer opening 443 and 7734 by default
+# This is now done by so-allow
 # Open port 443 for https web interface
-ufw allow 443/tcp >> $LOG 2>&1
+#ufw allow 443/tcp >> $LOG 2>&1
 # Open port 7734 for Sguil clients
-ufw allow 7734/tcp >> $LOG 2>&1
+#ufw allow 7734/tcp >> $LOG 2>&1
 # Open port 7736 for Sguil sensors
 ufw allow 7736/tcp >> $LOG 2>&1
 

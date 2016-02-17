@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion196) trusty; urgency=medium
+
+  * setup should no longer open ports 514, 1514, 443, and 7734 by default 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 17 Feb 2016 14:25:03 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion195) trusty; urgency=medium
 
   * add new script so-allow 

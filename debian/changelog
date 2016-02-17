@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion195) trusty; urgency=medium
+
+  * add new script so-allow 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 17 Feb 2016 14:20:15 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion194) trusty; urgency=medium
 
   * Setup: master-only shouldn't show Snort/Bro in final confirmation screen #848 

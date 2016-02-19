@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion200) trusty; urgency=medium
+
+  * so-allow - check for valid device type 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 19 Feb 2016 09:52:40 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion199) trusty; urgency=medium
 
   * Disable SURICATA events #860 

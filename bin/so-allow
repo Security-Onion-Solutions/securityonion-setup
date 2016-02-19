@@ -46,40 +46,50 @@ echo "you can do so using the standard 'ufw' utility."
 echo
 echo "For more information, please see the Firewall page on our Wiki:"
 echo "https://github.com/Security-Onion-Solutions/security-onion/wiki/Firewall"
-echo
-echo "Please enter your selection (a - analyst, l - syslog, o - ossec, or s - Security Onion sensor):"
-read input
 
-case $input in
-	a)
-		device="analyst"
-		proto="proto tcp"
-		port="22,443,7734"
-		;;
-	l)
-		device="syslog"
-		proto=""
-		port="514"
-		;;
-	o)
-		device="ossec agent"
-		proto="proto udp"
-		port="1514"
-		;;
-	s)
-		device="Security Onion sensor"
-		proto="proto tcp"
-		port="22,4505,4506,7736"
-		;;
-esac
+device="none"
+while [ "$device" = "none" ]; do
+	echo
+	echo "Please enter your selection (a - analyst, l - syslog, o - ossec, or s - Security Onion sensor):"
+	read input
 
-VALID="no"
-while [ $VALID = "no" ]; do
-	echo "Please enter the IP address of the $device you'd like to allow to connect to port(s) $port:"
-	read address
-	is_ip $address && VALID="yes"
+	case $input in
+		a)
+			device="analyst"
+			proto="proto tcp"
+			port="22,443,7734"
+			;;
+		l)
+			device="syslog"
+			proto=""
+			port="514"
+			;;
+		o)
+			device="ossec agent"
+			proto="proto udp"
+			port="1514"
+			;;
+		s)
+			device="Security Onion sensor"
+			proto="proto tcp"
+			port="22,4505,4506,7736"
+			;;
+	esac
 done
 
+#########################################
+# Prompt user for IP address
+#########################################
+valid="no"
+while [ "$valid" = "no" ]; do
+	echo "Please enter the IP address of the $device you'd like to allow to connect to port(s) $port:"
+	read address
+	is_ip $address && valid="yes"
+done
+
+#########################################
+# Confirm rule before adding
+#########################################
 echo "We're going to allow connections from $address to port(s) $port."
 echo
 echo "Here's the firewall rule we're about to add:"
@@ -90,6 +100,9 @@ echo "To continue and add this rule, press Enter."
 echo "Otherwise, press Ctrl-c to exit."
 read input
 
+#########################################
+# Run the command to add the firewall rule
+#########################################
 $rule
 
 echo "Rule has been added."

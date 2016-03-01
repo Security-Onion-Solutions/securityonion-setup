@@ -68,6 +68,7 @@ CRIT_DISK_USAGE=90
 # CORES is the number of CPU cores in the box
 # This is used for limiting IDS_LB_PROCS and BRO_LB_PROCS
 CORES=`grep -c ^processor /proc/cpuinfo`
+HALF_CORES=$((CORES / 2))
 # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
 IDS_LB_PROCS=1
 IDS_LB_PROCS_CONFIRM="- Run a single IDS process per interface.\n"
@@ -512,20 +513,30 @@ Would you like to enable the IDS Engine?"
 	fi
 
 	# IDS Engine Procs
-	if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ]; then
-		TEXT="How many IDS engine processes would you like to run?\n\
+        if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
+                TEXT="How many IDS engine processes would you like to run?\n\
 \n\
-This is limited by the number of CPU cores on your system.\n\
+Based on your system's number of cores, it is recommended that you run $CORES IDS engine processes per interface.\n\
 \n\
 If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNAME-INTERFACE/sensor.conf"
-		IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
-		if [ "$IDS_LB_PROCS" = "" ]; then
-		        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-		        exit
-		fi
-		IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
+                IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+                if [ "$IDS_LB_PROCS" = "" ]; then
+                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+                        exit
+                fi
+		if [ "$IDS_LB_PROCS" -gt 1 ]; then
+                IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
+                else
+                IDS_LB_PROCS_CONFIRM="- Run a a single IDS engine process per interface.\n"
+                fi
+        else
+		IDS_LB_PROCS=$CORES
+                if [ "$CORES" -gt 1 ]; then
+                IDS_LB_PROCS_CONFIRM="- Run $CORES load-balanced IDS engine processes per interface.\n"
+                else
+                BRO_LB_PROCS_CONFIRM="- Run a single IDS engine process per interface.\n"
+                fi
 	fi
-
 	if [ $CUSTOM -eq 1 ]; then
 	# Bro
 	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\
@@ -561,11 +572,11 @@ Would you like to enable Bro?"
 	fi
 
 	# BRO_LB_PROCS
-	if [ "$BRO_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ]; then
+	if [ "$BRO_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
 		TEXT="How many Bro processes would you like to run?\n\
 \n\
 This is limited by the total number of CPU cores on your system,\n\
-but you should probably choose no more than HALF your number of CPU cores.\n\
+but you should probably choose no more than HALF ($HALF_CORES) your number of CPU cores ($CORES).\n\
 \n\
 If you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
 		BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
@@ -573,7 +584,18 @@ If you need to change this setting later, you can change the lb_procs variable i
 			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
 			exit
 		fi
+		if [ "$BRO_LB_PROCS" -gt 1 ]; then
 		BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Bro processes per interface.\n"
+		else
+		BRO_LB_PROCS_CONFIRM="- Run a a single Bro process per interface.\n"
+		fi
+	else
+	BRO_LB_PROCS=$HALF_CORES
+		if [ "$HALF_CORES" -gt 1 ]; then
+		BRO_LB_PROCS_CONFIRM="- Run $HALF_CORES load-balanced Bro processes per interface.\n"
+		else
+		BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
+		fi
 	fi
 
 	if [ $CUSTOM -eq 1 ]; then

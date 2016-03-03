@@ -1219,10 +1219,10 @@ for INTERFACE in $ALL_INTERFACES; do
 	# Create symbolic link for sensor rules directory on server
 	if [ "$SERVERNAME" = "localhost" ]; then
         	ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME" >> $LOG 2>&1
-		for i in `seq 1 $CORES`; do ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME"-$i >> $LOG 2>&1; done
+		for i in `seq 1 $CALCD_CORES`; do ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME"-$i >> $LOG 2>&1; done
 	else
 		echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME" >> $SOSETUPSCP
-		for i in `seq 1 $CORES`; do
+		for i in `seq 1 $CALCD_CORES`; do
 			echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME-$i" >> $SOSETUPSCP
 		done
 	fi

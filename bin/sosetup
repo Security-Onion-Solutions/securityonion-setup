@@ -43,6 +43,7 @@ IDS_RULESET="ETGPL"
 INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
 ALL_INTERFACES="$INTERFACES"
 NUM_INTERFACES=`echo $INTERFACES | wc -w`
+SNIFF_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | wc -l`
 SENSORTAB="/etc/nsm/sensortab"
 UPDATE_ELSA_SERVER="NO"
 # PCAP_OPTIONS are passed to netsniff-ng
@@ -68,6 +69,12 @@ CRIT_DISK_USAGE=90
 # CORES is the number of CPU cores in the box
 # This is used for limiting IDS_LB_PROCS and BRO_LB_PROCS
 CORES=`grep -c ^processor /proc/cpuinfo`
+# SO_CORES is the number of CPU cores in the box, minus a reserved CPU core
+# for the OS, divided by the number of sniffing interfaces.
+SO_CORES=$(((CORES - 1) / SNIFF_INTERFACES))
+# CALCD_CORES subtracts a reserved CPU core for netsniff-ng from the available cores for
+# each interface and splits the number of cores between the IDS and Bro processes.
+CALCD_CORES=$(((SO_CORES - 1) / 2))
 # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
 IDS_LB_PROCS=1
 IDS_LB_PROCS_CONFIRM="- Run a single IDS process per interface.\n"
@@ -501,7 +508,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 	SENSOR_CONFIRM_2="$INTERFACES\n"
 
 	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
-	LIST=`seq 1 $CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
+	LIST=`seq 1 $CALCD_CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
 
 	if [ $CUSTOM -eq 1 ]; then
 	# IDS Engine
@@ -524,20 +531,32 @@ Would you like to enable the IDS Engine?"
 	fi
 
 	# IDS Engine Procs
-	if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ]; then
-		TEXT="How many IDS engine processes would you like to run?\n\
+        if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
+                TEXT="How many IDS engine processes would you like to run?\n\
 \n\
-This is limited by the number of CPU cores on your system.\n\
+Based on your system's number of CPU cores, it is recommended that you run $CALCD_CORES IDS engine processes per interface.\n\
 \n\
 If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNAME-INTERFACE/sensor.conf"
-		IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
-		if [ "$IDS_LB_PROCS" = "" ]; then
-		        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-		        exit
-		fi
-		IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
+                IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+                if [ "$IDS_LB_PROCS" = "" ]; then
+                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+                        exit
+                fi
+		if [ "$CALCD_CORES" -gt 1 ]; then
+                IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
+                else
+		IDS_LB_PROCS=1
+                IDS_LB_PROCS_CONFIRM="- Run a a single IDS engine process per interface.\n"
+                fi
+        else
+		IDS_LB_PROCS=$CALCD_CORES
+                if [ "$CALCD_CORES" -gt 1 ]; then
+                IDS_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced IDS engine processes per interface.\n"
+                else
+                IDS_LB_PROCS=1
+		IDS_LB_PROCS_CONFIRM="- Run a single IDS engine process per interface.\n"
+                fi
 	fi
-
 	if [ $CUSTOM -eq 1 ]; then
 	# Bro
 	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\
@@ -573,11 +592,10 @@ Would you like to enable Bro?"
 	fi
 
 	# BRO_LB_PROCS
-	if [ "$BRO_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ]; then
+	if [ "$BRO_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
 		TEXT="How many Bro processes would you like to run?\n\
 \n\
-This is limited by the total number of CPU cores on your system,\n\
-but you should probably choose no more than HALF your number of CPU cores.\n\
+Based on your system's number of CPU cores, it is recommended that you run $CALCD_CORES Bro processes per interface.
 \n\
 If you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
 		BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
@@ -585,7 +603,20 @@ If you need to change this setting later, you can change the lb_procs variable i
 			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
 			exit
 		fi
+		if [ "$CALCD_CORES" -gt 1 ]; then
 		BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Bro processes per interface.\n"
+		else
+		BRO_LB_PROCS=1
+		BRO_LB_PROCS_CONFIRM="- Run a a single Bro process per interface.\n"
+		fi
+	else
+		BRO_LB_PROCS=$CALCD_CORES
+		if [ "$CALCD_CORES" -gt 1 ]; then
+		BRO_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced Bro processes per interface.\n"
+		else
+		BRO_LB_PROCS=1
+		BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
+		fi
 	fi
 
 	if [ $CUSTOM -eq 1 ]; then
@@ -1213,10 +1244,10 @@ for INTERFACE in $ALL_INTERFACES; do
 	# Create symbolic link for sensor rules directory on server
 	if [ "$SERVERNAME" = "localhost" ]; then
         	ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME" >> $LOG 2>&1
-		for i in `seq 1 $CORES`; do ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME"-$i >> $LOG 2>&1; done
+		for i in `seq 1 $CALCD_CORES`; do ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME"-$i >> $LOG 2>&1; done
 	else
 		echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME" >> $SOSETUPSCP
-		for i in `seq 1 $CORES`; do
+		for i in `seq 1 $CALCD_CORES`; do
 			echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME-$i" >> $SOSETUPSCP
 		done
 	fi

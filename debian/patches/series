@@ -191,3 +191,4 @@ sensor-setup-should-automatically-open-ports-on-master-server-as-necessary
 open-ports-on-master-server-earlier-and-display-notice-at-end-about-so-allow
 Disable-SURICATA-events-#860
 so-allow---check-for-valid-device-type
+merge-pull-requests-from-Pete-Nelson-and-Wes-Lambert

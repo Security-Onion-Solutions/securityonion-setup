@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion201) trusty; urgency=medium
+
+  * merge pull requests from Pete Nelson and Wes Lambert 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 11 Mar 2016 12:24:34 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion200) trusty; urgency=medium
 
   * so-allow - check for valid device type 

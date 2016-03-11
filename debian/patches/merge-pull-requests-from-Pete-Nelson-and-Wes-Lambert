@@ -1,0 +1,301 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion201) trusty; urgency=medium
+ .
+   * merge pull requests from Pete Nelson and Wes Lambert
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -43,6 +43,7 @@ IDS_RULESET="ETGPL"
+ INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
+ ALL_INTERFACES="$INTERFACES"
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
++SNIFF_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | wc -l`
+ SENSORTAB="/etc/nsm/sensortab"
+ UPDATE_ELSA_SERVER="NO"
+ # PCAP_OPTIONS are passed to netsniff-ng
+@@ -68,6 +69,12 @@ CRIT_DISK_USAGE=90
+ # CORES is the number of CPU cores in the box
+ # This is used for limiting IDS_LB_PROCS and BRO_LB_PROCS
+ CORES=`grep -c ^processor /proc/cpuinfo`
++# SO_CORES is the number of CPU cores in the box, minus a reserved CPU core
++# for the OS, divided by the number of sniffing interfaces.
++SO_CORES=$(((CORES - 1) / SNIFF_INTERFACES))
++# CALCD_CORES subtracts a reserved CPU core for netsniff-ng from the available cores for
++# each interface and splits the number of cores between the IDS and Bro processes.
++CALCD_CORES=$(((SO_CORES - 1) / 2))
+ # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
+ IDS_LB_PROCS=1
+ IDS_LB_PROCS_CONFIRM="- Run a single IDS process per interface.\n"
+@@ -130,7 +137,7 @@ let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*100
+ #########################################
+ # Got r00t?
+ #########################################
+-if [[ $(/usr/bin/id -u) -ne 0 ]]; then
++if [[ $(/usr/bin/id -u) -ne 0 && "$1" != "-w" ]]; then
+     echo "Setup needs to be run as root.  Please try again using sudo."
+     zenity --error --text="Setup needs to be run as root.  Please try again using sudo."
+     exit
+@@ -145,6 +152,16 @@ TEXT="Welcome to Security Onion Setup!\n
+ This program will allow you to configure Security Onion on $HOSTNAME.\n\
+ \n\
+ Would you like to continue?"
++if [ "$WRITEANSWERFILE" ]; then
++	TEXT="Welcome to Security Onion Setup!\n\
++\n\
++Writing an answer file is still experimental, and does not\n\
++yet support network configuration.  Please make sure\n\
++your /etc/network/interfaces file is already configured and\n\
++has at least one interface configured for monitoring.\n\
++\n\
++Would you like to continue?"
++fi
+ YES="Yes, Continue!"
+ NO="No, Quit."
+ zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+@@ -159,10 +176,12 @@ fi
+ #########################################
+ # sosetup-network
+ #########################################
++if [ -z "$WRITEANSWERFILE" ]; then # Network config not yet supported when generating an answer file
+ [ -f /usr/bin/sosetup-network ] && /usr/bin/sosetup-network
+ ANSWER="$?"
+ # If there were errors in sosetup-network, then exit
+ [ $ANSWER -eq 1 ] && exit
++fi
+ 
+ #########################################
+ # Quick Setup or Advanced Setup
+@@ -489,7 +508,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSO
+ 	SENSOR_CONFIRM_2="$INTERFACES\n"
+ 
+ 	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
+-	LIST=`seq 1 $CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
++	LIST=`seq 1 $CALCD_CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
+ 
+ 	if [ $CUSTOM -eq 1 ]; then
+ 	# IDS Engine
+@@ -512,20 +531,32 @@ Would you like to enable the IDS Engine?
+ 	fi
+ 
+ 	# IDS Engine Procs
+-	if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ]; then
+-		TEXT="How many IDS engine processes would you like to run?\n\
++        if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
++                TEXT="How many IDS engine processes would you like to run?\n\
+ \n\
+-This is limited by the number of CPU cores on your system.\n\
++Based on your system's number of CPU cores, it is recommended that you run $CALCD_CORES IDS engine processes per interface.\n\
+ \n\
+ If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNAME-INTERFACE/sensor.conf"
+-		IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+-		if [ "$IDS_LB_PROCS" = "" ]; then
+-		        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+-		        exit
+-		fi
+-		IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
++                IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
++                if [ "$IDS_LB_PROCS" = "" ]; then
++                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
++                        exit
++                fi
++		if [ "$CALCD_CORES" -gt 1 ]; then
++                IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
++                else
++		IDS_LB_PROCS=1
++                IDS_LB_PROCS_CONFIRM="- Run a a single IDS engine process per interface.\n"
++                fi
++        else
++		IDS_LB_PROCS=$CALCD_CORES
++                if [ "$CALCD_CORES" -gt 1 ]; then
++                IDS_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced IDS engine processes per interface.\n"
++                else
++                IDS_LB_PROCS=1
++		IDS_LB_PROCS_CONFIRM="- Run a single IDS engine process per interface.\n"
++                fi
+ 	fi
+-
+ 	if [ $CUSTOM -eq 1 ]; then
+ 	# Bro
+ 	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\
+@@ -561,11 +592,10 @@ Would you like to enable Bro?"
+ 	fi
+ 
+ 	# BRO_LB_PROCS
+-	if [ "$BRO_ENABLED" == "yes" ] && [ "$CORES" -gt 1 ]; then
++	if [ "$BRO_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
+ 		TEXT="How many Bro processes would you like to run?\n\
+ \n\
+-This is limited by the total number of CPU cores on your system,\n\
+-but you should probably choose no more than HALF your number of CPU cores.\n\
++Based on your system's number of CPU cores, it is recommended that you run $CALCD_CORES Bro processes per interface.
+ \n\
+ If you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
+ 		BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+@@ -573,7 +603,20 @@ If you need to change this setting later
+ 			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+ 			exit
+ 		fi
++		if [ "$CALCD_CORES" -gt 1 ]; then
+ 		BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Bro processes per interface.\n"
++		else
++		BRO_LB_PROCS=1
++		BRO_LB_PROCS_CONFIRM="- Run a a single Bro process per interface.\n"
++		fi
++	else
++		BRO_LB_PROCS=$CALCD_CORES
++		if [ "$CALCD_CORES" -gt 1 ]; then
++		BRO_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced Bro processes per interface.\n"
++		else
++		BRO_LB_PROCS=1
++		BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
++		fi
+ 	fi
+ 
+ 	if [ $CUSTOM -eq 1 ]; then
+@@ -838,6 +881,19 @@ any ELSA queries running at the time."
+   	fi
+ fi
+ 
++
++#########################################
++# If just writing a file, do it and exit
++#########################################
++TEXT="$WRITEANSWERFILE has been saved."
++if [ "$WRITEANSWERFILE" ]; then
++	# write all the answers out
++	save
++	zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++	exit 0
++fi
++
++
+ #########################################
+ # Confirm all choices before proceeding
+ #########################################
+@@ -1186,6 +1242,8 @@ for INTERFACE in $ALL_INTERFACES; do
+ 	echo "HTTP_AGENT_ENABLED=\"$HTTP_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 
+ 	# Create symbolic link for sensor rules directory on server
++	# Since a user may have as many Snort/Suricata instances as they have CPU cores,
++	# we need to create a symbolic link for each and every CPU core.
+ 	if [ "$SERVERNAME" = "localhost" ]; then
+         	ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME" >> $LOG 2>&1
+ 		for i in `seq 1 $CORES`; do ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME"-$i >> $LOG 2>&1; done
+@@ -1893,6 +1951,70 @@ http://securityonionsolutions.com'
+ 
+ 
+ #########################################
++# write collected answers
++#########################################
++
++save()
++{
++	# TODO
++	echo "# ANSWERFILE generated by sosetup -w option" > $WRITEANSWERFILE
++	echo -n "# Generation date: " >> $WRITEANSWERFILE
++	date >> $WRITEANSWERFILE
++	echo "# Generated on host $HOSTNAME" >> $WRITEANSWERFILE
++	echo "#" >> $WRITEANSWERFILE
++	echo "# These fields were computed automatically" >> $WRITEANSWERFILE
++	echo "#IP=$IP" >> $WRITEANSWERFILE
++	echo "#CORES=$CORES" >> $WRITEANSWERFILE
++	echo \#ALL_INTERFACES=$ALL_INTERFACES >> $WRITEANSWERFILE # no quotes to collapse to one line
++	echo "#NUM_INTERFACES=$NUM_INTERFACES" >> $WRITEANSWERFILE
++	echo "#" >> $WRITEANSWERFILE
++	echo "# This field is specific to reading an answer file" >> $WRITEANSWERFILE
++	echo "SNIFFING_INTERFACES=$INTERFACES" >> $WRITEANSWERFILE
++	echo "#" >> $WRITEANSWERFILE
++	echo "# These fields were generated from your answers" >> $WRITEANSWERFILE
++	echo "SERVER=$SERVER" >> $WRITEANSWERFILE
++	echo "SERVERNAME=$SERVERNAME" >> $WRITEANSWERFILE
++	echo "SSH_USERNAME=\"$SSH_USERNAME\"" >> $WRITEANSWERFILE
++	echo "SGUIL_SERVER_NAME=$SGUIL_SERVER_NAME" >> $WRITEANSWERFILE
++	echo "SGUIL_CLIENT_USERNAME=\"$SGUIL_CLIENT_USERNAME\"" >> $WRITEANSWERFILE
++	echo "SGUIL_CLIENT_PASSWORD_1=\"$SGUIL_CLIENT_PASSWORD_1\"" >> $WRITEANSWERFILE
++	echo "XPLICO_ENABLED=$XPLICO_ENABLED" >> $WRITEANSWERFILE
++	echo "ELSA=$ELSA" >> $WRITEANSWERFILE
++	echo "UPDATE_ELSA_SERVER=$UPDATE_ELSA_SERVER" >> $WRITEANSWERFILE
++	echo "LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT" >> $WRITEANSWERFILE
++	echo "OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED" >> $WRITEANSWERFILE
++	echo "OSSEC_AGENT_LEVEL=$OSSEC_AGENT_LEVEL" >> $WRITEANSWERFILE
++	echo "SALT=$SALT" >> $WRITEANSWERFILE
++	echo "SENSOR=$SENSOR" >> $WRITEANSWERFILE
++	echo "BRO_ENABLED=$BRO_ENABLED" >> $WRITEANSWERFILE
++	echo "IDS_ENGINE_ENABLED=$IDS_ENGINE_ENABLED" >> $WRITEANSWERFILE
++	echo "SNORT_AGENT_ENABLED=$SNORT_AGENT_ENABLED" >> $WRITEANSWERFILE
++	echo "BARNYARD2_ENABLED=$BARNYARD2_ENABLED" >> $WRITEANSWERFILE
++	echo "PCAP_ENABLED=$PCAP_ENABLED" >> $WRITEANSWERFILE
++	echo "PCAP_AGENT_ENABLED=$PCAP_AGENT_ENABLED" >> $WRITEANSWERFILE
++	echo "PRADS_ENABLED=$PRADS_ENABLED" >> $WRITEANSWERFILE
++	echo "SANCP_AGENT_ENABLED=$SANCP_AGENT_ENABLED" >> $WRITEANSWERFILE
++	echo "PADS_AGENT_ENABLED=$PADS_AGENT_ENABLED" >> $WRITEANSWERFILE
++	echo "HTTP_AGENT_ENABLED=$HTTP_AGENT_ENABLED" >> $WRITEANSWERFILE
++	echo "ARGUS_ENABLED=$ARGUS_ENABLED" >> $WRITEANSWERFILE
++	echo "IDS_RULESET=\"$IDS_RULESET\"" >> $WRITEANSWERFILE
++	echo "OINKCODE=\"$OINKCODE\"" >> $WRITEANSWERFILE
++	echo "PF_RING_SLOTS=$PF_RING_SLOTS" >> $WRITEANSWERFILE
++	echo "IDS_ENGINE=$IDS_ENGINE" >> $WRITEANSWERFILE
++	echo "IDS_LB_PROCS=$IDS_LB_PROCS" >> $WRITEANSWERFILE
++	echo "BRO_LB_PROCS=$BRO_LB_PROCS" >> $WRITEANSWERFILE
++	echo "EXTRACT_FILES=$EXTRACT_FILES" >> $WRITEANSWERFILE
++	echo "PCAP_SIZE=$PCAP_SIZE" >> $WRITEANSWERFILE
++	echo "PCAP_RING_SIZE=$PCAP_RING_SIZE" >> $WRITEANSWERFILE
++	echo "PCAP_OPTIONS=\"$PCAP_OPTIONS\"" >> $WRITEANSWERFILE
++	echo "WARN_DISK_USAGE=$WARN_DISK_USAGE" >> $WRITEANSWERFILE
++	echo "CRIT_DISK_USAGE=$CRIT_DISK_USAGE" >> $WRITEANSWERFILE
++	echo "DAYSTOKEEP=$DAYSTOKEEP" >> $WRITEANSWERFILE
++	echo "DAYSTOREPAIR=$DAYSTOREPAIR" >> $WRITEANSWERFILE
++}
++
++
++#########################################
+ # Options
+ #########################################
+ 
+@@ -1906,6 +2028,7 @@ Security Onion Setup
+ 
+         -h              This message
+         -f <file>       Configure using answer file <file>
++        -w <file>       Create answer file <file>
+ 
+ Usage: $0
+ EOF
+@@ -1917,7 +2040,7 @@ EOF
+ #########################################
+ 
+ # Check to see if the user provided an answer file
+-while getopts "hf:" OPTION
++while getopts "hf:w:" OPTION
+ do
+      case $OPTION in
+          h)
+@@ -1932,6 +2055,9 @@ do
+ 			exit 1
+ 		fi
+              ;;
++         w)
++             	WRITEANSWERFILE="$OPTARG"
++             ;;
+      esac
+ done
+ 

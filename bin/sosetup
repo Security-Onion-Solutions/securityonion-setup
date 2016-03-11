@@ -176,7 +176,7 @@ fi
 #########################################
 # sosetup-network
 #########################################
-if [ -z "$WRITEANSWERFILE" ]; then # Network config noy yet supported when generating an answer file
+if [ -z "$WRITEANSWERFILE" ]; then # Network config not yet supported when generating an answer file
 [ -f /usr/bin/sosetup-network ] && /usr/bin/sosetup-network
 ANSWER="$?"
 # If there were errors in sosetup-network, then exit
@@ -1242,12 +1242,14 @@ for INTERFACE in $ALL_INTERFACES; do
 	echo "HTTP_AGENT_ENABLED=\"$HTTP_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
 
 	# Create symbolic link for sensor rules directory on server
+	# Since a user may have as many Snort/Suricata instances as they have CPU cores,
+	# we need to create a symbolic link for each and every CPU core.
 	if [ "$SERVERNAME" = "localhost" ]; then
         	ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME" >> $LOG 2>&1
-		for i in `seq 1 $CALCD_CORES`; do ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME"-$i >> $LOG 2>&1; done
+		for i in `seq 1 $CORES`; do ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/"$SENSORNAME"-$i >> $LOG 2>&1; done
 	else
 		echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME" >> $SOSETUPSCP
-		for i in `seq 1 $CALCD_CORES`; do
+		for i in `seq 1 $CORES`; do
 			echo "ln -f -s /etc/nsm/rules /nsm/server_data/$SGUIL_SERVER_NAME/rules/$SENSORNAME-$i" >> $SOSETUPSCP
 		done
 	fi

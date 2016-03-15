@@ -192,3 +192,4 @@ open-ports-on-master-server-earlier-and-display-notice-at-end-about-so-allow
 Disable-SURICATA-events-#860
 so-allow---check-for-valid-device-type
 merge-pull-requests-from-Pete-Nelson-and-Wes-Lambert
+-Issue-876:-Setup:-division-by-0-error-on-SNIFFING_INTERFACES-if-master-server-(no-sniffing)

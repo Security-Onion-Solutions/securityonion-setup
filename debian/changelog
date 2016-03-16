@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion203) trusty; urgency=medium
+
+  * better fix for division by 0 error 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 16 Mar 2016 12:55:00 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion202) trusty; urgency=medium
 
   * Issue 876: Setup: division by 0 error on SNIFFING_INTERFACES if master server (no sniffing) 

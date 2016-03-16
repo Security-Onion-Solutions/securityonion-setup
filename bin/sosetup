@@ -44,6 +44,7 @@ INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0
 ALL_INTERFACES="$INTERFACES"
 NUM_INTERFACES=`echo $INTERFACES | wc -w`
 SNIFF_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | wc -l`
+[ $SNIFF_INTERFACES -eq 0 ] && SNIFF_INTERFACES=1
 SENSORTAB="/etc/nsm/sensortab"
 UPDATE_ELSA_SERVER="NO"
 # PCAP_OPTIONS are passed to netsniff-ng
@@ -69,6 +70,12 @@ CRIT_DISK_USAGE=90
 # CORES is the number of CPU cores in the box
 # This is used for limiting IDS_LB_PROCS and BRO_LB_PROCS
 CORES=`grep -c ^processor /proc/cpuinfo`
+# SO_CORES is the number of CPU cores in the box, minus a reserved CPU core
+# for the OS, divided by the number of sniffing interfaces.
+SO_CORES=$(((CORES - 1) / SNIFF_INTERFACES))
+# CALCD_CORES subtracts a reserved CPU core for netsniff-ng from the available cores for
+# each interface and splits the number of cores between the IDS and Bro processes.
+CALCD_CORES=$(((SO_CORES - 1) / 2))
 # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
 IDS_LB_PROCS=1
 IDS_LB_PROCS_CONFIRM="- Run a single IDS process per interface.\n"
@@ -500,14 +507,6 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 	fi
 	SENSOR_CONFIRM_1="- Monitor each of the following interfaces:\n"
 	SENSOR_CONFIRM_2="$INTERFACES\n"
-
-	# SO_CORES is the number of CPU cores in the box, minus a reserved CPU core
-	# for the OS, divided by the number of sniffing interfaces.
-	SO_CORES=$(((CORES - 1) / SNIFF_INTERFACES))
-
-	# CALCD_CORES subtracts a reserved CPU core for netsniff-ng from the available cores for
-	# each interface and splits the number of cores between the IDS and Bro processes.
-	CALCD_CORES=$(((SO_CORES - 1) / 2))
 	
 	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
 	LIST=`seq 1 $CALCD_CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`

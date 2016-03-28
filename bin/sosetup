@@ -1130,7 +1130,7 @@ if [ "$SERVERNAME" != "localhost" ]; then
 	fi
 
 	# Need to open ports in server firewall to allow connections from sensor
-	echo "IPADDRESS=\`who am i | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
+	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
 	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
 	# Copy the script over
 	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1

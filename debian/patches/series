@@ -194,3 +194,4 @@ so-allow---check-for-valid-device-type
 merge-pull-requests-from-Pete-Nelson-and-Wes-Lambert
 -Issue-876:-Setup:-division-by-0-error-on-SNIFFING_INTERFACES-if-master-server-(no-sniffing)
 better-fix-for-division-by-0-error-
+Setup:-fix-errors-when-sensors-add-firewall-rules-#891

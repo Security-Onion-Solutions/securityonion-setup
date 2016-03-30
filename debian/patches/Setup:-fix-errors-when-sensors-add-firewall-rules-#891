@@ -1,0 +1,36 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion204) trusty; urgency=medium
+ .
+   * Setup: fix errors when sensors add firewall rules #891
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1130,7 +1130,7 @@ if [ "$SERVERNAME" != "localhost" ]; the
+ 	fi
+ 
+ 	# Need to open ports in server firewall to allow connections from sensor
+-	echo "IPADDRESS=\`who am i | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
++	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
+ 	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
+ 	# Copy the script over
+ 	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1

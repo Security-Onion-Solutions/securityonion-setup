@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion204) trusty; urgency=medium
+
+  * Setup: fix errors when sensors add firewall rules #891 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 30 Mar 2016 13:14:14 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion203) trusty; urgency=medium
 
   * better fix for division by 0 error 

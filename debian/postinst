@@ -51,7 +51,7 @@ case "$1" in
 	# Check for old login.keyring files
 	for FILE in /home/*/.local/share/keyrings/login.keyring /etc/skel/.local/share/keyrings/login.keyring; do
 		if [ -f $FILE ] ; then
-			if [ `sha256sum $FILE | awk '{print $1}'` == "dd2e2e5ad4a7a70d604738c4e3c4843ee5f75c6bf900e0b23518d4c011900274" ]; then 
+			if [ `sha256sum $FILE | awk '{print $1}'` = "dd2e2e5ad4a7a70d604738c4e3c4843ee5f75c6bf900e0b23518d4c011900274" ]; then 
 				echo "Removing old file $FILE."
 				rm -f $FILE || echo "Error removing $FILE."
 			fi
@@ -61,7 +61,7 @@ case "$1" in
 	# Check for old user.keystore files
 	for FILE in /home/*/.local/share/keyrings/user.keystore /etc/skel/.local/share/keyrings/user.keystore; do
 		if [ -f $FILE ] ; then
-			if [ `sha256sum $FILE | awk '{print $1}'` == "ec8ec90284d0c10bd9d39eb1f0923c4eacbc0fbd6d3b7dd48ce48b16f848aa4b" ]; then 
+			if [ `sha256sum $FILE | awk '{print $1}'` = "ec8ec90284d0c10bd9d39eb1f0923c4eacbc0fbd6d3b7dd48ce48b16f848aa4b" ]; then 
 				echo "Removing old file $FILE."
 				rm -f $FILE || echo "Error removing $FILE."
 			fi

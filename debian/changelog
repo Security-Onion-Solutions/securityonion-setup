@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion206) trusty; urgency=medium
+
+  * postinst: /bin/sh requires string check to be a single equals sign
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 31 Mar 2016 06:50:31 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion205) trusty; urgency=medium
 
   * Setup: remove old keyring files #894 

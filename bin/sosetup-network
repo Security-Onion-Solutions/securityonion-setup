@@ -38,9 +38,9 @@ if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1; then
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-	    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+	    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Reconfiguring network interfaces."
 	else
-	    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+	    [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Skipping network configuration."
 	    # exit 0 so we can continue running Setup
 	    exit 0
 	fi
@@ -73,6 +73,7 @@ fi
 # Choose management interface
 #########################################
 # Get a list of all possible interfaces
+#VALID="no"
 MGMT_INTERFACE=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | 
 	awk '{print $1}' | cut -d\: -f1 | sort `
 # If there's only one interface, then MGMT_INTERFACE will have the right one
@@ -89,26 +90,54 @@ elif [ $NUM_MGMT_INTERFACES -eq 1 ]; then
     TEXT="You only have one interface ($MGMT_INTERFACE), which will be configured as a management interface."
     zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
 elif [ $NUM_MGMT_INTERFACES -gt 1 ]; then
+VALID="no"
+while [ $VALID = "no" ]; do
 	TEXT='Which network interface should be the management interface?'
 	INPUT=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort | while read INT; do echo -n "FALSE $INT "; done`
 	MGMT_INTERFACE=`zenity --list --radiolist --column "1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" $INPUT 2>/dev/null`
-	if [ "$MGMT_INTERFACE" = "" ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-		exit
+
+        if [ $? = 1 ]; then
+		if [ $DEBUG -eq 1 ]; then
+			 echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+		else
+			exit 1
+		fi
 	fi
+        if ! [ -z $MGMT_INTERFACE ]; then
+		VALID="yes" && [ $DEBUG -eq 1 ] && echo "DEBUG: Selected $MGMT_INTERFACE as the management interface."
+
+        else
+        zenity --error --text="Please specify a management interface!"
+fi
+done
 fi
 
 #########################################
 # Choose static or DHCP configuration for management interface
 #########################################
+VALID="no"
+while [ $VALID = "no" ]; do
 TEXT="Should $MGMT_INTERFACE use DHCP or static addressing?\n\
 \n\
 Static addressing is highly recommended for production deployments."
 MGMT_CONFIG_TYPE=`zenity --list --radiolist \
         --column "1" --column "2" --hide-header --title="$TITLE" \
-        FALSE static FALSE DHCP --text="$TEXT"`
+        TRUE static FALSE DHCP --text="$TEXT"`
+if [ $? = 1 ]; then
+	if [ $DEBUG -eq 1 ]; then
+		echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+	else
+		exit 1
+	fi
+fi
 
-# Define a function to validate IP addresses    
+if ! [ -z $MGMT_CONFIG_TYPE ]; then
+	VALID="yes"
+elif [ -z $MGMT_CONFIG_TYPE ]; then
+        zenity --error --text="Please specify the type of addressing you would like to perform!"
+fi
+done
+ #Define a function to validate IP addresses
  is_ip() {
             case "$*" in
                 ""|*[!0-9.]*) return 1 ;;
@@ -129,16 +158,25 @@ MGMT_CONFIG_TYPE=`zenity --list --radiolist \
 
 if [ "$MGMT_CONFIG_TYPE" = "DHCP" ]; then
 	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE using DHCP."
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Configuring $MGMT_INTERFACE using DHCP."
 elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
 	# Obtain network settings for management interface 
 	# Enter static management IP address
+	[  $DEBUG -eq 1 ] && echo "DEBUG: Configuring $MGMT_INTERFACE with a static IP address."
+
 	VALID="no"
         while [ $VALID = "no" ]; do
 		TEXT="Enter a static IP address for your management interface (e.g., 192.168.1.100):"
 		ADDRESS=`zenity --title="$TITLE" --text="$TEXT" --entry`
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+			else
+				exit 1
+			fi
+		fi
 		if [ "$ADDRESS" = "" ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-		        exit
+			zenity --error --text="Please enter a valid IP address!"
 		fi
 	is_ip $ADDRESS && VALID="yes"
 	done
@@ -146,13 +184,21 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
 	# Enter subnet mask
 	VALID="no"
         while [ $VALID = "no" ]; do
-	TEXT="Enter your network's subnet mask (e.g., 255.255.255.0):"
-	NETMASK=`zenity --title="$TITLE" --text="$TEXT" --entry`
-	if [ "$NETMASK" = "" ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-	        exit
-	fi
-	is_ip $NETMASK && VALID="yes"
+		TEXT="Enter your network's subnet mask (e.g., 255.255.255.0):"
+		NETMASK=`zenity --title="$TITLE" --text="$TEXT" --entry`
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Clicked Cancel.  Exiting" && exit 1
+			else
+				exit 1
+			fi
+		fi
+		if [ "$NETMASK" = "" ]; then
+			zenity --error --text="Please enter a valid subnet mask!"
+		else
+		is_ip $NETMASK && VALID="yes"
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Subnet mask set to $NETMASK."
+		fi
 	done
 
 	# Enter gateway IP address
@@ -160,25 +206,42 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
         while [ $VALID = "no" ]; do
 	TEXT="Enter your gateway's IP address (e.g., 192.168.1.1):"
 	GATEWAY=`zenity --title="$TITLE" --text="$TEXT" --entry`
-	if [ "$GATEWAY" = "" ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-        	exit
+	if [ $? = 1 ]; then
+		if [ $DEBUG -eq 1 ]; then
+			echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+		else
+			exit 1
+		fi
 	fi
+	if [ "$GATEWAY" = "" ]; then
+		zenity --error --text="Please enter a valid IP address!"
+	fi
+
 	is_ip $GATEWAY && VALID="yes"
+
 	done
-          
-        # Enter DNS server address
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Gateway IP address set to $GATEWAY."
+
+	# Enter DNS server address
 	VALID="no"
         while [ $VALID = "no" ]; do
         	TEXT="Enter one or more DNS server IP addresses, separated by spaces:\n"
           	NAMESERVER=`zenity --title="$TITLE" --text="$TEXT" --entry`
-          	if [ "$NAMESERVER" = "" ]; then
-            		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-            		exit
-          	fi
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ] ;then
+				echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+			else
+				exit 1
+			fi
+		fi
+		if [ "$NAMESERVER" = "" ]; then
+			zenity --error --text="Please enter a valid IP address!"
+		else
 		VALID="yes"
+		fi
 		for i in `echo $NAMESERVER`; do
 			is_ip $i || VALID="no"
+		[ $DEBUG -eq 1 ] && echo "DEBUG: DNS server(s) set to $NAMESERVER."
 		done
 	done
           
@@ -187,11 +250,19 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
         while [ $VALID = "no" ]; do
 		TEXT="Enter your local domain name (e.g., example.com):"
 		DOMAIN=`zenity --title="$TITLE" --text="$TEXT" --entry`
-		if [ "$DOMAIN" = "" ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-			exit
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Clicked Cancel.  Exiting."   && exit 1
+			else
+				exit 1
+			fi
 		fi
+		if [ "$DOMAIN" = "" ]; then
+			zenity --error --text="Please enter local domain name!"
+		else
 		VALID="yes"
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Domain set to $DOMAIN."
+		fi
 	done
           
 	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows: \n\
@@ -200,11 +271,7 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
           Set the network mask to $NETMASK \n\
           Set the DNS server(s) to $NAMESERVER \n\
 	  Set the DNS domain to $DOMAIN"
-else
-	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-	exit
 fi
-
 #########################################
 # Sniffing interfaces
 #########################################
@@ -228,29 +295,29 @@ if [ $NUM_MON_INTERFACES -gt 0 ]; then
     zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
     ANSWER="$?"
     if [ $ANSWER -eq 1 ]; then
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Configuring management interface only."
     else
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring monitor interfaces."
         CONFIG_MON_INTERFACES=1
     fi
-    
     # If user selected "Yes" to configure monitor interfaces, continue configuration
     if [ $CONFIG_MON_INTERFACES -eq 1 ]; then
         SNIFF_TEXT=""
-        if [ $NUM_MON_INTERFACES -gt 0 ]; then
-            TEXT='Please select any additional interfaces that will be used for sniffing.'
-            INPUT=`for i in $MON_INTERFACES; do echo -n "FALSE $i "; done`
+	if [ $NUM_MON_INTERFACES -gt 0 ]; then
+	    TEXT='Please select any additional interfaces that will be used for sniffing.'
+	    INPUT=`for i in $MON_INTERFACES; do echo -n "TRUE $i "; done`
             MON_INTERFACES=`zenity --list --checklist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
-            if [ "$MON_INTERFACES" = "" ]; then
-                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-                exit
-            fi
-            SNIFF_TEXT="    - Configure the following interface(s) for sniffing:\n\
-              $MON_INTERFACES"
-        fi
-    fi
+		if [ "$MON_INTERFACES" = "" ]; then
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+                        exit 1
+		else
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Configuring the following interfaces: $MON_INTERFACES."
+		fi
+		SNIFF_TEXT="    - Configure the following interface(s) for sniffing:\n\
+                $MON_INTERFACES"
+	fi
+   fi
 fi
-
 #########################################
 # Confirmation dialog box
 #########################################
@@ -269,7 +336,7 @@ zenity --question --no-wrap --title="$TITLE" --text="$TEXT" --ok-label="$YES" --
 ANSWER="$?"
 if [ $ANSWER -eq 1 ]; then
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No. Do not proceed."
-        exit
+        exit 1
 else
         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes to proceed with all changes."
 fi

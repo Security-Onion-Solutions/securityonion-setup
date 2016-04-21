@@ -168,10 +168,10 @@ NO="No, Quit."
 zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 ANSWER="$?"
 if [ $ANSWER -eq 1 ]; then
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
         exit
 else
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Continuing Setup."
 fi
 
 #########################################
@@ -206,16 +206,24 @@ SETUP=""
 SETUP=`zenity --list --radiolist \
         --column "1" --column "2" --hide-header --title="$TITLE" \
         TRUE "Evaluation Mode" FALSE "Production Mode" --text="$TEXT"`
+if [ $? = 1 ]; then
+	if [ $DEBUG -eq 1 ]; then
+		echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+	else
+		exit 1
+	fi
+fi
 [ "$SETUP" == "" ] && exit
 [ "$SETUP" == "Production Mode" ] && ADVANCED_SETUP="1" || ADVANCED_SETUP="0"
 if [ $ADVANCED_SETUP -eq 0 ]; then
-	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes for Evaluation Mode."
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Evaluation Mode."
 
         if [ $NUM_INTERFACES -gt 1 ]; then
                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
                 INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
                 if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
-                        CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
+
+			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
                         INPUT=`for i in $INTERFACES; do 
                                         if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
                                                 echo -n "TRUE $i "
@@ -227,7 +235,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
                         INPUT=`for i in $INTERFACES; do echo -n "FALSE $i "; done`
                 fi
                 INTERFACES=`zenity --list --radiolist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
-                if [ "$INTERFACES" = "" ]; then
+		if [ "$INTERFACES" = "" ]; then
                         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
                         exit
                 fi
@@ -242,7 +250,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
 	SENSOR_CONFIRM_1="- Configure Snort and Bro to monitor the following interface:\n"
 	SENSOR_CONFIRM_2="$INTERFACES\n"
 else
-	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No. Performing Advanced Setup."
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Production Mode."
 	# Ask which components to configure
 	TEXT="If this is the first machine in a distributed deployment, choose Server.\n\
 This machine will only run Sguil, Squert, and ELSA and will not monitor any network interfaces.\n\
@@ -251,16 +259,16 @@ If this is a sensor for a distributed deployment (you've already installed the S
 You will need to be able to SSH to the existing Server box with an account with sudo privileges.\n\
 \n\
 Otherwise, choose Standalone to configure both Server and Sensor components on this box."
-	COMPONENTS=`zenity --height=300 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" FALSE Server FALSE Sensor FALSE Standalone`
+	COMPONENTS=`zenity --height=300 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Server FALSE Sensor FALSE Standalone`
 	case $COMPONENTS in
         Standalone)
-                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Standalone"
+                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Standalone"
 		SERVER=1
 		SENSOR=1
 		SERVERNAME="localhost"
 		;;
 	Server)
-                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Server."
+                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Server."
 		SERVER=1
 		SENSOR=0
 		SERVERNAME="localhost"
@@ -268,14 +276,20 @@ Otherwise, choose Standalone to configure both Server and Sensor components on t
 		BRO_LB_PROCS_CONFIRM=""
 		;;
 	Sensor)
-                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Sensor."
+                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Sensor."
 		SERVER=0
 		SENSOR=1
 		TEXT="What is the hostname or IP address of the Sguil server that this sensor should connect to?"
 		SERVERNAME_CONFIRMED="no"
 		while [ $SERVERNAME_CONFIRMED = "no" ]; do
 			SERVERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
-			[ x$SERVERNAME = "x" ] && exit
+			if [ $? = 1 ]; then
+				if [ $DEBUG -eq 1 ]; then
+					echo "DEBUG: Clicked Cancel.  Exiting."  && exit 1
+				else
+					exit 1
+				fi
+			fi
 			# Did the user enter the hostname or IP address of the local box?
 			if [ "$SERVERNAME" = "$HOSTNAME" ]; then
 				zenity --error --text="That is the hostname of this box\!\r \
@@ -285,11 +299,17 @@ Since you chose a sensor-only installation, the Sguil server should be a separat
 				zenity --error --text="That is the IP address of this box\!\r \
 \r \
 Since you chose a sensor-only installation, the Sguil server should be a separate box."
+			elif [ "x$SERVERNAME" = "x" ]; then
+				zenity --error --text="No server defined\!\r \
+\r \
+Please provide the hostname or IP address of a valid Sguil server."
+
 			else
 				# nc will result in OSSEC Active Response blocking the IP address
 				# nc -vz $SERVERNAME 22 -w 5 2>&1 | grep "succeeded\!" >/dev/null 2>&1 && SERVERNAME_CONFIRMED="yes"
 				# so use ssh instead:
 				ssh $SERVERNAME -o ConnectTimeout=5 -o BatchMode=yes 2>&1 | egrep 'Connection timed out|Could not resolve hostname' >/dev/null 2>&1 || SERVERNAME_CONFIRMED="yes"
+				[ $DEBUG -eq 1 ] && echo "DEBUG: Hostname/IP set to $SERVERNAME."
 				if [ $SERVERNAME_CONFIRMED = "no" ]; then
 					zenity --error --text="Couldn't connect to $SERVERNAME on port 22\!\r \
 \r \
@@ -299,12 +319,27 @@ firewall rules."
 			fi
 		done
 		TEXT="Please enter a username that can SSH to the Sguil server and execute sudo."
+		SENSOR_CONFIRM_3="no"
+		while [[ $SENSOR_CONFIRM_3 = "no" ]]; do
 		SSH_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
-		[ x$SSH_USERNAME = "x" ] && exit
-		SENSOR_CONFIRM_3="- Configure the sensors to report to $SERVERNAME.\n"
+                        if [ $? = 1 ]; then
+                                if [ $DEBUG -eq 1 ]; then
+                                        echo "DEBUG: Clicked Cancel.  Exiting."  && exit 1
+                                else
+                                        exit 1
+                                fi
+                        fi
+			if [ x$SSH_USERNAME = "x" ]; then
+				zenity --error --text="No username defined\!\r \
+\r\ \
+Please provide a username that can SSH to the Sguil server and execute sudo."
+			else
+				[ $DEBUG -eq 1 ] && echo "DEBUG: SSH username set."
+				SENSOR_CONFIRM_3="- Configure the sensors to report to $SERVERNAME.\n"
+			fi
+		done
 		;;	
 	*)
-                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
                 exit
                 ;;
         esac
@@ -318,9 +353,20 @@ If you'd like to see all options, choose Custom."
 	CUSTOM=`zenity --list --radiolist \
         --column "1" --column "2" --hide-header --title="$TITLE" \
         TRUE "Best Practices" FALSE "Custom" --text="$TEXT"`
+	if [ $? = 1 ]; then
+		if [ $DEBUG -eq 1 ]; then
+			echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+		else
+			exit 1
+		fi
+	fi
 	[ "$CUSTOM" == "" ] && exit
 	[ "$CUSTOM" == "Custom" ] && CUSTOM="1" || CUSTOM="0"
-
+	if [ $CUSTOM -eq 0 ]; then
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Best Practices."
+	else
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Custom."
+	fi
 fi
 
 #########################################
@@ -331,14 +377,21 @@ if [ $SERVER -eq 1 ]; then
 	while [ $USERNAME_CONFIRMED = "no" ]; do
 		TEXT="What would you like your Sguil username to be?\r\rThis will be used when logging into Sguil, Squert, and ELSA.\r\rPlease use alphanumeric characters only."
 		SGUIL_CLIENT_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
-		[ x$SGUIL_CLIENT_USERNAME = "x" ] && exit
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Clicked Cancel. Exiting." && exit 1
+			else
+				exit 1
+			fi
+		fi
 		COMPRESSED="$(echo $SGUIL_CLIENT_USERNAME | sed -e 's/[^[:alnum:]]//g')"
-		if [ "$COMPRESSED" != "$SGUIL_CLIENT_USERNAME" ] ; then
+		if [ "$COMPRESSED" != "$SGUIL_CLIENT_USERNAME" ] || [ x$SGUIL_CLIENT_USERNAME = "x" ] ; then
 	    		zenity --error --text="Invalid username\! \r \
 \r \
 Please use alphanumeric characters only."
 		else
 	    		USERNAME_CONFIRMED="yes"
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Sguil username set."
 		fi
 	done
 fi
@@ -357,15 +410,28 @@ This password will be used for Sguil, Squert, and ELSA.\n\
 \n\
 Once you've logged into these interfaces using this initial password, you can change it in the Sguil client."
 		SGUIL_CLIENT_PASSWORD_1=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
-		[ "x$SGUIL_CLIENT_PASSWORD_1" = "x" ] && exit
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Clicked Cancel.  Exiting."  && exit 1
+			else
+				exit 1
+			fi
+		fi
 	        if [ "${#SGUIL_CLIENT_PASSWORD_1}" -lt "6" ]; then
 			zenity --error --text="Password must be at least 6 characters\!"
 		else
 			TEXT="Please confirm what you would like to set your password to."
 			SGUIL_CLIENT_PASSWORD_2=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
-			[ "x$SGUIL_CLIENT_PASSWORD_2" = "x" ] && exit
+			if [ $? = 1 ]; then
+				if [ $DEBUG -eq 1 ]; then
+					echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+				else
+					exit 1
+				fi
+			fi
 			if [ "$SGUIL_CLIENT_PASSWORD_1" = "$SGUIL_CLIENT_PASSWORD_2" ]; then
 				SGUIL_CLIENT_PASSWORD_CONFIRMED="yes"
+				[ $DEBUG -eq 1 ] && echo "DEBUG: Password set."
 			else
 			        zenity --error --text="Passwords didn't match\!"
 			fi
@@ -385,9 +451,15 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	DAYSTOKEEP_CONFIRMED="no"
 	while [ $DAYSTOKEEP_CONFIRMED = "no" ]; do
 		DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="How many days of data do you want to keep in your Sguil database?\n\nThis includes things like IDS alerts, PADS events, and PRADS session data.\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days." --entry-text=30`
-		[ x$DAYSTOKEEP = "x" ] && exit
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+			else
+				exit 1
+			fi
+		fi
 		COMPRESSED="$(echo $DAYSTOKEEP | sed -e 's/[^[:digit:]]//g')"
-		if [ "$COMPRESSED" != "$DAYSTOKEEP" ]; then
+		if [ "$COMPRESSED" != "$DAYSTOKEEP" ] || [ x$DAYSTOKEEP = "x" ]; then
 			zenity --error --text "Invalid value! Please use integers only." 
 		else
 			DAYSTOKEEP_CONFIRMED="yes"
@@ -398,9 +470,15 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	DAYSTOREPAIR_CONFIRMED="no"
 	while [ $DAYSTOREPAIR_CONFIRMED = "no" ]; do
 		DAYSTOREPAIR=`zenity --entry --title "$TITLE" --text="How many days of data do you want to repair in your Sguil database?\n\nA daily cronjob stops Sguil, repairs the MySQL tables for the last X days, and then starts Sguil back up.\n\nIf you choose a higher value, Sguil will be down for longer.\n\nIf you need to change this later, you can change DAYSTOREPAIR in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 7 days." --entry-text=7`
-		[ x$DAYSTOREPAIR = "x" ] && exit
+		if [ $? = 1 ];then
+			if [ $DEBUG -eq 1 ];then
+				echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+			else
+				exit 1
+			fi
+		fi
 		COMPRESSED="$(echo $DAYSTOREPAIR | sed -e 's/[^[:digit:]]//g')"
-		if [ "$COMPRESSED" != "$DAYSTOREPAIR" ]; then
+		if [ "$COMPRESSED" != "$DAYSTOREPAIR" ] || [ x$DAYSTOREPAIR = "x" ]; then
 			zenity --error --text "Invalid value! Please use integers only." 
 		else
 			DAYSTOREPAIR_CONFIRMED="yes"
@@ -410,14 +488,15 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 
 	# Ask which IDS engine to use.
 	TEXT="Which IDS Engine would you like to use?"
-	IDS_ENGINE=`zenity --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" FALSE Snort FALSE Suricata`
-	[ -z $IDS_ENGINE ] && exit 
-        [ $DEBUG -eq 1 ] && echo "DEBUG: User selected $IDS_ENGINE."
+	IDS_ENGINE=`zenity --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Snort FALSE Suricata`
+	#[ -z $IDS_ENGINE ]
+	[ $? = 1 ] && [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected $IDS_ENGINE."
 
 	# Ask which IDS ruleset to use.
 	TEXT="Which IDS ruleset would you like to use?"
 	IDS_RULESET=`zenity --width=600 --height=300 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
-	FALSE "ETGPL" "Emerging Threats GPL"  "no oinkcode required" \
+	TRUE "ETGPL" "Emerging Threats GPL"  "no oinkcode required" \
 	FALSE "ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
 	FALSE "VRTET" "Snort VRT ruleset and Emerging Threats NoGPL ruleset" "requires Snort VRT oinkcode" \
 	FALSE "VRT" "Snort VRT ruleset only and set a VRT policy" "requires Snort VRT oinkcode" `
@@ -454,8 +533,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 		IDS_RULESET_ACTION="- Download the Snort VRT ruleset using oinkcode $OINKCODE.\n- Download the Emerging Threats NoGPL ruleset.\n"
 		;;
 	*)
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
-		exit
+		[ $? = 1 ] && [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
 		;;
 	esac
 	# End of ADVANCED SETUP - SERVER
@@ -473,20 +551,28 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 	PF_RING_SLOTS_CONFIRMED="no"
 	while [ $PF_RING_SLOTS_CONFIRMED = "no" ]; do
 		PF_RING_SLOTS=`zenity --entry --title "$TITLE" --text="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module." --entry-text=4096`
-		[ x$PF_RING_SLOTS = "x" ] && exit
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+			else
+				exit 1
+			fi
+		fi
 		COMPRESSED="$(echo $PF_RING_SLOTS | sed -e 's/[^[:digit:]]//g')"
-		if [ "$COMPRESSED" != "$PF_RING_SLOTS" ]; then
+		if [ "$COMPRESSED" != "$PF_RING_SLOTS" ] || [ x$PF_RING_SLOTS = "x" ]; then
 			zenity --error --text "Invalid value! Please use integers only." 
 		else
+			[ $DEBUG -eq 1 ] && echo "DEBUG: PF_RING min_num_slots set to $PF_RING_SLOTS."
 			PF_RING_SLOTS_CONFIRMED="yes"
 		fi
 	done
 
 	# Ask which interface(s) to listen on
-        if [ $NUM_INTERFACES -gt 1 ]; then
-		TEXT="Which network interface(s) should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your monitor interfaces are already selected."
+	if [ $NUM_INTERFACES -gt 1 ]; then
+	TEXT="Which network interface(s) should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your monitor interfaces are already selected."
 		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
 		if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+		[ $? = 1 ] && exit 1
 			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`
 			INPUT=`for i in $INTERFACES; do 
 					if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
@@ -500,7 +586,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 		fi
 		INTERFACES=`zenity --list --checklist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
 		if [ "$INTERFACES" = "" ]; then
-	       		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
 		        exit
 		fi
 		[ $DEBUG -eq 1 ] &&  echo "DEBUG: Selected interfaces $INTERFACES."
@@ -521,14 +607,14 @@ Would you like to enable the IDS Engine?"
 	NO="No, disable the IDS Engine."
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	ANSWER="$?"
-	if [ $ANSWER -eq 1 ]; then
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
-		IDS_ENGINE_ENABLED="no"
-		BARNYARD2_ENABLED="no"
-		SNORT_AGENT_ENABLED="no"
-	else
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
-	fi
+		if [ $ANSWER -eq 1 ]; then
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling IDS Engine."
+			IDS_ENGINE_ENABLED="no"
+			BARNYARD2_ENABLED="no"
+			SNORT_AGENT_ENABLED="no"
+		else
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling IDS Engine."
+		fi
 	fi
 
 	# IDS Engine Procs
@@ -544,18 +630,18 @@ If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNA
                         exit
                 fi
 		if [ "$CALCD_CORES" -gt 1 ]; then
-                IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
+			IDS_LB_PROCS_CONFIRM="- Run $IDS_LB_PROCS load-balanced IDS engine processes per interface.\n"
                 else
-		IDS_LB_PROCS=1
-                IDS_LB_PROCS_CONFIRM="- Run a a single IDS engine process per interface.\n"
+			IDS_LB_PROCS=1
+			IDS_LB_PROCS_CONFIRM="- Run a a single IDS engine process per interface.\n"
                 fi
         else
 		IDS_LB_PROCS=$CALCD_CORES
                 if [ "$CALCD_CORES" -gt 1 ]; then
-                IDS_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced IDS engine processes per interface.\n"
+			IDS_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced IDS engine processes per interface.\n"
                 else
-                IDS_LB_PROCS=1
-		IDS_LB_PROCS_CONFIRM="- Run a single IDS engine process per interface.\n"
+			IDS_LB_PROCS=1
+			IDS_LB_PROCS_CONFIRM="- Run a single IDS engine process per interface.\n"
                 fi
 	fi
 	if [ $CUSTOM -eq 1 ]; then
@@ -568,11 +654,11 @@ Would you like to enable Bro?"
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling Bro."
 		BRO_ENABLED="no"
 		HTTP_AGENT_ENABLED="no"
 	else
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling Bro."
 	fi
 
 	# Bro file extraction
@@ -583,10 +669,10 @@ Would you like to enable Bro?"
 		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 		ANSWER="$?"
 		if [ $ANSWER -eq 1 ]; then
-	        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling file extraction"
 			EXTRACT_FILES="no"
 		else
-        		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling file extraction."
 			EXTRACT_FILES="yes"
 		fi
 	fi
@@ -605,18 +691,18 @@ If you need to change this setting later, you can change the lb_procs variable i
 			exit
 		fi
 		if [ "$CALCD_CORES" -gt 1 ]; then
-		BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Bro processes per interface.\n"
+			BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Bro processes per interface.\n"
 		else
-		BRO_LB_PROCS=1
-		BRO_LB_PROCS_CONFIRM="- Run a a single Bro process per interface.\n"
+			BRO_LB_PROCS=1
+			BRO_LB_PROCS_CONFIRM="- Run a a single Bro process per interface.\n"
 		fi
 	else
 		BRO_LB_PROCS=$CALCD_CORES
 		if [ "$CALCD_CORES" -gt 1 ]; then
-		BRO_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced Bro processes per interface.\n"
+			BRO_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced Bro processes per interface.\n"
 		else
-		BRO_LB_PROCS=1
-		BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
+			BRO_LB_PROCS=1
+			BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
 		fi
 	fi
 
@@ -634,10 +720,10 @@ Would you like to enable http_agent?"
 		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 		ANSWER="$?"
 		if [ $ANSWER -eq 1 ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling http_agent."
 			HTTP_AGENT_ENABLED="no"
 		else
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling http_agent."
 			HTTP_AGENT_ENABLED="yes"
 		fi
 	fi
@@ -654,10 +740,10 @@ Would you like to enable Argus?"
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling Argus."
 		ARGUS_ENABLED="no"
 	else
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling Argus."
 		ARGUS_ENABLED="yes"
 	fi
 
@@ -674,12 +760,12 @@ Would you like to enable Prads?"
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling Prads."
 		PRADS_ENABLED="no"
 		PADS_AGENT_ENABLED="no"
 		SANCP_AGENT_ENABLED="no"
 	else
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling Prads."
 		PRADS_ENABLED="yes"
 		PADS_AGENT_ENABLED="yes"
 		SANCP_AGENT_ENABLED="yes"
@@ -698,11 +784,11 @@ Would you like to enable full packet capture?"
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling full packet capture."
 		PCAP_ENABLED="no"
 		PCAP_AGENT_ENABLED="no"
 	else
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling full packet capture."
 	fi
 
 	# Ask for PCAP_SIZE
@@ -712,11 +798,12 @@ Would you like to enable full packet capture?"
 		PCAP_SIZE_CONFIRMED="no"
 		while [ $PCAP_SIZE_CONFIRMED = "no" ]; do
 			PCAP_SIZE=`zenity --entry --title "$TITLE" --text="How big do you want your pcap files to be?\n\nPlease enter an integer in Megabytes (MB).  The default is 150 MB." --entry-text=150`
-			[ x$PCAP_SIZE = "x" ] && exit
+			[ $? = 1 ] && exit
 			COMPRESSED="$(echo $PCAP_SIZE | sed -e 's/[^[:digit:]]//g')"
-			if [ "$COMPRESSED" != "$PCAP_SIZE" ]; then
+			if [ "$COMPRESSED" != "$PCAP_SIZE" ] || [ x$PCAP_SIZE = "x" ]; then
 				zenity --error --text "Invalid MB Value! Please use integers only." 
 			else
+				[ $DEBUG -eq 1 ] && echo "DEBUG: PCAP size set to $PCAP_SIZE."
 				PCAP_SIZE_CONFIRMED="yes"
 			fi
 		done
@@ -732,9 +819,9 @@ Would you like to enable mmap I/O?"
 		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 		ANSWER="$?"
 		if [ $ANSWER -eq 1 ]; then
-	        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Using scatter/gather."
 		else
-	        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Using mmap I/O."
 			PCAP_OPTIONS="--mmap"
 		fi
 
@@ -742,11 +829,12 @@ Would you like to enable mmap I/O?"
 		PCAP_RING_SIZE_CONFIRMED="no"
 		while  [ $PCAP_RING_SIZE_CONFIRMED = "no" ]; do
 			PCAP_RING_SIZE=`zenity --entry --title "$TITLE" --text="How large do you want your PCAP ring buffer?\n\nEach monitoring interface will have the specified amount allocated from RAM\nso be sure your system has enough memory. In the case of 4 sensor interfaces\nand a specified ring buffer of 1GB, 4GB of total RAM will be allocated for packet\nbuffering. For busy networks a ring buffer of at least 256MB is recommended.\n\nPlease enter an integer in Megabytes (MB). The default is 64 MB." --entry-text=64`
-			[ x$PCAP_RING_SIZE = "x" ] && exit
+			[ $? = 1 ] && exit
 			COMPRESSED="$(echo $PCAP_RING_SIZE | sed -e 's/[^[:digit:]]//g')"
-			if [ "$COMPRESSED" != "$PCAP_RING_SIZE" ]; then
-				zenity --error --text "Invalid MB Value! Please use integers only." 
+			if [ "$COMPRESSED" != "$PCAP_RING_SIZE" ] || [ x$PCAP_RING_SIZE = "x" ]; then
+				zenity --error --text "Invalid MB Value! Please use integers only."
 			else
+				[ $DEBUG -eq 1 ] && echo "DEBUG: PCAP ring size set to $PCAP_RING_SIZE."
 				PCAP_RING_SIZE_CONFIRMED="yes"
 			fi
 		done
@@ -756,7 +844,7 @@ Would you like to enable mmap I/O?"
 	CRIT_DISK_USAGE_CONFIRMED="no"
 	while [ $CRIT_DISK_USAGE_CONFIRMED = "no" ]; do
 		CRIT_DISK_USAGE=`zenity --entry --title "$TITLE" --text="At what percent of disk usage would you like to begin purging old logs?\n\nPlease enter an integer between 10 and 100.  The default is 90." --entry-text=90`
-		[ x$CRIT_DISK_USAGE = "x" ] && exit
+		[ $? = 1 ] && exit
 		COMPRESSED="$(echo $CRIT_DISK_USAGE | sed -e 's/[^[:digit:]]//g')"
 		[ "$COMPRESSED" == "$CRIT_DISK_USAGE" ] && 
 		[ $CRIT_DISK_USAGE -gt 10 ] && 
@@ -765,6 +853,7 @@ Would you like to enable mmap I/O?"
 		zenity --error --text "Invalid percentage! Please use integers between 0 and 100." 
 	done
 	let WARN_DISK_USAGE=${CRIT_DISK_USAGE}-10
+	[ $DEBUG -eq 1 ] && echo "DEBUG: CRIT_DISK_USAGE set to $CRIT_DISK_USAGE."
 	fi # End of CUSTOM
 
 fi # End of ADVANCED SETUP - SENSOR
@@ -841,15 +930,20 @@ Would you like to enable ELSA?"
 			LOG_SIZE_LIMIT_CONFIRMED="no"
 			while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
 				LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="How much disk space (in GigaBytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is half your disk size.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=$LOG_SIZE_LIMIT_GB`
-				[ x$LOG_SIZE_LIMIT_GB = "x" ] && exit
+				[ $? = 1 ] && exit
+				if [ x$LOG_SIZE_LIMIT_GB = "x" ]; then
+				zenity --error --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size."
+				else
 				COMPRESSED="$(echo $LOG_SIZE_LIMIT_GB | sed -e 's/[^[:digit:]]//g')"
 				[ "$COMPRESSED" == "$LOG_SIZE_LIMIT_GB" ] && 
 				[ $LOG_SIZE_LIMIT_GB -gt 0 ] && 
 				[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB ] && 
 				LOG_SIZE_LIMIT_CONFIRMED="yes" || 
 				zenity --error --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size." 
+				fi
 			done
 			let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000
+			[ $DEBUG -eq 1 ] && echo "DEBUG: LOG_SIZE_LIMIT set to $LOG_SIZE_LIMIT."
 		fi
 	fi
 fi

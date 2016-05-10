@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion209) trusty; urgency=medium
+
+  * fixes for -w option and calling rule-update directly 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 10 May 2016 15:49:40 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion208) trusty; urgency=medium
 
   * Issues 904 906 907 

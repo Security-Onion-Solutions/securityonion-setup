@@ -1,0 +1,80 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion209) trusty; urgency=medium
+ .
+   * fixes for -w option and calling rule-update directly
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1581,17 +1581,8 @@ EOF
+ 	if [ "$INTERNET" = "UP" ]; then
+ 		echo "45"
+ 		echo "# Please wait while executing PulledPork to download rules..." | tee -a $LOG
+-		mkdir -p /etc/nsm/rules/backup/
+-		cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+-		mkdir -p /var/log/nsm/
+-	        PP_OPTIONS="-P"
+-	        if [ "$IDS_ENGINE_LOWER" = "suricata" ]; then
+-                	PP_OPTIONS="$PP_OPTIONS -T"
+-	        fi
+-		touch /var/log/nsm/pulledpork.log
+-		chown sguil /var/log/nsm/pulledpork.log
+-		su - sguil -c "/usr/bin/pulledpork.pl $PP_OPTIONS -c $PP_CONF" >> /var/log/nsm/pulledpork.log
+ 		echo "LOCAL_NIDS_RULE_TUNING=no" >> $CONF
++		/usr/bin/rule-update
+ 	else
+ 		echo "LOCAL_NIDS_RULE_TUNING=yes" >> $CONF
+ 		echo "Can't reach rule download sites.  Setting LOCAL_NIDS_RULE_TUNING to yes." >> $LOG 2>&1
+@@ -2023,10 +2014,10 @@ save()
+ 	echo "# These fields were generated from your answers" >> $WRITEANSWERFILE
+ 	echo "SERVER=$SERVER" >> $WRITEANSWERFILE
+ 	echo "SERVERNAME=$SERVERNAME" >> $WRITEANSWERFILE
+-	echo "SSH_USERNAME=\'$SSH_USERNAME\'" >> $WRITEANSWERFILE
++	echo "SSH_USERNAME='$SSH_USERNAME'" >> $WRITEANSWERFILE
+ 	echo "SGUIL_SERVER_NAME=$SGUIL_SERVER_NAME" >> $WRITEANSWERFILE
+-	echo "SGUIL_CLIENT_USERNAME=\'$SGUIL_CLIENT_USERNAME\'" >> $WRITEANSWERFILE
+-	echo "SGUIL_CLIENT_PASSWORD_1=\'$SGUIL_CLIENT_PASSWORD_1\'" >> $WRITEANSWERFILE
++	echo "SGUIL_CLIENT_USERNAME='$SGUIL_CLIENT_USERNAME'" >> $WRITEANSWERFILE
++	echo "SGUIL_CLIENT_PASSWORD_1='$SGUIL_CLIENT_PASSWORD_1'" >> $WRITEANSWERFILE
+ 	echo "XPLICO_ENABLED=$XPLICO_ENABLED" >> $WRITEANSWERFILE
+ 	echo "ELSA=$ELSA" >> $WRITEANSWERFILE
+ 	echo "UPDATE_ELSA_SERVER=$UPDATE_ELSA_SERVER" >> $WRITEANSWERFILE
+@@ -2046,8 +2037,8 @@ save()
+ 	echo "PADS_AGENT_ENABLED=$PADS_AGENT_ENABLED" >> $WRITEANSWERFILE
+ 	echo "HTTP_AGENT_ENABLED=$HTTP_AGENT_ENABLED" >> $WRITEANSWERFILE
+ 	echo "ARGUS_ENABLED=$ARGUS_ENABLED" >> $WRITEANSWERFILE
+-	echo "IDS_RULESET=\'$IDS_RULESET\'" >> $WRITEANSWERFILE
+-	echo "OINKCODE=\'$OINKCODE\'" >> $WRITEANSWERFILE
++	echo "IDS_RULESET='$IDS_RULESET'" >> $WRITEANSWERFILE
++	echo "OINKCODE='$OINKCODE'" >> $WRITEANSWERFILE
+ 	echo "PF_RING_SLOTS=$PF_RING_SLOTS" >> $WRITEANSWERFILE
+ 	echo "IDS_ENGINE=$IDS_ENGINE" >> $WRITEANSWERFILE
+ 	echo "IDS_LB_PROCS=$IDS_LB_PROCS" >> $WRITEANSWERFILE
+@@ -2055,7 +2046,7 @@ save()
+ 	echo "EXTRACT_FILES=$EXTRACT_FILES" >> $WRITEANSWERFILE
+ 	echo "PCAP_SIZE=$PCAP_SIZE" >> $WRITEANSWERFILE
+ 	echo "PCAP_RING_SIZE=$PCAP_RING_SIZE" >> $WRITEANSWERFILE
+-	echo "PCAP_OPTIONS=\'$PCAP_OPTIONS\'" >> $WRITEANSWERFILE
++	echo "PCAP_OPTIONS='$PCAP_OPTIONS'" >> $WRITEANSWERFILE
+ 	echo "WARN_DISK_USAGE=$WARN_DISK_USAGE" >> $WRITEANSWERFILE
+ 	echo "CRIT_DISK_USAGE=$CRIT_DISK_USAGE" >> $WRITEANSWERFILE
+ 	echo "DAYSTOKEEP=$DAYSTOKEEP" >> $WRITEANSWERFILE

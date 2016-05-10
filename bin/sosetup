@@ -279,7 +279,7 @@ Otherwise, choose Standalone to configure both Server and Sensor components on t
                 [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Sensor."
 		SERVER=0
 		SENSOR=1
-		TEXT="What is the hostname or IP address of the Sguil server that this sensor should connect to?"
+		TEXT="What is the hostname or IP address of the master server that this sensor should connect to?"
 		SERVERNAME_CONFIRMED="no"
 		while [ $SERVERNAME_CONFIRMED = "no" ]; do
 			SERVERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
@@ -294,15 +294,15 @@ Otherwise, choose Standalone to configure both Server and Sensor components on t
 			if [ "$SERVERNAME" = "$HOSTNAME" ]; then
 				zenity --error --text="That is the hostname of this box\!\r \
 \r \
-Since you chose a sensor-only installation, the Sguil server should be a separate box."
+Since you chose a sensor-only installation, the master server should be a separate box."
 			elif [ "$SERVERNAME" = "$IP" ]; then
 				zenity --error --text="That is the IP address of this box\!\r \
 \r \
-Since you chose a sensor-only installation, the Sguil server should be a separate box."
+Since you chose a sensor-only installation, the master server should be a separate box."
 			elif [ "x$SERVERNAME" = "x" ]; then
 				zenity --error --text="No server defined\!\r \
 \r \
-Please provide the hostname or IP address of a valid Sguil server."
+Please provide the hostname or IP address of a valid master server."
 
 			else
 				# nc will result in OSSEC Active Response blocking the IP address
@@ -318,7 +318,7 @@ firewall rules."
 				fi
 			fi
 		done
-		TEXT="Please enter a username that can SSH to the Sguil server and execute sudo."
+		TEXT="Please enter a username that can SSH to the master server and execute sudo."
 		SENSOR_CONFIRM_3="no"
 		while [[ $SENSOR_CONFIRM_3 = "no" ]]; do
 		SSH_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
@@ -332,7 +332,7 @@ firewall rules."
 			if [ x$SSH_USERNAME = "x" ]; then
 				zenity --error --text="No username defined\!\r \
 \r\ \
-Please provide a username that can SSH to the Sguil server and execute sudo."
+Please provide a username that can SSH to the master server and execute sudo."
 			else
 				[ $DEBUG -eq 1 ] && echo "DEBUG: SSH username set."
 				SENSOR_CONFIRM_3="- Configure the sensors to report to $SERVERNAME.\n"

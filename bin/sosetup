@@ -1090,6 +1090,19 @@ sed -i "s|^#$HOSTNAME-|$HOSTNAME-|g" $SENSORTAB
 # Delete all nsm configuration and data
 /usr/sbin/nsm_all_del_quick >> $LOG 2>&1
 
+# Delete any existing ELSA databases.
+if [ "$ELSA" = "YES" ]; then
+	if [ -d /var/lib/mysql/elsa_web/ ]; then
+		mysql -e "drop database elsa_web" >> $LOG 2>&1
+	fi
+	if [ -d /var/lib/mysql/syslog/ ]; then
+		mysql -e "drop database syslog" >> $LOG 2>&1
+	fi
+	if [ -d /var/lib/mysql/syslog_data/ ]; then
+		mysql -e "drop database syslog_data" >> $LOG 2>&1
+	fi
+fi
+
 #########################################
 # MySQL tuning
 #########################################
@@ -1128,16 +1141,10 @@ echo "options pf_ring transparent_mode=0 min_num_slots=$PF_RING_SLOTS" > /etc/mo
 # Firewall
 # When enabling ufw over SSH, it says it might disrupt the SSH
 # connection and asks for confirmation, so we put in the "allow 22" first, 
-# then echo "y" into the "ufw enable", and hope for the best!
+# and then echo "y" into the "ufw enable".
 #########################################
 # Open port 22 for remote administration
 ufw allow 22/tcp >> $LOG 2>&1
-# No longer opening 514 and 1514 by default
-# This is now done by so-allow
-# Open port 514 (tcp and udp) for syslog
-#ufw allow 514 >> $LOG 2>&1
-# Open port 1514/udp for OSSEC agents
-#ufw allow 1514/udp >> $LOG 2>&1
 # Enable ufw if not already enabled
 echo "y" | ufw enable >> $LOG 2>&1
 
@@ -1159,44 +1166,6 @@ rm -f /root/.ssh/securityonion_ssh.conf
 echo "10"
 echo "# Please wait while creating the Sguil server..." | tee -a $LOG
 /usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
-
-# MOVED TO /usr/sbin/nsm_server_add
-# Create /etc/sguild symlink - http://securityonion.blogspot.com/2011/11/security-onion-20111130-now-available.html
-#if [ ! -e /etc/sguild ]; then 
-#	ln -f -s /etc/nsm/"$SGUIL_SERVER_NAME"/ /etc/sguild
-#fi
-# We keep all our rules in /etc/nsm/rules, so symlink all other rules locations to here
-#rm -rf /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
-#ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
-# Sensors will try to scp bpf.conf and threshold.conf from master, so let's create them if they don't already exist
-#if [ ! -f /etc/nsm/rules/bpf.conf ]; then touch /etc/nsm/rules/bpf.conf; fi
-#if [ ! -f /etc/nsm/rules/threshold.conf ]; then cp /etc/nsm/templates/snort/threshold.conf /etc/nsm/rules/; fi
-
-# MOVED TO /usr/lib/nsmnow/lib-nsm-server-utils
-#cat /var/www/squert/.scripts/squert.sql | mysql -uroot -U securityonion_db  >> $LOG 2>&1
-#mysql -N -B --user=root -e "GRANT SELECT ON securityonion_db.* TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
-#mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.mappings TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
-#mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.ip2c TO 'readonly'@'localhost';" >> $LOG 2>&1
-#mysql -N -B --user=root -e "GRANT FILE ON *.* TO 'readonly'@'localhost';" >> $LOG 2>&1
-#mysql -N -B --user=root -e "GRANT INSERT,UPDATE,DELETE ON securityonion_db.filters TO 'readonly'@'localhost';" >> $LOG 2>&1
-#mysql -N -B --user=root -e "CREATE INDEX comment ON securityonion_db.history (comment(50));" >> $LOG 2>&1
-#mysql -N -B --user=root -e "CREATE INDEX sid ON securityonion_db.history (sid);" >> $LOG 2>&1
-#mysql -N -B --user=root -e "CREATE INDEX cid ON securityonion_db.history (cid);" >> $LOG 2>&1
-#mysql -N -B --user=root -e "GRANT DELETE on securityonion_db.history to 'readonly'@'localhost';" >> $LOG 2>&1
-#mysql -N -B --user=root -e "GRANT UPDATE on securityonion_db.user_info TO 'readonly'@'localhost';" >> $LOG 2>&1
-
-#echo "15"
-#echo "# Please wait while configuring firewall..." | tee -a $LOG
-# No longer opening 443 and 7734 by default
-# This is now done by so-allow
-# Open port 443 for https web interface
-#ufw allow 443/tcp >> $LOG 2>&1
-# Open port 7734 for Sguil clients
-#ufw allow 7734/tcp >> $LOG 2>&1
-# No longer opening port 7736 by default
-# This is now done when the sensor runs Setup
-# Open port 7736 for Sguil sensors
-#ufw allow 7736/tcp >> $LOG 2>&1
 
 fi
 
@@ -1842,10 +1811,6 @@ if [ "$ELSA" = "YES" ]; then
     # update LOG_SIZE_LIMIT
     sed -i "s|\"log_size_limit\" :.*$|\"log_size_limit\" : $LOG_SIZE_LIMIT,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-node.conf
 
-    # update query_timeout
-    #sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-web.conf
-    #sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-api.conf
-
     # check if there is an ELSA directive already
     ELSA_USE=$(grep "ELSA=" $CONF)
     if [ ! $? -eq 0 ]; then
@@ -1854,17 +1819,6 @@ if [ "$ELSA" = "YES" ]; then
         echo "ELSA=YES" >> $CONF
     else
         sed -i 's,ELSA=NO,ELSA=YES,' $CONF
-    fi
-
-    # Delete any existing ELSA databases.
-    if [ -d /var/lib/mysql/elsa_web/ ]; then
-	    mysql -e "drop database elsa_web" >> $LOG 2>&1
-    fi
-    if [ -d /var/lib/mysql/syslog/ ]; then
-    	mysql -e "drop database syslog" >> $LOG 2>&1
-    fi
-    if [ -d /var/lib/mysql/syslog_data/ ]; then
-    	mysql -e "drop database syslog_data" >> $LOG 2>&1
     fi
 
     # Delete sphinxsearch binlog files

@@ -1581,17 +1581,8 @@ EOF
 	if [ "$INTERNET" = "UP" ]; then
 		echo "45"
 		echo "# Please wait while executing PulledPork to download rules..." | tee -a $LOG
-		mkdir -p /etc/nsm/rules/backup/
-		cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
-		mkdir -p /var/log/nsm/
-	        PP_OPTIONS="-P"
-	        if [ "$IDS_ENGINE_LOWER" = "suricata" ]; then
-                	PP_OPTIONS="$PP_OPTIONS -T"
-	        fi
-		touch /var/log/nsm/pulledpork.log
-		chown sguil /var/log/nsm/pulledpork.log
-		su - sguil -c "/usr/bin/pulledpork.pl $PP_OPTIONS -c $PP_CONF" >> /var/log/nsm/pulledpork.log
 		echo "LOCAL_NIDS_RULE_TUNING=no" >> $CONF
+		/usr/bin/rule-update
 	else
 		echo "LOCAL_NIDS_RULE_TUNING=yes" >> $CONF
 		echo "Can't reach rule download sites.  Setting LOCAL_NIDS_RULE_TUNING to yes." >> $LOG 2>&1

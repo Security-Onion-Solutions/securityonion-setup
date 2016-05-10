@@ -1,0 +1,638 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion208) trusty; urgency=medium
+ .
+   * Issues 904 906 907
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -279,7 +279,7 @@ Otherwise, choose Standalone to configur
+                 [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Sensor."
+ 		SERVER=0
+ 		SENSOR=1
+-		TEXT="What is the hostname or IP address of the Sguil server that this sensor should connect to?"
++		TEXT="What is the hostname or IP address of the master server that this sensor should connect to?"
+ 		SERVERNAME_CONFIRMED="no"
+ 		while [ $SERVERNAME_CONFIRMED = "no" ]; do
+ 			SERVERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
+@@ -294,15 +294,15 @@ Otherwise, choose Standalone to configur
+ 			if [ "$SERVERNAME" = "$HOSTNAME" ]; then
+ 				zenity --error --text="That is the hostname of this box\!\r \
+ \r \
+-Since you chose a sensor-only installation, the Sguil server should be a separate box."
++Since you chose a sensor-only installation, the master server should be a separate box."
+ 			elif [ "$SERVERNAME" = "$IP" ]; then
+ 				zenity --error --text="That is the IP address of this box\!\r \
+ \r \
+-Since you chose a sensor-only installation, the Sguil server should be a separate box."
++Since you chose a sensor-only installation, the master server should be a separate box."
+ 			elif [ "x$SERVERNAME" = "x" ]; then
+ 				zenity --error --text="No server defined\!\r \
+ \r \
+-Please provide the hostname or IP address of a valid Sguil server."
++Please provide the hostname or IP address of a valid master server."
+ 
+ 			else
+ 				# nc will result in OSSEC Active Response blocking the IP address
+@@ -318,7 +318,7 @@ firewall rules."
+ 				fi
+ 			fi
+ 		done
+-		TEXT="Please enter a username that can SSH to the Sguil server and execute sudo."
++		TEXT="Please enter a username that can SSH to the master server and execute sudo."
+ 		SENSOR_CONFIRM_3="no"
+ 		while [[ $SENSOR_CONFIRM_3 = "no" ]]; do
+ 		SSH_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
+@@ -332,7 +332,7 @@ firewall rules."
+ 			if [ x$SSH_USERNAME = "x" ]; then
+ 				zenity --error --text="No username defined\!\r \
+ \r\ \
+-Please provide a username that can SSH to the Sguil server and execute sudo."
++Please provide a username that can SSH to the master server and execute sudo."
+ 			else
+ 				[ $DEBUG -eq 1 ] && echo "DEBUG: SSH username set."
+ 				SENSOR_CONFIRM_3="- Configure the sensors to report to $SERVERNAME.\n"
+@@ -1090,6 +1090,19 @@ sed -i "s|^#$HOSTNAME-|$HOSTNAME-|g" $SE
+ # Delete all nsm configuration and data
+ /usr/sbin/nsm_all_del_quick >> $LOG 2>&1
+ 
++# Delete any existing ELSA databases.
++if [ "$ELSA" = "YES" ]; then
++	if [ -d /var/lib/mysql/elsa_web/ ]; then
++		mysql -e "drop database elsa_web" >> $LOG 2>&1
++	fi
++	if [ -d /var/lib/mysql/syslog/ ]; then
++		mysql -e "drop database syslog" >> $LOG 2>&1
++	fi
++	if [ -d /var/lib/mysql/syslog_data/ ]; then
++		mysql -e "drop database syslog_data" >> $LOG 2>&1
++	fi
++fi
++
+ #########################################
+ # MySQL tuning
+ #########################################
+@@ -1128,16 +1141,10 @@ echo "options pf_ring transparent_mode=0
+ # Firewall
+ # When enabling ufw over SSH, it says it might disrupt the SSH
+ # connection and asks for confirmation, so we put in the "allow 22" first, 
+-# then echo "y" into the "ufw enable", and hope for the best!
++# and then echo "y" into the "ufw enable".
+ #########################################
+ # Open port 22 for remote administration
+ ufw allow 22/tcp >> $LOG 2>&1
+-# No longer opening 514 and 1514 by default
+-# This is now done by so-allow
+-# Open port 514 (tcp and udp) for syslog
+-#ufw allow 514 >> $LOG 2>&1
+-# Open port 1514/udp for OSSEC agents
+-#ufw allow 1514/udp >> $LOG 2>&1
+ # Enable ufw if not already enabled
+ echo "y" | ufw enable >> $LOG 2>&1
+ 
+@@ -1160,44 +1167,6 @@ echo "10"
+ echo "# Please wait while creating the Sguil server..." | tee -a $LOG
+ /usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
+ 
+-# MOVED TO /usr/sbin/nsm_server_add
+-# Create /etc/sguild symlink - http://securityonion.blogspot.com/2011/11/security-onion-20111130-now-available.html
+-#if [ ! -e /etc/sguild ]; then 
+-#	ln -f -s /etc/nsm/"$SGUIL_SERVER_NAME"/ /etc/sguild
+-#fi
+-# We keep all our rules in /etc/nsm/rules, so symlink all other rules locations to here
+-#rm -rf /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
+-#ln -s /etc/nsm/rules /nsm/server_data/"$SGUIL_SERVER_NAME"/rules/default >> $LOG 2>&1
+-# Sensors will try to scp bpf.conf and threshold.conf from master, so let's create them if they don't already exist
+-#if [ ! -f /etc/nsm/rules/bpf.conf ]; then touch /etc/nsm/rules/bpf.conf; fi
+-#if [ ! -f /etc/nsm/rules/threshold.conf ]; then cp /etc/nsm/templates/snort/threshold.conf /etc/nsm/rules/; fi
+-
+-# MOVED TO /usr/lib/nsmnow/lib-nsm-server-utils
+-#cat /var/www/squert/.scripts/squert.sql | mysql -uroot -U securityonion_db  >> $LOG 2>&1
+-#mysql -N -B --user=root -e "GRANT SELECT ON securityonion_db.* TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.mappings TO 'readonly'@'localhost' IDENTIFIED BY 'securityonion';" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "GRANT ALL PRIVILEGES ON securityonion_db.ip2c TO 'readonly'@'localhost';" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "GRANT FILE ON *.* TO 'readonly'@'localhost';" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "GRANT INSERT,UPDATE,DELETE ON securityonion_db.filters TO 'readonly'@'localhost';" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "CREATE INDEX comment ON securityonion_db.history (comment(50));" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "CREATE INDEX sid ON securityonion_db.history (sid);" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "CREATE INDEX cid ON securityonion_db.history (cid);" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "GRANT DELETE on securityonion_db.history to 'readonly'@'localhost';" >> $LOG 2>&1
+-#mysql -N -B --user=root -e "GRANT UPDATE on securityonion_db.user_info TO 'readonly'@'localhost';" >> $LOG 2>&1
+-
+-#echo "15"
+-#echo "# Please wait while configuring firewall..." | tee -a $LOG
+-# No longer opening 443 and 7734 by default
+-# This is now done by so-allow
+-# Open port 443 for https web interface
+-#ufw allow 443/tcp >> $LOG 2>&1
+-# Open port 7734 for Sguil clients
+-#ufw allow 7734/tcp >> $LOG 2>&1
+-# No longer opening port 7736 by default
+-# This is now done when the sensor runs Setup
+-# Open port 7736 for Sguil sensors
+-#ufw allow 7736/tcp >> $LOG 2>&1
+-
+ fi
+ 
+ #########################################
+@@ -1619,7 +1588,9 @@ EOF
+ 	        if [ "$IDS_ENGINE_LOWER" = "suricata" ]; then
+                 	PP_OPTIONS="$PP_OPTIONS -T"
+ 	        fi
+-		/usr/bin/pulledpork.pl $PP_OPTIONS -c $PP_CONF >> /var/log/nsm/pulledpork.log
++		touch /var/log/nsm/pulledpork.log
++		chown sguil /var/log/nsm/pulledpork.log
++		su - sguil -c "/usr/bin/pulledpork.pl $PP_OPTIONS -c $PP_CONF" >> /var/log/nsm/pulledpork.log
+ 		echo "LOCAL_NIDS_RULE_TUNING=no" >> $CONF
+ 	else
+ 		echo "LOCAL_NIDS_RULE_TUNING=yes" >> $CONF
+@@ -1659,7 +1630,7 @@ else
+ 	# We can use a relative hyperlink now that Apache is proxying ELSA at /elsa-query
+ 	URL="/elsa-query/?query_string=\"\${var}\"%20groupby:program"
+ 	HEXVAL=$(xxd -pu -c 256 <<< "$URL")
+-	[ "$ELSA" = "YES" ] && mysql -uroot -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
++	[ "$ELSA" = "YES" ] && mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
+ 
+ 	# Restart web server
+ 	apache2ctl restart >> $LOG 2>&1
+@@ -1842,10 +1813,6 @@ if [ "$ELSA" = "YES" ]; then
+     # update LOG_SIZE_LIMIT
+     sed -i "s|\"log_size_limit\" :.*$|\"log_size_limit\" : $LOG_SIZE_LIMIT,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-node.conf
+ 
+-    # update query_timeout
+-    #sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-web.conf
+-    #sed -i "s|\"query_timeout\":.*$|\"query_timeout\": 10000,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-api.conf
+-
+     # check if there is an ELSA directive already
+     ELSA_USE=$(grep "ELSA=" $CONF)
+     if [ ! $? -eq 0 ]; then
+@@ -1856,17 +1823,6 @@ if [ "$ELSA" = "YES" ]; then
+         sed -i 's,ELSA=NO,ELSA=YES,' $CONF
+     fi
+ 
+-    # Delete any existing ELSA databases.
+-    if [ -d /var/lib/mysql/elsa_web/ ]; then
+-	    mysql -e "drop database elsa_web" >> $LOG 2>&1
+-    fi
+-    if [ -d /var/lib/mysql/syslog/ ]; then
+-    	mysql -e "drop database syslog" >> $LOG 2>&1
+-    fi
+-    if [ -d /var/lib/mysql/syslog_data/ ]; then
+-    	mysql -e "drop database syslog_data" >> $LOG 2>&1
+-    fi
+-
+     # Delete sphinxsearch binlog files
+     rm -f /var/lib/sphinxsearch/data/binlog.*
+ 
+@@ -1953,12 +1909,10 @@ function IP2C() {
+ # If this is a server, populate ip2c table
+ if [ -d /var/lib/mysql/securityonion_db/ ]; then
+ 	/usr/bin/sguild-add-user "$SGUIL_CLIENT_USERNAME" "$SGUIL_CLIENT_PASSWORD_1" >/dev/null
+-	cd /var/www/so/squert/.scripts/
+-	# Setup needs to delete /var/www/so/squert/.scripts/Ip2c/*.md5 before running ip2c.tcl
++	# Setup needs to delete /var/www/so/squert/.scripts/*.md5 before running ip2c.tcl
+ 	# http://code.google.com/p/security-onion/issues/detail?id=250
+-	rm -f *.md5
+-	./ip2c.tcl >> $LOG 2>&1 &
+-	cd - >/dev/null
++	rm -f /var/www/so/squert/.scripts/*.md5
++	/usr/bin/so-squert-ip2c >> $LOG 2>&1 &
+ fi
+ }
+ 
+@@ -2069,10 +2023,10 @@ save()
+ 	echo "# These fields were generated from your answers" >> $WRITEANSWERFILE
+ 	echo "SERVER=$SERVER" >> $WRITEANSWERFILE
+ 	echo "SERVERNAME=$SERVERNAME" >> $WRITEANSWERFILE
+-	echo "SSH_USERNAME=\"$SSH_USERNAME\"" >> $WRITEANSWERFILE
++	echo "SSH_USERNAME=\'$SSH_USERNAME\'" >> $WRITEANSWERFILE
+ 	echo "SGUIL_SERVER_NAME=$SGUIL_SERVER_NAME" >> $WRITEANSWERFILE
+-	echo "SGUIL_CLIENT_USERNAME=\"$SGUIL_CLIENT_USERNAME\"" >> $WRITEANSWERFILE
+-	echo "SGUIL_CLIENT_PASSWORD_1=\"$SGUIL_CLIENT_PASSWORD_1\"" >> $WRITEANSWERFILE
++	echo "SGUIL_CLIENT_USERNAME=\'$SGUIL_CLIENT_USERNAME\'" >> $WRITEANSWERFILE
++	echo "SGUIL_CLIENT_PASSWORD_1=\'$SGUIL_CLIENT_PASSWORD_1\'" >> $WRITEANSWERFILE
+ 	echo "XPLICO_ENABLED=$XPLICO_ENABLED" >> $WRITEANSWERFILE
+ 	echo "ELSA=$ELSA" >> $WRITEANSWERFILE
+ 	echo "UPDATE_ELSA_SERVER=$UPDATE_ELSA_SERVER" >> $WRITEANSWERFILE
+@@ -2092,8 +2046,8 @@ save()
+ 	echo "PADS_AGENT_ENABLED=$PADS_AGENT_ENABLED" >> $WRITEANSWERFILE
+ 	echo "HTTP_AGENT_ENABLED=$HTTP_AGENT_ENABLED" >> $WRITEANSWERFILE
+ 	echo "ARGUS_ENABLED=$ARGUS_ENABLED" >> $WRITEANSWERFILE
+-	echo "IDS_RULESET=\"$IDS_RULESET\"" >> $WRITEANSWERFILE
+-	echo "OINKCODE=\"$OINKCODE\"" >> $WRITEANSWERFILE
++	echo "IDS_RULESET=\'$IDS_RULESET\'" >> $WRITEANSWERFILE
++	echo "OINKCODE=\'$OINKCODE\'" >> $WRITEANSWERFILE
+ 	echo "PF_RING_SLOTS=$PF_RING_SLOTS" >> $WRITEANSWERFILE
+ 	echo "IDS_ENGINE=$IDS_ENGINE" >> $WRITEANSWERFILE
+ 	echo "IDS_LB_PROCS=$IDS_LB_PROCS" >> $WRITEANSWERFILE
+@@ -2101,7 +2055,7 @@ save()
+ 	echo "EXTRACT_FILES=$EXTRACT_FILES" >> $WRITEANSWERFILE
+ 	echo "PCAP_SIZE=$PCAP_SIZE" >> $WRITEANSWERFILE
+ 	echo "PCAP_RING_SIZE=$PCAP_RING_SIZE" >> $WRITEANSWERFILE
+-	echo "PCAP_OPTIONS=\"$PCAP_OPTIONS\"" >> $WRITEANSWERFILE
++	echo "PCAP_OPTIONS=\'$PCAP_OPTIONS\'" >> $WRITEANSWERFILE
+ 	echo "WARN_DISK_USAGE=$WARN_DISK_USAGE" >> $WRITEANSWERFILE
+ 	echo "CRIT_DISK_USAGE=$CRIT_DISK_USAGE" >> $WRITEANSWERFILE
+ 	echo "DAYSTOKEEP=$DAYSTOKEEP" >> $WRITEANSWERFILE
+--- securityonion-setup-20120912.orig/bin/sosetup-fix-ppconf
++++ securityonion-setup-20120912/bin/sosetup-fix-ppconf
+@@ -1,25 +1,42 @@
+ #!/bin/sh
+ 
+ FILE="/etc/nsm/pulledpork/pulledpork.conf"
++DATE=`date +%Y%m%d`
+ 
++# Check to see if pulledpork.conf exists and if Snort VRT ruleset is enabled.
+ if [ -f $FILE ]; then
+ 	if grep "^rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz" $FILE >/dev/null 2>&1; then
+-		if ! grep "^rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
+-			echo "$FILE doesn't already have Snort Community ruleset enabled."
+-			DATE=`date +%Y%m%d`
++
++		# Snort VRT ruleset is enabled.
++
++		# First, check to see if there are any old amazonaws entries that need to be removed.
++		if grep "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
++			echo "Found old Snort VRT amazonaws entries in $FILE."
+ 			echo "Backing up $FILE to $FILE.$DATE."
+ 			cp $FILE $FILE.$DATE
+-			if ! grep "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
+-				echo "Appending the following to $FILE:"
+-				STRING="rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community"
+-				echo "$STRING" | tee -a $FILE
+-			else
+-				echo "Uncommenting the Snort Community line in $FILE."
+-				sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $FILE
++			echo "Removing old amazonaws entries from $FILE."
++			grep -v "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE > $FILE.$DATE.without.amazonaws
++			mv $FILE.$DATE.without.amazonaws $FILE
++		fi
++
++		# Next, check to see if there are multiple snort.org community entries.  If so, remove all of them.
++		COMMUNITY_ENTRIES=`grep "rule_url=https://snort.org/downloads/community/" $FILE | wc -l`
++		if [ "$COMMUNITY_ENTRIES" -gt 1 ]; then
++			echo "Found multiple Snort VRT community entries in $FILE."
++			if [ ! -f $FILE.$DATE ]; then
++				echo "Backing up $FILE to $FILE.$DATE."
++				cp $FILE $FILE.$DATE
+ 			fi
++			echo "Removing all Snort VRT community entries from $FILE."
++			grep -v "rule_url=https://snort.org/downloads/community/" $FILE > $FILE.$DATE.without.snort.community
++			mv $FILE.$DATE.without.snort.community $FILE
++		fi
++
++		# Finally, append a single snort.org community entry if necessary.
++		if ! grep "rule_url=https://snort.org/downloads/community/" $FILE >/dev/null 2>&1; then
++			echo "Appending the following to $FILE:"
++			STRING="rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community"
++			echo "$STRING" | tee -a $FILE
+ 		fi
+ 	fi
+-	
+-	# 2015-10-29 The URL has changed
+-	sed -i 's\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\g' $FILE
+ fi
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup.conf
+@@ -19,20 +19,20 @@
+ # Which network interface should be the management interface?
+ # The management interface has an IP address and is NOT used for sniffing.
+ # We recommend that you always make this eth0 if possible for consistency.
+-MGMT_INTERFACE="eth0"
++MGMT_INTERFACE='eth0'
+ 
+ # MGMT_CONFIG_TYPE
+ # Should the management interface be configured using DHCP or static IP?
+ # We recommend using static IP whenever possible.
+-# MGMT_CONFIG_TYPE="static"
+-MGMT_CONFIG_TYPE="DHCP"
++# MGMT_CONFIG_TYPE='static'
++MGMT_CONFIG_TYPE='DHCP'
+ 
+ # If MGMT_CONFIG_TYPE=static, then provide the details here:
+-ADDRESS="192.168.244.3"
+-NETMASK="255.255.255.0"
+-GATEWAY="192.168.244.1"
+-NAMESERVER="192.168.244.2 192.168.244.3"
+-DOMAIN="example.com"
++ADDRESS='192.168.244.3'
++NETMASK='255.255.255.0'
++GATEWAY='192.168.244.1'
++NAMESERVER='192.168.244.2 192.168.244.3'
++DOMAIN='example.com'
+ 
+ ################################
+ # Sniffing interface(s)
+@@ -40,8 +40,8 @@ DOMAIN="example.com"
+ # Which interface(s) will be sniffing network traffic?
+ # For multiple interfaces, please separate them with spaces.
+ # For example:
+-# SNIFFING_INTERFACES="eth1 eth2"
+-SNIFFING_INTERFACES="eth1"
++# SNIFFING_INTERFACES='eth1 eth2'
++SNIFFING_INTERFACES='eth1'
+ 
+ ################################
+ # Master Server
+@@ -55,33 +55,35 @@ SNIFFING_INTERFACES="eth1"
+ SERVER=1
+ 
+ # SERVERNAME
+-# If SERVER=1, then this should be "localhost":
+-# SERVERNAME="localhost"
++# If SERVER=1, then this should be 'localhost':
++# SERVERNAME='localhost'
+ # If SERVER=0, then this should be the name/IP of the separate Master server:
+-# SERVERNAME="sguilserver.example.com"
+-SERVERNAME="localhost"
++# SERVERNAME='sguilserver.example.com'
++SERVERNAME='localhost'
+ 
+ # SSH_USERNAME
+ # If SERVER=0, then this should be the name of an
+ # account on the separate Master server that has sudo privileges.
+ # sudo privileges can be revoked after sosetup is complete.
+-# SSH_USERNAME="sensor1"
+-SSH_USERNAME=""
++# SSH_USERNAME='sensor1'
++SSH_USERNAME=''
+ 
+ # SGUIL_SERVER_NAME
+ # If SERVER=1, then this is the name of the Sguil server we'll create.
+ # You probably shouldn't change this value.
+-SGUIL_SERVER_NAME="securityonion"
++SGUIL_SERVER_NAME='securityonion'
+ 
+ # SGUIL_CLIENT_USERNAME
+ # If SERVER=1, then this is the username that we'll create
+ # for Sguil/Squert/ELSA.
+-SGUIL_CLIENT_USERNAME="onionuser"
++SGUIL_CLIENT_USERNAME='onionuser'
+ 
+ # SGUIL_CLIENT_PASSWORD_1
+ # If SERVER=1, then this is the password that we'll create
+ # for Sguil/Squert/ELSA.
+-SGUIL_CLIENT_PASSWORD_1="asdfasdf"
++# If you set a password here, you may want to change it later and/or
++# shred this file.
++SGUIL_CLIENT_PASSWORD_1='asdfasdf'
+ 
+ ################################
+ # Master server services
+@@ -90,7 +92,7 @@ SGUIL_CLIENT_PASSWORD_1="asdfasdf"
+ # If SERVER=1, then the following services can be enabled/disabled.
+ 
+ # Do you want to run Xplico?  yes/no
+-XPLICO_ENABLED="no"
++XPLICO_ENABLED='no'
+ 
+ ################################
+ # ELSA
+@@ -110,23 +112,23 @@ ELSA=YES
+ # this new ELSA node.  Restarting Apache will interrupt
+ # any running ELSA queries.
+ # To automatically update the server's elsa_web.conf and 
+-# restart Apache, set this option to "YES":
+-# UPDATE_ELSA_SERVER="YES"
++# restart Apache, set this option to 'YES':
++# UPDATE_ELSA_SERVER='YES'
+ # If you'd rather update the server's elsa_web.conf yourself
+-# and manually restart Apache, set this option to "NO":
+-# UPDATE_ELSA_SERVER="NO"
+-UPDATE_ELSA_SERVER="YES"
++# and manually restart Apache, set this option to 'NO':
++# UPDATE_ELSA_SERVER='NO'
++UPDATE_ELSA_SERVER='YES'
+ 
+ # LOG_SIZE_LIMIT
+ # This setting controls how much disk space ELSA uses.
+ # 10TB = 10000000000000
+-# LOG_SIZE_LIMIT="10000000000000"
++# LOG_SIZE_LIMIT='10000000000000'
+ # 1TB = 1000000000000
+-# LOG_SIZE_LIMIT="1000000000000"
++# LOG_SIZE_LIMIT='1000000000000'
+ # 100GB = 100000000000
+-# LOG_SIZE_LIMIT="100000000000"
++# LOG_SIZE_LIMIT='100000000000'
+ # 10GB = 10000000000
+-LOG_SIZE_LIMIT="10000000000"
++LOG_SIZE_LIMIT='10000000000'
+ 
+ ################################
+ # Enable/disable services
+@@ -134,16 +136,16 @@ LOG_SIZE_LIMIT="10000000000"
+ 
+ # The OSSEC agent sends OSSEC HIDS alerts into the Sguil database.
+ # Do you want to run the OSSEC Agent?  yes/no
+-OSSEC_AGENT_ENABLED="yes"
++OSSEC_AGENT_ENABLED='yes'
+ 
+ # OSSEC_AGENT_LEVEL specifies the level at which OSSEC alerts are sent to sguild.
+-OSSEC_AGENT_LEVEL="5"
++OSSEC_AGENT_LEVEL='5'
+ 
+ # Salt allows you to manage your entire Security Onion deployment
+ # as one cohesive whole.  It provides configuration management
+ # and remote code execution.
+ # Do you want to enable Salt?  yes/no
+-SALT="yes"
++SALT='yes'
+ 
+ ################################
+ # Sensor components
+@@ -163,66 +165,68 @@ SENSOR=1
+ 
+ # BRO_ENABLED
+ # Do you want to run Bro?  yes/no
+-BRO_ENABLED="yes"
++BRO_ENABLED='yes'
+ 
+ # IDS_ENGINE_ENABLED
+ # Do you want to run an IDS engine (Snort/Suricata)?  yes/no
+-IDS_ENGINE_ENABLED="yes"
++IDS_ENGINE_ENABLED='yes'
+ 
+ # SNORT_AGENT_ENABLED
+ # Do you want to run the Snort agent?  yes/no
+ # The Snort agent sends Snort IDS alerts to the Sguil database.
+-SNORT_AGENT_ENABLED="yes"
++SNORT_AGENT_ENABLED='yes'
+ 
+ # BARNYARD2_ENABLED
+ # Do you want to run Barnyard2?  yes/no
+ # Barnyard2 sends IDS alerts from Snort/Suricata to
+ # Sguil's Snort agent and syslog (ELSA).
+-BARNYARD2_ENABLED="yes"
++BARNYARD2_ENABLED='yes'
+ 
+ # PCAP_ENABLED
+ # Do you want to run full packet capture?  yes/no
+-PCAP_ENABLED="yes"
++PCAP_ENABLED='yes'
+ 
+ # PCAP_AGENT_ENABLED
+ # Do you want to run Sguil's pcap_agent?  yes/no
+ # The pcap_agent allows Sguil to access the pcap store.
+-PCAP_AGENT_ENABLED="yes"
++PCAP_AGENT_ENABLED='yes'
+ 
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+ # Bro provides the same data types plus more, so most
+ # folks don't run Prads.
+-PRADS_ENABLED="no"
++PRADS_ENABLED='no'
+ 
+ # SANCP_AGENT_ENABLED
+ # Do you want to run the sancp_agent?  yes/no
+ # sancp_agent sends session data from Prads to Sguil.
+-SANCP_AGENT_ENABLED="no"
++SANCP_AGENT_ENABLED='no'
+ 
+ # PADS_AGENT_ENABLED
+ # Do you want to run the pads_agent?  yes/no
+ # pads_agent sends asset data from Prads to Sguil.
+-PADS_AGENT_ENABLED="no"
++PADS_AGENT_ENABLED='no'
+ 
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+ # http_agent sends http logs from Bro to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+-HTTP_AGENT_ENABLED="no"
++HTTP_AGENT_ENABLED='no'
+ 
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+ # Argus writes session data, also provided by Bro and Prads.
+ # Most folks don't run Argus.
+-ARGUS_ENABLED="no"
++ARGUS_ENABLED='no'
+ 
+ ################################
+ # Rules
+ ################################
+ 
+ # IDS_RULESET
++# This setting is only necessary on a master server.
++# Sensors automatically inherit ruleset from the master server.
+ # Which IDS ruleset would you like to use?
+ # Emerging Threats GPL (no oinkcode required):
+ # ETGPL
+@@ -232,12 +236,14 @@ ARGUS_ENABLED="no"
+ # VRT
+ # VRT and ET (requires VRT oinkcode):
+ # VRTET
+-IDS_RULESET="ETGPL"
++IDS_RULESET='ETGPL'
+ 
+ # OINKCODE
++# This setting is only necessary on a master server.
++# Sensors automatically inherit ruleset from the master server.
+ # If you're running VRT or ETPRO rulesets, you'll need to supply your
+ # oinkcode here.
+-OINKCODE=""
++OINKCODE=''
+ 
+ ################################
+ # PF_RING Config
+@@ -257,15 +263,15 @@ PF_RING_SLOTS=4096
+ # Whatever you choose here will apply to the master server
+ # and then sensors inherit this setting from the master server.
+ # To run Snort:
+-# IDS_ENGINE="snort"
++# IDS_ENGINE='snort'
+ # To run Suricata:
+-# IDS_ENGINE="suricata"
+-IDS_ENGINE="snort"
++# IDS_ENGINE='suricata'
++IDS_ENGINE='snort'
+ 
+ # IDS_LB_PROCS
+ # How many PF_RING load-balanced processes would you like to run?
+ # This value should be lower than your number of CPU cores.
+-IDS_LB_PROCS="1"
++IDS_LB_PROCS='1'
+ 
+ ################################
+ # Bro Config
+@@ -274,11 +280,11 @@ IDS_LB_PROCS="1"
+ # BRO_LB_PROCS
+ # How many PF_RING load-balanced processes would you like Bro to run?
+ # This value should be lower than your number of CPU cores.
+-BRO_LB_PROCS="1"
++BRO_LB_PROCS='1'
+ 
+ # EXTRACT_FILES
+ # Do you want Bro to automatically extract Windows EXEs and write them to disk?  yes/no
+-EXTRACT_FILES="yes"
++EXTRACT_FILES='yes'
+ 
+ ################################
+ # PCAP Config
+@@ -287,15 +293,18 @@ EXTRACT_FILES="yes"
+ # PCAP_SIZE
+ # How large do you want your pcap files to be?
+ # The default is 150MB.
+-PCAP_SIZE="150"
++PCAP_SIZE='150'
+ 
+ # PCAP_RING_SIZE
+ # How big of a ring buffer should be allocated for netsniff-ng?
+ # The default is 64MB.
+-PCAP_RING_SIZE="64"
++PCAP_RING_SIZE='64'
+ 
+ # PCAP_OPTIONS
+-PCAP_OPTIONS=""
++# The default option here of '-c' is intended for low-volume environments.
++# If monitoring lots of traffic, you will want to remove the -c to use
++# netsniff-ng's default scatter/gather I/O or consider netsniff-ng's --mmap option.
++PCAP_OPTIONS='-c'
+ 
+ ################################
+ # Maintenance
+@@ -303,16 +312,16 @@ PCAP_OPTIONS=""
+ 
+ # WARN_DISK_USAGE
+ # Begin warning when disk usage reaches this level
+-WARN_DISK_USAGE="80"
++WARN_DISK_USAGE='80'
+ 
+ # CRIT_DISK_USAGE
+ # Begin purging old files when disk usage reaches this level
+-CRIT_DISK_USAGE="90"
++CRIT_DISK_USAGE='90'
+ 
+ # DAYSTOKEEP
+-# Only applies to Sguil database ("securityonion_db")
+-DAYSTOKEEP="30"
++# Only applies to Sguil database ('securityonion_db')
++DAYSTOKEEP='30'
+ 
+ # DAYSTOREPAIR
+-# Only applies to Sguil database ("securityonion_db")
+-DAYSTOREPAIR="7"
++# Only applies to Sguil database ('securityonion_db')
++DAYSTOREPAIR='7'

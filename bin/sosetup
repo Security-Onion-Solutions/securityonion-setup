@@ -1628,7 +1628,7 @@ else
 	# We can use a relative hyperlink now that Apache is proxying ELSA at /elsa-query
 	URL="/elsa-query/?query_string=\"\${var}\"%20groupby:program"
 	HEXVAL=$(xxd -pu -c 256 <<< "$URL")
-	[ "$ELSA" = "YES" ] && mysql -uroot -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
+	[ "$ELSA" = "YES" ] && mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
 
 	# Restart web server
 	apache2ctl restart >> $LOG 2>&1

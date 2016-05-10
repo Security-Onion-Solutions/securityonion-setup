@@ -1,25 +1,42 @@
 #!/bin/sh
 
 FILE="/etc/nsm/pulledpork/pulledpork.conf"
+DATE=`date +%Y%m%d`
 
+# Check to see if pulledpork.conf exists and if Snort VRT ruleset is enabled.
 if [ -f $FILE ]; then
 	if grep "^rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz" $FILE >/dev/null 2>&1; then
-		if ! grep "^rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
-			echo "$FILE doesn't already have Snort Community ruleset enabled."
-			DATE=`date +%Y%m%d`
+
+		# Snort VRT ruleset is enabled.
+
+		# First, check to see if there are any old amazonaws entries that need to be removed.
+		if grep "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
+			echo "Found old Snort VRT amazonaws entries in $FILE."
 			echo "Backing up $FILE to $FILE.$DATE."
 			cp $FILE $FILE.$DATE
-			if ! grep "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
-				echo "Appending the following to $FILE:"
-				STRING="rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community"
-				echo "$STRING" | tee -a $FILE
-			else
-				echo "Uncommenting the Snort Community line in $FILE."
-				sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $FILE
+			echo "Removing old amazonaws entries from $FILE."
+			grep -v "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE > $FILE.$DATE.without.amazonaws
+			mv $FILE.$DATE.without.amazonaws $FILE
+		fi
+
+		# Next, check to see if there are multiple snort.org community entries.  If so, remove all of them.
+		COMMUNITY_ENTRIES=`grep "rule_url=https://snort.org/downloads/community/" $FILE | wc -l`
+		if [ "$COMMUNITY_ENTRIES" -gt 1 ]; then
+			echo "Found multiple Snort VRT community entries in $FILE."
+			if [ ! -f $FILE.$DATE ]; then
+				echo "Backing up $FILE to $FILE.$DATE."
+				cp $FILE $FILE.$DATE
 			fi
+			echo "Removing all Snort VRT community entries from $FILE."
+			grep -v "rule_url=https://snort.org/downloads/community/" $FILE > $FILE.$DATE.without.snort.community
+			mv $FILE.$DATE.without.snort.community $FILE
+		fi
+
+		# Finally, append a single snort.org community entry if necessary.
+		if ! grep "rule_url=https://snort.org/downloads/community/" $FILE >/dev/null 2>&1; then
+			echo "Appending the following to $FILE:"
+			STRING="rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community"
+			echo "$STRING" | tee -a $FILE
 		fi
 	fi
-	
-	# 2015-10-29 The URL has changed
-	sed -i 's\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\g' $FILE
 fi

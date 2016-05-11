@@ -1093,13 +1093,13 @@ sed -i "s|^#$HOSTNAME-|$HOSTNAME-|g" $SENSORTAB
 # Delete any existing ELSA databases.
 if [ "$ELSA" = "YES" ]; then
 	if [ -d /var/lib/mysql/elsa_web/ ]; then
-		mysql -e "drop database elsa_web" >> $LOG 2>&1
+		mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database elsa_web" >> $LOG 2>&1
 	fi
 	if [ -d /var/lib/mysql/syslog/ ]; then
-		mysql -e "drop database syslog" >> $LOG 2>&1
+		mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database syslog" >> $LOG 2>&1
 	fi
 	if [ -d /var/lib/mysql/syslog_data/ ]; then
-		mysql -e "drop database syslog_data" >> $LOG 2>&1
+		mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database syslog_data" >> $LOG 2>&1
 	fi
 fi
 

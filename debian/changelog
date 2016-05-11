@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion210) trusty; urgency=medium
+
+  * use mysql --defaults-file when removing ELSA databases
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 11 May 2016 06:40:32 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion209) trusty; urgency=medium
 
   * fixes for -w option and calling rule-update directly 

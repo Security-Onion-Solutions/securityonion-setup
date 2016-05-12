@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion212) trusty; urgency=medium
+
+  * write date into pulledpork.log 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 12 May 2016 15:43:18 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion211) trusty; urgency=medium
 
   * write pulledpork output to pulledpork.log 

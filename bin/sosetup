@@ -1582,7 +1582,7 @@ EOF
 		echo "45"
 		echo "# Please wait while executing PulledPork to download rules..." | tee -a $LOG
 		echo "LOCAL_NIDS_RULE_TUNING=no" >> $CONF
-		/usr/bin/rule-update
+		/usr/bin/rule-update >> /var/log/nsm/pulledpork.log 2>&1
 	else
 		echo "LOCAL_NIDS_RULE_TUNING=yes" >> $CONF
 		echo "Can't reach rule download sites.  Setting LOCAL_NIDS_RULE_TUNING to yes." >> $LOG 2>&1

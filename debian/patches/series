@@ -199,3 +199,4 @@ Setup:-Additonal-debug-info-and-input-validation-#902
 Issues-904-906-907
 fixes-for--w-option-and-calling-rule-update-directly
 use-mysql---defaults-file-when-removing-ELSA-databases
+write-pulledpork-output-to-pulledpork.log

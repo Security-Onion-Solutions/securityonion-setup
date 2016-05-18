@@ -201,3 +201,4 @@ fixes-for--w-option-and-calling-rule-update-directly
 use-mysql---defaults-file-when-removing-ELSA-databases
 write-pulledpork-output-to-pulledpork.log
 write-date-into-pulledpork.log
+Issue-919:-Setup:-check-minimum-RAM-requirements

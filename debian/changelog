@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion213) trusty; urgency=medium
+
+  * Issue 919: Setup: check minimum RAM requirements 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 18 May 2016 06:17:29 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion212) trusty; urgency=medium
 
   * write date into pulledpork.log 

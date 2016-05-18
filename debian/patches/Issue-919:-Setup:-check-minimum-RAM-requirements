@@ -1,0 +1,126 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion213) trusty; urgency=medium
+ .
+   * Issue 919: Setup: check minimum RAM requirements
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -129,6 +129,14 @@ let LOG_SIZE_LIMIT=DISK_SIZE/2
+ let LOG_SIZE_LIMIT_GB=LOG_SIZE_LIMIT/1000000000
+ let DISK_SIZE_GB=DISK_SIZE/1000000000
+ let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000
++# Check amount of system RAM (MB)
++TOTAL_MEM=`grep MemTotal /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'`
++# Make RAM # human readable (GB)
++HR_MEM=$((TOTAL_MEM / 1000))
++# Text for minimum memory check
++MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 3GB of RAM.\n\n\Please consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
++Click 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n\
++Otherwise, click 'Yes' to continue."
+ 
+ #########################################
+ # Debug
+@@ -217,7 +225,16 @@ fi
+ [ "$SETUP" == "Production Mode" ] && ADVANCED_SETUP="1" || ADVANCED_SETUP="0"
+ if [ $ADVANCED_SETUP -eq 0 ]; then
+ 	[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Evaluation Mode."
+-
++	if [ $TOTAL_MEM -lt 3000 ]; then zenity --question --title="$TITLE" --text="$MEM_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap 
++		if [ $? = 1 ]; then
++			if [ $DEBUG -eq 1 ]; then
++				echo "DEBUG: Clicked No.  Exiting." && exit 1
++			else
++				exit 1
++			fi
++		fi
++	[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
++	fi
+         if [ $NUM_INTERFACES -gt 1 ]; then
+                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
+                 INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 | sort`
+@@ -241,7 +258,6 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
+                 fi
+                 [ $DEBUG -eq 1 ] &&  echo "DEBUG: Selected interfaces $INTERFACES."
+         fi
+-
+ 	SERVER=1
+ 	SENSOR=1
+         ELSA="YES"
+@@ -262,10 +278,20 @@ Otherwise, choose Standalone to configur
+ 	COMPONENTS=`zenity --height=300 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Server FALSE Sensor FALSE Standalone`
+ 	case $COMPONENTS in
+         Standalone)
+-                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Standalone"
++                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Standalone."
+ 		SERVER=1
+ 		SENSOR=1
+ 		SERVERNAME="localhost"
++		if [ $TOTAL_MEM -lt 3000 ];then zenity --question --title="$TITLE" --text="$MEM_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++			if [ $? = 1 ]; then
++				if [ $DEBUG -eq 1 ]; then
++					echo "DEBUG: Clicked No.  Exiting." && exit 1
++				else
++					exit 1
++				fi
++			fi
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
++		fi
+ 		;;
+ 	Server)
+                 [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Server."
+@@ -274,6 +300,18 @@ Otherwise, choose Standalone to configur
+ 		SERVERNAME="localhost"
+ 		IDS_LB_PROCS_CONFIRM=""
+ 		BRO_LB_PROCS_CONFIRM=""
++		if [ $TOTAL_MEM -lt 2000 ];then zenity --question --title="$TITLE" --text="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 2GB of RAM.\n\n\Consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
++Click 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n\
++Otherwise, click 'Yes' to continue." --ok-label="$YES" --cancel-label="$NO" --no-wrap
++			if [ $? = 1 ]; then
++				if [ $DEBUG -eq 1 ]; then
++					echo "DEBUG: Clicked No.  Exiting." && exit 1
++				else
++					exit 1
++				fi
++			fi
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
++		fi
+ 		;;
+ 	Sensor)
+                 [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Sensor."
+@@ -281,6 +319,16 @@ Otherwise, choose Standalone to configur
+ 		SENSOR=1
+ 		TEXT="What is the hostname or IP address of the master server that this sensor should connect to?"
+ 		SERVERNAME_CONFIRMED="no"
++		if [ $TOTAL_MEM -lt 3000 ];then zenity --question --title="$TITLE" --text="$MEM_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++			if [ $? = 1 ]; then
++				if [ $DEBUG -eq 1 ]; then
++					echo "DEBUG: Clicked No.  Exiting." && exit 1
++				else
++					exit 1
++				fi
++			fi
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
++		fi
+ 		while [ $SERVERNAME_CONFIRMED = "no" ]; do
+ 			SERVERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
+ 			if [ $? = 1 ]; then

@@ -886,6 +886,19 @@ Would you like to enable mmap I/O?"
 				PCAP_RING_SIZE_CONFIRMED="yes"
 			fi
 		done
+	else
+	# Note about disabling full packet capture
+	YES="Yes, Continue."
+	NO="No, Quit."
+	zenity --question --text="Please note, if you choose not to enable full packet capture, you will not\nbe able to pivot from Sguil to PCAP, or to CapME to retrieve PCAP data.\n\nClick 'Yes' to continue without enabling full packet capture.\n\nOtherwise, click 'No' to exit setup and re-run it to enable the capture of this valuable data." --ok-label="$YES" --cancel-label="$NO" --no-wrap
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Clicked No.  Exiting." && exit 1
+			else
+				exit 1
+			fi
+		fi
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Continuing without enabling full packet capture."
 	fi
 
 	# Ask for CRIT_DISK_USAGE

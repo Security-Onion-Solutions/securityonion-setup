@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion214) trusty; urgency=medium
+
+  * Setup: warn user if they disable full packet capture #923 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 20 May 2016 06:40:07 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion213) trusty; urgency=medium
 
   * Issue 919: Setup: check minimum RAM requirements 

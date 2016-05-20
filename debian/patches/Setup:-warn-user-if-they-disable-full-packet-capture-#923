@@ -1,0 +1,47 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion214) trusty; urgency=medium
+ .
+   * Setup: warn user if they disable full packet capture #923
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -886,6 +886,19 @@ Would you like to enable mmap I/O?"
+ 				PCAP_RING_SIZE_CONFIRMED="yes"
+ 			fi
+ 		done
++	else
++	# Note about disabling full packet capture
++	YES="Yes, Continue."
++	NO="No, Quit."
++	zenity --question --text="Please note, if you choose not to enable full packet capture, you will not\nbe able to pivot from Sguil to PCAP, or to CapME to retrieve PCAP data.\n\nClick 'Yes' to continue without enabling full packet capture.\n\nOtherwise, click 'No' to exit setup and re-run it to enable the capture of this valuable data." --ok-label="$YES" --cancel-label="$NO" --no-wrap
++		if [ $? = 1 ]; then
++			if [ $DEBUG -eq 1 ]; then
++				echo "DEBUG: Clicked No.  Exiting." && exit 1
++			else
++				exit 1
++			fi
++		fi
++        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Continuing without enabling full packet capture."
+ 	fi
+ 
+ 	# Ask for CRIT_DISK_USAGE

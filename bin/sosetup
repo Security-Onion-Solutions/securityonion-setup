@@ -148,7 +148,7 @@ Otherwise, click 'Yes' to continue."
 #########################################
 if [[ $(/usr/bin/id -u) -ne 0 && "$1" != "-w" ]]; then
     echo "Setup needs to be run as root.  Please try again using sudo."
-    zenity --error --text="Setup needs to be run as root.  Please try again using sudo."
+    zenity --error --title "$TITLE" --text="Setup needs to be run as root.  Please try again using sudo."
     exit
 fi
 
@@ -340,15 +340,15 @@ Otherwise, click 'Yes' to continue." --ok-label="$YES" --cancel-label="$NO" --no
 			fi
 			# Did the user enter the hostname or IP address of the local box?
 			if [ "$SERVERNAME" = "$HOSTNAME" ]; then
-				zenity --error --text="That is the hostname of this box\!\r \
+				zenity --error --title "$TITLE" --text="That is the hostname of this box\!\r \
 \r \
 Since you chose a sensor-only installation, the master server should be a separate box."
 			elif [ "$SERVERNAME" = "$IP" ]; then
-				zenity --error --text="That is the IP address of this box\!\r \
+				zenity --error --title "$TITLE" --text="That is the IP address of this box\!\r \
 \r \
 Since you chose a sensor-only installation, the master server should be a separate box."
 			elif [ "x$SERVERNAME" = "x" ]; then
-				zenity --error --text="No server defined\!\r \
+				zenity --error --title "$TITLE" --text="No server defined\!\r \
 \r \
 Please provide the hostname or IP address of a valid master server."
 
@@ -359,7 +359,7 @@ Please provide the hostname or IP address of a valid master server."
 				ssh $SERVERNAME -o ConnectTimeout=5 -o BatchMode=yes 2>&1 | egrep 'Connection timed out|Could not resolve hostname' >/dev/null 2>&1 || SERVERNAME_CONFIRMED="yes"
 				[ $DEBUG -eq 1 ] && echo "DEBUG: Hostname/IP set to $SERVERNAME."
 				if [ $SERVERNAME_CONFIRMED = "no" ]; then
-					zenity --error --text="Couldn't connect to $SERVERNAME on port 22\!\r \
+					zenity --error --title "$TITLE" --text="Couldn't connect to $SERVERNAME on port 22\!\r \
 \r \
 Please double-check hostname or IP address and\r\
 firewall rules."
@@ -378,7 +378,7 @@ firewall rules."
                                 fi
                         fi
 			if [ x$SSH_USERNAME = "x" ]; then
-				zenity --error --text="No username defined\!\r \
+				zenity --error --title "$TITLE" --text="No username defined\!\r \
 \r\ \
 Please provide a username that can SSH to the master server and execute sudo."
 			else
@@ -434,7 +434,7 @@ if [ $SERVER -eq 1 ]; then
 		fi
 		COMPRESSED="$(echo $SGUIL_CLIENT_USERNAME | sed -e 's/[^[:alnum:]]//g')"
 		if [ "$COMPRESSED" != "$SGUIL_CLIENT_USERNAME" ] || [ x$SGUIL_CLIENT_USERNAME = "x" ] ; then
-	    		zenity --error --text="Invalid username\! \r \
+	    		zenity --error --title "$TITLE" --text="Invalid username\! \r \
 \r \
 Please use alphanumeric characters only."
 		else
@@ -466,7 +466,7 @@ Once you've logged into these interfaces using this initial password, you can ch
 			fi
 		fi
 	        if [ "${#SGUIL_CLIENT_PASSWORD_1}" -lt "6" ]; then
-			zenity --error --text="Password must be at least 6 characters\!"
+			zenity --error --title "$TITLE" --text="Password must be at least 6 characters\!"
 		else
 			TEXT="Please confirm what you would like to set your password to."
 			SGUIL_CLIENT_PASSWORD_2=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
@@ -481,7 +481,7 @@ Once you've logged into these interfaces using this initial password, you can ch
 				SGUIL_CLIENT_PASSWORD_CONFIRMED="yes"
 				[ $DEBUG -eq 1 ] && echo "DEBUG: Password set."
 			else
-			        zenity --error --text="Passwords didn't match\!"
+			        zenity --error --title "$TITLE" --text="Passwords didn't match\!"
 			fi
 		fi
 	done
@@ -508,7 +508,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 		fi
 		COMPRESSED="$(echo $DAYSTOKEEP | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$DAYSTOKEEP" ] || [ x$DAYSTOKEEP = "x" ]; then
-			zenity --error --text "Invalid value! Please use integers only." 
+			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
 		else
 			DAYSTOKEEP_CONFIRMED="yes"
 		fi
@@ -527,7 +527,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 		fi
 		COMPRESSED="$(echo $DAYSTOREPAIR | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$DAYSTOREPAIR" ] || [ x$DAYSTOREPAIR = "x" ]; then
-			zenity --error --text "Invalid value! Please use integers only." 
+			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
 		else
 			DAYSTOREPAIR_CONFIRMED="yes"
 		fi
@@ -557,16 +557,16 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	ETPRO)
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting ETPRO ruleset." 
 		TEXT="Please enter your Emerging Threats Pro oinkcode.\n\nIf you don't already have one, you can purchase one from http://www.emergingthreatspro.com/."
-		OINKCODE=`zenity --entry --title="Emerging Threats Pro Oinkcode" --text="$TEXT"`
+		OINKCODE=`zenity --title "$TITLE" --entry --text="$TEXT"`
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered ETPRO oinkcode $OINKCODE"
 		IDS_RULESET_ACTION="- Download ETPRO ruleset using oinkcode $OINKCODE.\n"
 		;;
 	VRT)
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting Snort VRT ruleset only and setting a VRT policy."
 		TEXT="Please enter your Snort VRT oinkcode.\n\nIf you don't already have one, you can obtain one from http://www.snort.org/."
-		OINKCODE=`zenity --entry --title="Snort VRT Oinkcode" --text="$TEXT"`
+		OINKCODE=`zenity --title "$TITLE" --entry --text="$TEXT"`
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered Snort VRT oinkcode $OINKCODE"
-		VRT_POLICY=`zenity --list --radiolist --hide-header --column="1" --column="2" --text="Please choose a VRT policy." --title="VRT Policy" \
+		VRT_POLICY=`zenity --list --radiolist --hide-header --column="1" --column="2" --text="Please choose a VRT policy." --title "$TITLE" \
 		FALSE "connectivity" \
 		FALSE "balanced" \
 		FALSE "security" `
@@ -576,7 +576,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	VRTET)
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting Snort VRT and Emerging Threats NoGPL ruleset."
 		TEXT="Please enter your Snort VRT oinkcode.\n\nIf you don't already have one, you can obtain one from http://www.snort.org/."
-		OINKCODE=`zenity --entry --title="Snort VRT Oinkcode" --text="$TEXT"`
+		OINKCODE=`zenity --entry --title "$TITLE" --text="$TEXT"`
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered Snort VRT oinkcode $OINKCODE"
 		IDS_RULESET_ACTION="- Download the Snort VRT ruleset using oinkcode $OINKCODE.\n- Download the Emerging Threats NoGPL ruleset.\n"
 		;;
@@ -608,7 +608,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 		fi
 		COMPRESSED="$(echo $PF_RING_SLOTS | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$PF_RING_SLOTS" ] || [ x$PF_RING_SLOTS = "x" ]; then
-			zenity --error --text "Invalid value! Please use integers only." 
+			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
 		else
 			[ $DEBUG -eq 1 ] && echo "DEBUG: PF_RING min_num_slots set to $PF_RING_SLOTS."
 			PF_RING_SLOTS_CONFIRMED="yes"
@@ -849,7 +849,7 @@ Would you like to enable full packet capture?"
 			[ $? = 1 ] && exit
 			COMPRESSED="$(echo $PCAP_SIZE | sed -e 's/[^[:digit:]]//g')"
 			if [ "$COMPRESSED" != "$PCAP_SIZE" ] || [ x$PCAP_SIZE = "x" ]; then
-				zenity --error --text "Invalid MB Value! Please use integers only." 
+				zenity --error --title "$TITLE" --text "Invalid MB Value! Please use integers only." 
 			else
 				[ $DEBUG -eq 1 ] && echo "DEBUG: PCAP size set to $PCAP_SIZE."
 				PCAP_SIZE_CONFIRMED="yes"
@@ -880,7 +880,7 @@ Would you like to enable mmap I/O?"
 			[ $? = 1 ] && exit
 			COMPRESSED="$(echo $PCAP_RING_SIZE | sed -e 's/[^[:digit:]]//g')"
 			if [ "$COMPRESSED" != "$PCAP_RING_SIZE" ] || [ x$PCAP_RING_SIZE = "x" ]; then
-				zenity --error --text "Invalid MB Value! Please use integers only."
+				zenity --error --title "$TITLE" --text "Invalid MB Value! Please use integers only."
 			else
 				[ $DEBUG -eq 1 ] && echo "DEBUG: PCAP ring size set to $PCAP_RING_SIZE."
 				PCAP_RING_SIZE_CONFIRMED="yes"
@@ -890,7 +890,7 @@ Would you like to enable mmap I/O?"
 	# Note about disabling full packet capture
 	YES="Yes, Continue."
 	NO="No, Quit."
-	zenity --question --text="Please note, if you choose not to enable full packet capture, you will not\nbe able to pivot from Sguil to PCAP, or to CapME to retrieve PCAP data.\n\nClick 'Yes' to continue without enabling full packet capture.\n\nOtherwise, click 'No' to exit setup and re-run it to enable the capture of this valuable data." --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	zenity --title "$TITLE" --question --text="Please note, if you choose not to enable full packet capture, you will not\nbe able to pivot from Sguil to PCAP, or to CapME to retrieve PCAP data.\n\nClick 'Yes' to continue without enabling full packet capture.\n\nOtherwise, click 'No' to exit setup and re-run it to enable the capture of this valuable data." --ok-label="$YES" --cancel-label="$NO" --no-wrap
 		if [ $? = 1 ]; then
 			if [ $DEBUG -eq 1 ]; then
 				echo "DEBUG: Clicked No.  Exiting." && exit 1
@@ -911,7 +911,7 @@ Would you like to enable mmap I/O?"
 		[ $CRIT_DISK_USAGE -gt 10 ] && 
 		[ $CRIT_DISK_USAGE -lt 100 ] && 
 		CRIT_DISK_USAGE_CONFIRMED="yes" || 
-		zenity --error --text "Invalid percentage! Please use integers between 0 and 100." 
+		zenity --error --title "$TITLE" --text "Invalid percentage! Please use integers between 0 and 100." 
 	done
 	let WARN_DISK_USAGE=${CRIT_DISK_USAGE}-10
 	[ $DEBUG -eq 1 ] && echo "DEBUG: CRIT_DISK_USAGE set to $CRIT_DISK_USAGE."
@@ -993,14 +993,14 @@ Would you like to enable ELSA?"
 				LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="How much disk space (in GigaBytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is half your disk size.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=$LOG_SIZE_LIMIT_GB`
 				[ $? = 1 ] && exit
 				if [ x$LOG_SIZE_LIMIT_GB = "x" ]; then
-				zenity --error --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size."
+				zenity --error --title "$TITLE" --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size."
 				else
 				COMPRESSED="$(echo $LOG_SIZE_LIMIT_GB | sed -e 's/[^[:digit:]]//g')"
 				[ "$COMPRESSED" == "$LOG_SIZE_LIMIT_GB" ] && 
 				[ $LOG_SIZE_LIMIT_GB -gt 0 ] && 
 				[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB ] && 
 				LOG_SIZE_LIMIT_CONFIRMED="yes" || 
-				zenity --error --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size." 
+				zenity --error --title "$TITLE" --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size." 
 				fi
 			done
 			let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000

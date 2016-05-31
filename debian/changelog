@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion215) trusty; urgency=medium
+
+  * consistently apply title to all zenity windows 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 31 May 2016 13:10:44 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion214) trusty; urgency=medium
 
   * Setup: warn user if they disable full packet capture #923 

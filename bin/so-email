@@ -283,6 +283,8 @@ newaliases > /dev/null 2>&1
 POSTFIX="/etc/postfix/main.cf"
 #Configure system mail server
 sed -i "s|^relayhost = .*$|relayhost = $MAILSERVER|g" $POSTFIX
+#Configure loopback-only so that Posfix listens to localhost only
+sed -i "s|^inet_interfaces = .*$|inet_interfaces = loopback-only|g" $POSTFIX
 service postfix restart > /dev/null 2>&1
 #Configure sostat
 echo "15"

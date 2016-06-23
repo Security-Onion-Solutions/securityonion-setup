@@ -1,0 +1,503 @@
+#!/bin/bash
+#
+# Description:
+# Configure email for Security Onion
+#
+#########################################
+# Variables
+#########################################
+DEBUG="0"
+# Create temp log
+LOG=`mktemp /tmp/so-email.log.XXXXXXXXXX`
+# Get hostname
+HOSTNAME=`hostname`
+# Get IP address of machine
+IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+# Set title for Zenity dialog(s)
+TITLE="Security Onion Email Setup ($HOSTNAME)"
+# Set 'from' address for mail
+FROMADDRESS="no-reply"
+# Daily sostat mail enabled - YES/NO
+SOSTATEMAIL="NO"
+# Default sostat confirmation verbiage
+SOSTATEMAIL_SUMMARY=" - Daily sostat email will not be configured."
+# Bro email enabled - YES/NO
+BROEMAIL="NO"
+# Default Bro confirmation verbiage
+BROEMAIL_SUMMARY=" - Bro email will not be configured."
+# OSSEC email enabled - YES/NO
+OSSECEMAIL="NO"
+# Default OSSEC confirmation verbiage
+OSSECEMAIL_SUMMARY=" - OSSEC email will not be configured"
+# Sguil email enabled - YES/NO
+SGUILEMAIL="NO"
+# Default Sguil confirmation verbiage
+SGUILEMAIL_SUMMARY=" - Sguil email will not be configured."
+# ELSA email enabled - YES/NO
+ELSAEMAIL="NO"
+# Default ELSA confirmation verbiage
+ELSAEMAIL_SUMMARY=" - ELSA email will not be configured."
+# Get notification address from /etc/aliases if it already exists
+[ -f /etc/aliases ] && ADMINADDR=`grep -o 'root:.*' /etc/aliases | cut -f2- -d' '`
+# Get SMTP server from main.cf if it already exists
+if [ -f /etc/postfix/main.cf ];then
+	SMTP=`grep -o 'relayhost =.*' /etc/postfix/main.cf | cut -f2- -d'='| cut -f2 -d' '`
+else
+	SMTP=''
+fi 
+
+#########################################
+# Got r00t?
+#########################################
+if [[ $(/usr/bin/id -u) -ne 0 && "$1" != "-w" ]]; then
+    echo "Email Setup needs to be run as root.  Please try again using sudo."
+    zenity --error --title "$TITLE" --text="Email Setup needs to be run as root.  Please try again using sudo."
+    exit
+fi
+
+function ask() {
+#########################################
+# Welcome Screen
+#########################################
+TEXT="<b>Welcome to Security Onion Email Setup!</b>\n\
+\n\
+This program will allow you to configure email for Security Onion on $HOSTNAME.\n\
+\n\
+Please note, this script will install mailutils and Postfix if they are not already installed.
+\n\
+Would you like to continue?"
+YES="Yes, Continue!"
+NO="No, Quit."
+zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ANSWER="$?"
+if [ $ANSWER -eq 1 ]; then
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
+        exit 1
+else
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Continuing Setup."
+fi
+TEXT="What type of deployment are you currently running?"
+COMPONENTS=`zenity --height=300 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Server FALSE Sensor FALSE Standalone`
+
+case $COMPONENTS in
+        Standalone)
+                SERVER="1"
+                SENSOR="1"
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Selected Standalone."
+                ;;
+        Server)
+                SERVER="1"
+                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Selected Server."
+		;;
+        Sensor)
+                SENSOR="1"
+                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Selected Sensor."
+		;;
+        *)
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
+                exit 1
+		;;
+esac
+#########################################
+# Notification Address
+#########################################
+NOTIFY_CONFIRMED="no"
+while [ $NOTIFY_CONFIRMED = "no" ]; do
+	TEXT="What would you like to specify for the notification address?"
+	NOTIFYADDRESS=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$ADMINADDR"`
+	ANSWER="$?"
+	if [ $ANSWER -eq 1 ]; then
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
+        	exit 1
+	else
+		if ! [[ "$NOTIFYADDRESS" == ?*@?*.?* ]]; then
+                        zenity --error --title "$TITLE" --text="Please provide a valid response\!"
+                else
+                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring notification address."
+			NOTIFY_CONFIRMED="yes"
+			NOTIFY_SUMMARY=" - Notification address will be set to: $NOTIFYADDRESS"
+                fi
+	fi
+done
+#########################################
+# Mail server
+#########################################
+MAILSERVER_CONFIRMED="no"
+while [ $MAILSERVER_CONFIRMED = "no" ]; do
+	TEXT="What address would you like to specify for the mail (SMTP) server?"
+	MAILSERVER=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$SMTP"`
+	ANSWER="$?"
+	if [ $ANSWER -eq 1 ]; then
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
+        	exit 1
+	else
+		if ! [[ "$MAILSERVER" == ?*.?*.?* ]]; then
+                        zenity --error --title "$TITLE" --text="Please provide a valid response\!"
+                else
+                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring SMTP server."
+			MAILSERVER_CONFIRMED="yes"
+			MAILSERVER_SUMMARY=" - Mail (SMTP) server set to: $MAILSERVER"
+                fi
+	fi
+done
+#########################################
+# Sostat email
+#########################################
+TEXT="Would you like to configure daily email for sostat output?"
+YES="Yes"
+NO="No"
+zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ANSWER="$?"
+if [ $ANSWER -eq 1 ]; then
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for sostat output."
+else
+        [  $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring sostat email."
+	SOSTATADDRESS="root@localhost"
+	SOSTATEMAIL="YES"
+	SOSTATEMAIL_SUMMARY=" - Daily sostat email will be configured."
+fi
+#########################################
+# Bro email
+#########################################
+if [[ $SENSOR -eq 1 ]];then
+	TEXT="Would you like to configure email alerts for Bro?"
+	YES="Yes"
+	NO="No"
+	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	ANSWER="$?"
+	if [ $ANSWER -eq 1 ]; then
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for Bro."
+	else
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Bro."
+		BROADDRESS="root@localhost"
+		BROEMAIL="YES"
+		BROEMAIL_SUMMARY=" - Bro email will be configured."
+	fi
+fi
+#########################################
+# Sguil email
+#########################################
+if [[ $SERVER -eq 1 ]];then
+	TEXT="Would you like to configure email alerts for Sguil?"
+	YES="Yes"
+	NO="No"
+	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	ANSWER="$?"
+	if [ $ANSWER -eq 1 ]; then
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for Sguil."
+	else
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Sguil."
+		SGUILADDRESS="root@localhost"
+		SGUILEMAIL="Configured"
+		SGUILEMAIL_SUMMARY=" - Sguil email will be configured."
+	fi
+fi
+#########################################
+# OSSEC email
+#########################################
+TEXT="Would you like to configure email alerts for OSSEC?"
+YES="Yes"
+NO="No"
+zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ANSWER="$?"
+if [ $ANSWER -eq 1 ]; then
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for OSSEC."
+else
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for OSSEC."
+	OSSECADDRESS="root@localhost"
+	OSSECEMAIL="YES"
+	OSSECEMAIL_SUMMARY=" - OSSEC email will be configured."
+fi
+#########################################
+#ELSA email
+#########################################
+if [[ $SERVER -eq 1 ]];then
+	TEXT="Would you like to configure email alerts for ELSA?"
+	YES="Yes"
+	NO="No"
+	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	ANSWER="$?"
+	if [ $ANSWER -eq 1 ]; then
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for ELSA."
+	else
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for ELSA."
+		ELSAADDRESS="root@localhost"
+		ELSAEMAIL="YES"
+        	ELSA_USER_CONFIRMED="no"
+		while [ $ELSA_USER_CONFIRMED = "no" ]; do	
+			TEXT="What is the ELSA username to which this email address is associated?"
+        		ELSAUSER=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$SUDO_USER"`
+        		ANSWER="$?"
+			if [ $ANSWER -eq 1 ]; then
+				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
+				exit 1
+			else
+				if [ -z $ELSAUSER ]; then
+                        		zenity --error --title "$TITLE" --text="Please provide a valid response\!"
+                		else
+                        		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring ELSA username."
+					ELSA_USER_CONFIRMED="yes"
+                		fi
+			fi
+		done
+		#########################################
+		# ELSA server IP/Hostname
+        	#########################################
+        	ELSASERVER_CONFIRMED="no"
+		while [ $ELSASERVER_CONFIRMED = "no" ]; do	
+			TEXT="What is the ELSA server IP/hostname for which you wish to alert?"
+        		ELSASERVER=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$IP"`
+        		ANSWER="$?"
+			if [ $ANSWER -eq 1 ]; then 
+				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
+				exit 1
+			else
+				if [ -z $ELSASERVER ]; then 
+                        		zenity --error --title "$TITLE" --text="Please provide a valid response\!"
+                		else
+                        		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring ELSA server."
+					ELSASERVER_CONFIRMED="yes"
+                		fi
+			fi
+		done
+	ELSAEMAIL_SUMMARY=" - ELSA email will be configured.\n\   - ELSA User: $ELSAUSER\n\   - ELSA Server: $ELSASERVER"
+	fi
+fi
+#########################################
+# Summary
+#########################################
+TEXT="The following will be configured for $HOSTNAME:\n\
+\n\
+$NOTIFY_SUMMARY\n\
+$MAILSERVER_SUMMARY\n\
+$SOSTATEMAIL_SUMMARY\n\
+$BROEMAIL_SUMMARY\n\
+$SGUILEMAIL_SUMMARY\n\
+$OSSECEMAIL_SUMMARY\n\
+$ELSAEMAIL_SUMMARY\n\\n\
+Please note, services will restart upon confirmation."
+
+YES="Yes, Continue!"
+NO="No, Quit."
+zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ANSWER="$?"
+if [ $ANSWER -eq 1 ]; then
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
+	exit 1
+else
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuration confirmed."
+fi
+}
+
+function MOVELOG() {
+# Move log file from /tmp/ to /var/log/nsm/
+mv $LOG /var/log/nsm/so-email.log
+LOG="/var/log/nsm/so-email.log"
+}
+
+#########################################
+# Begin function CONFIGURE_EMAIL
+#########################################
+function CONFIGURE_EMAIL() {
+
+#Check if mailutils installed.  If not, install it.
+if dpkg -l | grep -q -i "mailutils"; then
+        :
+else
+	apt-get install -y mailutils >> $LOG 2>&1
+fi
+if dpkg -l | grep -q -i "postfix"; then
+	:
+else
+	apt-get install -y postfix >> $LOG 2>&1
+fi
+echo "10"
+echo "# Configuring system mail..." | tee -a $LOG
+#Configure system 'notification' address
+ALIASES="/etc/aliases"
+if  grep -q "root:" $ALIASES;then
+        sed -i "s|^root:.*$|root: $NOTIFYADDRESS|g" $ALIASES
+else
+        sed -i "/postmaster/a root: $NOTIFYADDRESS" $ALIASES
+fi
+newaliases >> $LOG 2>&1
+#Configure system from address
+POSTFIX="/etc/postfix/main.cf"
+#Configure system mail server
+sed -i "s|^relayhost = .*$|relayhost = $MAILSERVER|g" $POSTFIX
+sed -i "s|^inet_interfaces = .*$|inet_interfaces = loopback-only|g" $POSTFIX
+service postfix restart >> $LOG 2>&1
+#Configure sostat
+if ! [[ "$SOSTATEMAIL" == "NO" ]]; then
+	echo "15"
+	echo "# Configuring sostat mail..." | tee -a $LOG
+	SOSTAT="/etc/cron.d/sostat"
+	touch $SOSTAT
+	echo -e '#/etc/cron.d/sostat\n#\n#crontab entry to run sostat and email its output\n\n\nSHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\nEMAIL=root@localhost\nHOSTNAME='$HOSTNAME'\n\n01 12 * * * root /usr/bin/sostat 2>&1 | mail -aFrom:SecurityOnion@$HOSTNAME -s "Statistics for $HOSTNAME" $EMAIL' > $SOSTAT
+fi
+#Configure Bro
+if ! [[ "$BROEMAIL" == "NO" ]]; then
+	echo "30"
+	echo "# Configuring Bro email..." | tee -a $LOG
+	BROCTL="/opt/bro/etc/broctl.cfg"
+	sed -i "s|^MailTo.*$|MailTo = root@localhost|g" $BROCTL
+        if grep -q "tracesummary=" $BROCTL;then
+        	sed -i "s|^tracesummary=.*$|tracesummary=|g" $BROCTL
+	else
+		sed -i '/MailTo/a tracesummary=' $BROCTL
+        fi
+	LOCALBRO="/opt/bro/share/bro/site/local.bro"
+        if grep -q -i "email" $LOCALBRO;then
+        	:
+        else
+        	echo -e "\n# Bro Notice email configuration\nhook Notice::policy(n: Notice::Info)\n             {       \n      add n\$actions[Notice::ACTION_ALARM];\n         }" >> $LOCALBRO
+        fi
+	nsm_sensor_ps-restart --only-bro >> $LOG 2>&1
+fi
+#Configure Sguil
+if ! [[ "$SGUILEMAIL" == "NO" ]]; then
+	echo "45"
+	echo "# Configuring Sguil email..." | tee -a $LOG
+	SGUILDEMAIL="/etc/nsm/securityonion/sguild.email"
+	sed -i "s|^set EMAIL_EVENTS.*$|set EMAIL_EVENTS 1|g" $SGUILDEMAIL
+        sed -i "s|^set SMTP.*$|set SMTP_SERVER localhost|g" $SGUILDEMAIL
+        sed -i "s|^set EMAIL_RCPT.*$|set EMAIL_RCPT_TO \"root@localhost\"|g" $SGUILDEMAIL
+        sed -i "s|^set EMAIL_FROM.*$|set EMAIL_FROM \"Sguil\"|g" $SGUILDEMAIL
+	nsm_server_ps-restart >> $LOG 2>&1
+fi
+#Configure OSSEC
+if ! [[ "$OSSECEMAIL" == "NO" ]]; then
+	echo "60"
+	echo "# Configuring OSSEC email..." | tee -a $LOG
+	OSSECCONF="/var/ossec/etc/ossec.conf"
+        sed -i 's/.*email_notification.*/     <email_notification>yes<\/email_notification>/' $OSSECCONF
+	if grep -q -i "smtp" $OSSECCONF;then
+		sed -i 's/.*email_to.*/     <email_to>root@localhost<\/email_to>/' $OSSECCONF
+                sed -i 's/.*smtp_server.*/     <smtp_server>localhost<\/smtp_server>/' $OSSECCONF
+                sed -i 's/.*email_from.*/     <email_from>no-reply<\/email_from>/' $OSSECCONF
+                sed -i 's/.*email_maxperhour.*/     <email_maxperhour>20<\/email_maxperhour>/' $OSSECCONF
+        else
+                sed -i '/.*email_notification.*/ a \     <email_to>root@localhost<\/email_to>' $OSSECCONF
+               	sed -i '/.*email_to.*/ a \     <smtp_server>localhost<\/smtp_server>' $OSSECCONF
+                sed -i '/.*smtp_server.*/ a \     <email_from>no-reply<\/email_from>' $OSSECCONF
+                sed -i '/.*email_from.*/ a \     <email_maxperhour>\100\<\/email_maxperhour>' $OSSECCONF
+        fi
+	service ossec-hids-server restart >> $LOG 2>&1
+fi
+#Configure ELSA
+if ! [[ "$ELSAEMAIL" == "NO" ]]; then
+	echo "75"
+	echo "# Configuring ELSA email..." | tee -a $LOG
+	ELSAWEB="/etc/elsa_web.conf"
+	mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "update user_info set email='$ELSAADDRESS' where username='$ELSAUSER';"
+        sed -i 's#.*display_address.*#    "display_address": "ELSA@'$HOSTNAME'",#g' $ELSAWEB
+	sed -i 's#.*base_url.*#    "base_url": "https://'$ELSASERVER'/elsa-query",#g' $ELSAWEB
+	if grep -q -i "smtp" $ELSAWEB;then
+                sed -i 's#.*smtp_server.*#    "smtp_server": "localhost",#g' $ELSAWEB
+        else
+                sed -i '/.*base_url.*/ a \    "smtp_server": "localhost",' $ELSAWEB
+        fi
+	service apache2 restart >> $LOG 2>&1
+fi
+}
+#########################################
+# Options
+#########################################
+
+usage()
+{
+cat <<EOF
+
+Security Onion Email Setup
+
+     Options:
+
+        -h              This message
+        -f <file>       Configure using answer file <file>
+
+Usage: $0
+EOF
+}
+# Check to see if the user provided an answer file
+while getopts "hf:" OPTION
+do
+     case $OPTION in
+         h)
+                usage
+                exit 0
+                ;;
+         f)
+                ANSWERFILE="$OPTARG"
+                # Verify answer file exists and then read it into memory
+                if [ ! -f "$ANSWERFILE" ]; then
+                        echo "Error accessing $ANSWERFILE"
+                        exit 1
+                fi
+             ;;
+     esac
+done
+
+# GUI (Zenity) or CLI?
+# Default to zenity
+OUTPUT="gui"
+# If no X11, then fall back to cli
+[ -z "$DISPLAY" ] && OUTPUT="cli"
+# If user provided an answer file, set to cli
+[ -f "$ANSWERFILE" ] && OUTPUT="cli"
+# If the user didn't provide an answer file, then ask them the questions
+if [ ! -f "$ANSWERFILE" ]; then
+        if [ "$OUTPUT" = "gui" ] ; then
+                ask
+        else
+                echo
+                echo "No X display found."
+                echo
+                echo "You'll need to either:"
+                echo
+                echo "- use SSH X-forwarding (ssh -X)"
+                echo
+                echo "OR"
+                echo
+                echo "- use an answer file (sudo sosetup -f so-email.conf)"
+                echo
+                usage
+                exit 0
+        fi
+else
+        source "$ANSWERFILE"
+        echo
+        echo "Security Onion Email Setup"
+        echo
+        echo "Ready to configure system using parameters in $ANSWERFILE."
+        echo
+        echo "WARNING! Continuing will destroy any existing email configuration."
+        echo "Are you sure you want to continue?"
+        echo "Type yes to continue or anything else to exit."
+        read INPUT
+        [ "$INPUT" != "yes" ] && exit 0
+        echo
+fi
+
+if [ "$OUTPUT" = "gui" ]; then
+	CONFIGURE_EMAIL |
+	zenity --progress --title="$TITLE" --text="Please wait while making changes to the system..." --percentage=0 --auto-close
+else
+        echo "Please wait while..."
+        CONFIGURE_EMAIL | grep --line-buffered "^#" | sed 's|# Please wait while||g'
+fi
+
+MOVELOG
+########################################
+# Setup Complete
+########################################
+TEXT="Security Onion Email Setup is now complete! \n \
+\n\
+If you would like to edit the email configuration manually, please refer to:\n
+https://github.com/Security-Onion-Solutions/security-onion/wiki/Email\n"
+if [ "$OUTPUT" = "gui" ]; then
+	zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+else
+	echo
+	echo "$TEXT" | sed 's|\\n|\n|g' | sed 's|\\||g' | tee -a $LOG
+	echo
+fi

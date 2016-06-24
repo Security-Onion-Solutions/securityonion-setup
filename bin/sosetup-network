@@ -315,6 +315,14 @@ if [ $NUM_MON_INTERFACES -gt 0 ]; then
 		fi
 		SNIFF_TEXT="    - Configure the following interface(s) for sniffing:\n\
                 $MON_INTERFACES"
+		TEXT="What is the default MTU of your network?\n\n\Most networks use an MTU of 1500, however, Security Onion will configure a default\n\MTU of 1550, in order to allow for Q-in-Q, MPLS, and VLAN-tagged traffic.\n\\n\Please note, Snort and Suricata will add 16 to whatever value you set here\n\and use the resulting value for snaplen."
+		MTU=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="1550"`
+		ANSWER="$?"
+		if [ $ANSWER -eq 1 ]; then
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
+		else
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring MTU as $MTU."
+		fi
 	fi
    fi
 fi
@@ -410,8 +418,8 @@ fi
 for INTERFACE in $MON_INTERFACES
 do
             	# Get max RX size for monitored interface
-            	MAX_RX=$(ethtool -g $INTERFACE | grep -m 1 RX | cut -d\: -f2 | awk '{sub(/^[ \t]+/, "")};1')
-    
+		MAX_RX=$(ethtool -g $INTERFACE | grep -m 1 RX | cut -d\: -f2 | awk '{sub(/^[ \t]+/, "")};1')
+
 cat << EOF >> $FILE
 auto $INTERFACE
 iface $INTERFACE inet manual
@@ -419,7 +427,7 @@ iface $INTERFACE inet manual
   down ip link set \$IFACE promisc off down
   post-up ethtool -G \$IFACE rx $MAX_RX; for i in rx tx sg tso ufo gso gro lro; do ethtool -K \$IFACE \$i off; done
   post-up echo 1 > /proc/sys/net/ipv6/conf/\$IFACE/disable_ipv6
-
+  mtu $MTU
 EOF
 
 done

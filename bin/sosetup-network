@@ -330,7 +330,8 @@ if [ $NUM_MON_INTERFACES -gt 0 ]; then
                                 else
                                         VALID="yes"
                                         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring MTU as $MTU."
-                                fi
+					MTU_TEXT="    - Configure the MTU for the sniffing interface(s):\n\		$MTU"
+				fi
                         fi
                 done
 	fi
@@ -343,6 +344,7 @@ TEXT="We're about to do the following:\n\
     - Backup existing network configuration to /etc/network/interfaces.bak \n\
     - $MANAGEMENT_TEXT \n\
 $SNIFF_TEXT \n\
+$MTU_TEXT
     \n\
     We're about to make changes to your system! \n\
     \n\

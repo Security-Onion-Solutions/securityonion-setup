@@ -40,6 +40,7 @@ VRT_URL="www.snort.org"
 SGUIL_SERVER_NAME="securityonion"
 IDS_ENGINE="snort"
 IDS_RULESET="ETGPL"
+HOME_NET="192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
 INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
 ALL_INTERFACES="$INTERFACES"
 NUM_INTERFACES=`echo $INTERFACES | wc -w`
@@ -694,6 +695,27 @@ If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNA
 			IDS_LB_PROCS_CONFIRM="- Run a single IDS engine process per interface.\n"
                 fi
 	fi
+	# Ask if user would like to configure a custom HOME_NET
+	if [ "$IDS_ENGINE_ENABLED" == "yes" ]; then
+		HOME_NET_CONFIRMED="no"
+		while [ "$HOME_NET_CONFIRMED" == "no" ];do
+			TEXT="What would you like to configure HOME__NET as?\n\n\Add a comma (no space) after each address range.\n\n\Ex. 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
+			HOME_NET=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$HOME_NET"`
+			ANSWER="$?"
+			if [ $ANSWER -eq 1 ]; then
+				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
+				exit 1
+			else
+				if [ "$HOME_NET" == "" ]; then
+					zenity --error --title "$TITLE" --text="Please provide a value for HOME_NET!"
+				else
+					HOME_NET_CONFIRMED="yes"
+					[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring HOME_NET as $HOME_NET."
+				fi
+			fi
+		done
+	fi
+	IDS_HOME_NET_CONFIRM="- Configure IDS HOME_NET as: $HOME_NET.\n"
 	if [ $CUSTOM -eq 1 ]; then
 	# Bro
 	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\
@@ -1067,6 +1089,7 @@ $SENSOR_CONFIRM_3\
 $IDS_LB_PROCS_CONFIRM\
 $BRO_LB_PROCS_CONFIRM\
 $IDS_RULESET_ACTION\
+$IDS_HOME_NET_CONFIRM\
 $ELSA_ACTION_CONFIRM\
 \n\
 We're about to make changes to your system!\n\
@@ -1318,6 +1341,7 @@ for INTERFACE in $ALL_INTERFACES; do
         cp /etc/nsm/templates/snort/unicode.map /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1
         cp /etc/nsm/templates/suricata/suricata.yaml.in /etc/nsm/"$SENSORNAME"/suricata.yaml >> $LOG 2>&1
 	sed -i "s|# config snaplen:|config snaplen: $MTU_FIN|g" /etc/nsm/"$SENSORNAME"/snort.conf
+	sed -i "s|^ipvar HOME_NET.*|ipvar HOME_NET \[$HOME_NET\]|g" /etc/nsm/"$SENSORNAME"/snort.conf
 	sed -i "s|classification-file: /etc/suricata/classification.config|classification-file: /etc/nsm/$SENSORNAME/classification.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|reference-config-file: /etc/suricata/reference.config|reference-config-file: /etc/nsm/$SENSORNAME/reference.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|# threshold-file: /etc/suricata/threshold.config|threshold-file: /etc/nsm/$SENSORNAME/threshold.conf|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
@@ -1325,6 +1349,7 @@ for INTERFACE in $ALL_INTERFACES; do
 	#sed -i "s|threads: 1|threads: $IDS_LB_PROCS|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|interface: eth0|interface: $INTERFACE|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|cluster-id: 99|cluster-id: $BY2PORT|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+	sed -i "s|HOME_NET:.*|HOME_NET: \"[$HOME_NET]\"|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	mkdir -p /usr/local/lib/snort_dynamicrules
 
 	# /etc/nsm/rules/
@@ -1470,11 +1495,8 @@ EOF
         fi
 	# Finished with node.cfg
 	# Now update networks.cfg
-	if grep "172.16" /opt/bro/etc/networks.cfg >/dev/null; then
-		echo "/opt/bro/etc/networks.cfg already contains 172.16" >> $LOG 2>&1
-	else
-		echo "172.16.0.0/12       Private IP space" >> /opt/bro/etc/networks.cfg
-	fi
+	sed -i '1,4!d' /opt/bro/etc/networks.cfg
+	echo $HOME_NET | tr , '\n\\' >> /opt/bro/etc/networks.cfg
 	# update broctl.cfg
 	if grep "nsm" /opt/bro/etc/broctl.cfg >/dev/null; then
 		echo "/opt/bro/etc/broctl.cfg already contains nsm" >> $LOG 2>&1

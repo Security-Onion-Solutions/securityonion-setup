@@ -325,14 +325,19 @@ if [ $NUM_MON_INTERFACES -gt 0 ]; then
                                 [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
                                 exit 1
                         else
-                                if [ "$MTU" = "" ]; then
-                                        zenity --error --text="Please enter a value for the MTU!"
-                                else
-                                        VALID="yes"
-                                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring MTU as $MTU."
-					MTU_TEXT="    - Configure the MTU for the sniffing interface(s):\n\		$MTU"
+                                if echo $MTU | egrep '^[0-9]+$' >/dev/null 2>&1
+				then
+					if [[ "$MTU" -ge "1" ]] && [[ "$MTU" -le "65000" ]]; then
+						VALID="yes"
+						[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring MTU as $MTU."
+						MTU_TEXT="    - Configure the MTU for the sniffing interface(s):\n\                $MTU"
+					else
+						zenity --error --text="Please provide an integer value between 1 and 65000!"
+					fi
+				else
+					zenity --error --text="Not a number -- please use integers only!"
 				fi
-                        fi
+			fi
                 done
 	fi
    fi

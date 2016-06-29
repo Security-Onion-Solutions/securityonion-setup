@@ -39,7 +39,7 @@ VRT_URL="www.snort.org"
 # Provide sensible defaults for Quick Setup
 SGUIL_SERVER_NAME="securityonion"
 IDS_ENGINE="snort"
-IDS_RULESET="ETGPL"
+IDS_RULESET="ETOPEN"
 HOME_NET="192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
 INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
 ALL_INTERFACES="$INTERFACES"
@@ -547,15 +547,15 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	# Ask which IDS ruleset to use.
 	TEXT="Which IDS ruleset would you like to use?"
 	IDS_RULESET=`zenity --width=600 --height=300 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
-	TRUE "ETGPL" "Emerging Threats GPL"  "no oinkcode required" \
+	TRUE "ETOPEN" "Emerging Threats Open"  "no oinkcode required" \
 	FALSE "ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
 	FALSE "VRTET" "Snort VRT ruleset and Emerging Threats NoGPL ruleset" "requires Snort VRT oinkcode" \
 	FALSE "VRT" "Snort VRT ruleset only and set a VRT policy" "requires Snort VRT oinkcode" `
 
 	case $IDS_RULESET in
-	ETGPL)
-		[ $DEBUG -eq 1 ] &&  echo "DEBUG: Selecting Emerging Threats GPL ruleset."
-		IDS_RULESET_ACTION="- Download Emerging Threats GPL ruleset.\n"
+	ETOPEN)
+		[ $DEBUG -eq 1 ] &&  echo "DEBUG: Selecting Emerging Threats Open ruleset."
+		IDS_RULESET_ACTION="- Download Emerging Threats Open ruleset.\n"
 		;;
 	ETPRO)
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting ETPRO ruleset." 
@@ -1610,8 +1610,8 @@ if [ "$SERVERNAME" = "localhost" ]; then
 	INTERNET="DOWN"
 
 	case $IDS_RULESET in
-	ETGPL)
-		echo "Already configured for Emerging Threats GPL ruleset." >> $LOG 2>&1
+	ETOPEN)
+		echo "Already configured for Emerging Threats Open ruleset." >> $LOG 2>&1
 		# Test Internet access
 		curl -s $ET_URL >/dev/null 2>&1 && INTERNET="UP"
 		;;
@@ -2066,14 +2066,14 @@ Mailing Lists\
 IRC channel\
 and more!\
 \
-http://securityonion.net'
+https://securityonion.net'
 }
 
 function FIN6() {
 TEXT='If you need commercial support or training,\
 please see:\
 \
-http://securityonionsolutions.com'
+https://securityonionsolutions.com'
 }
 
 

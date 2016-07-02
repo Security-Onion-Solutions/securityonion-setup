@@ -1,0 +1,822 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion216) trusty; urgency=medium
+ .
+   * Issues 925 926 948 949 953
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- /dev/null
++++ securityonion-setup-20120912/bin/so-email
+@@ -0,0 +1,503 @@
++#!/bin/bash
++#
++# Description:
++# Configure email for Security Onion
++#
++#########################################
++# Variables
++#########################################
++DEBUG="0"
++# Create temp log
++LOG=`mktemp /tmp/so-email.log.XXXXXXXXXX`
++# Get hostname
++HOSTNAME=`hostname`
++# Get IP address of machine
++IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
++# Set title for Zenity dialog(s)
++TITLE="Security Onion Email Setup ($HOSTNAME)"
++# Set 'from' address for mail
++FROMADDRESS="no-reply"
++# Daily sostat mail enabled - YES/NO
++SOSTATEMAIL="NO"
++# Default sostat confirmation verbiage
++SOSTATEMAIL_SUMMARY=" - Daily sostat email will not be configured."
++# Bro email enabled - YES/NO
++BROEMAIL="NO"
++# Default Bro confirmation verbiage
++BROEMAIL_SUMMARY=" - Bro email will not be configured."
++# OSSEC email enabled - YES/NO
++OSSECEMAIL="NO"
++# Default OSSEC confirmation verbiage
++OSSECEMAIL_SUMMARY=" - OSSEC email will not be configured"
++# Sguil email enabled - YES/NO
++SGUILEMAIL="NO"
++# Default Sguil confirmation verbiage
++SGUILEMAIL_SUMMARY=" - Sguil email will not be configured."
++# ELSA email enabled - YES/NO
++ELSAEMAIL="NO"
++# Default ELSA confirmation verbiage
++ELSAEMAIL_SUMMARY=" - ELSA email will not be configured."
++# Get notification address from /etc/aliases if it already exists
++[ -f /etc/aliases ] && ADMINADDR=`grep -o 'root:.*' /etc/aliases | cut -f2- -d' '`
++# Get SMTP server from main.cf if it already exists
++if [ -f /etc/postfix/main.cf ];then
++	SMTP=`grep -o 'relayhost =.*' /etc/postfix/main.cf | cut -f2- -d'='| cut -f2 -d' '`
++else
++	SMTP=''
++fi 
++
++#########################################
++# Got r00t?
++#########################################
++if [[ $(/usr/bin/id -u) -ne 0 && "$1" != "-w" ]]; then
++    echo "Email Setup needs to be run as root.  Please try again using sudo."
++    zenity --error --title "$TITLE" --text="Email Setup needs to be run as root.  Please try again using sudo."
++    exit
++fi
++
++function ask() {
++#########################################
++# Welcome Screen
++#########################################
++TEXT="<b>Welcome to Security Onion Email Setup!</b>\n\
++\n\
++This program will allow you to configure email for Security Onion on $HOSTNAME.\n\
++\n\
++Please note, this script will install mailutils and Postfix if they are not already installed.
++\n\
++Would you like to continue?"
++YES="Yes, Continue!"
++NO="No, Quit."
++zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++ANSWER="$?"
++if [ $ANSWER -eq 1 ]; then
++	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
++        exit 1
++else
++        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Continuing Setup."
++fi
++TEXT="What type of deployment are you currently running?"
++COMPONENTS=`zenity --height=300 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Server FALSE Sensor FALSE Standalone`
++
++case $COMPONENTS in
++        Standalone)
++                SERVER="1"
++                SENSOR="1"
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Selected Standalone."
++                ;;
++        Server)
++                SERVER="1"
++                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Selected Server."
++		;;
++        Sensor)
++                SENSOR="1"
++                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Selected Sensor."
++		;;
++        *)
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
++                exit 1
++		;;
++esac
++#########################################
++# Notification Address
++#########################################
++NOTIFY_CONFIRMED="no"
++while [ $NOTIFY_CONFIRMED = "no" ]; do
++	TEXT="What would you like to specify for the notification address?"
++	NOTIFYADDRESS=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$ADMINADDR"`
++	ANSWER="$?"
++	if [ $ANSWER -eq 1 ]; then
++        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
++        	exit 1
++	else
++		if ! [[ "$NOTIFYADDRESS" == ?*@?*.?* ]]; then
++                        zenity --error --title "$TITLE" --text="Please provide a valid response\!"
++                else
++                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring notification address."
++			NOTIFY_CONFIRMED="yes"
++			NOTIFY_SUMMARY=" - Notification address will be set to: $NOTIFYADDRESS"
++                fi
++	fi
++done
++#########################################
++# Mail server
++#########################################
++MAILSERVER_CONFIRMED="no"
++while [ $MAILSERVER_CONFIRMED = "no" ]; do
++	TEXT="What address would you like to specify for the mail (SMTP) server?"
++	MAILSERVER=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$SMTP"`
++	ANSWER="$?"
++	if [ $ANSWER -eq 1 ]; then
++        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
++        	exit 1
++	else
++		if ! [[ "$MAILSERVER" == ?*.?*.?* ]]; then
++                        zenity --error --title "$TITLE" --text="Please provide a valid response\!"
++                else
++                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring SMTP server."
++			MAILSERVER_CONFIRMED="yes"
++			MAILSERVER_SUMMARY=" - Mail (SMTP) server set to: $MAILSERVER"
++                fi
++	fi
++done
++#########################################
++# Sostat email
++#########################################
++TEXT="Would you like to configure daily email for sostat output?"
++YES="Yes"
++NO="No"
++zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++ANSWER="$?"
++if [ $ANSWER -eq 1 ]; then
++        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for sostat output."
++else
++        [  $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring sostat email."
++	SOSTATADDRESS="root@localhost"
++	SOSTATEMAIL="YES"
++	SOSTATEMAIL_SUMMARY=" - Daily sostat email will be configured."
++fi
++#########################################
++# Bro email
++#########################################
++if [[ $SENSOR -eq 1 ]];then
++	TEXT="Would you like to configure email alerts for Bro?"
++	YES="Yes"
++	NO="No"
++	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++	ANSWER="$?"
++	if [ $ANSWER -eq 1 ]; then
++        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for Bro."
++	else
++        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Bro."
++		BROADDRESS="root@localhost"
++		BROEMAIL="YES"
++		BROEMAIL_SUMMARY=" - Bro email will be configured."
++	fi
++fi
++#########################################
++# Sguil email
++#########################################
++if [[ $SERVER -eq 1 ]];then
++	TEXT="Would you like to configure email alerts for Sguil?"
++	YES="Yes"
++	NO="No"
++	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++	ANSWER="$?"
++	if [ $ANSWER -eq 1 ]; then
++        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for Sguil."
++	else
++        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Sguil."
++		SGUILADDRESS="root@localhost"
++		SGUILEMAIL="Configured"
++		SGUILEMAIL_SUMMARY=" - Sguil email will be configured."
++	fi
++fi
++#########################################
++# OSSEC email
++#########################################
++TEXT="Would you like to configure email alerts for OSSEC?"
++YES="Yes"
++NO="No"
++zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++ANSWER="$?"
++if [ $ANSWER -eq 1 ]; then
++        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for OSSEC."
++else
++        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for OSSEC."
++	OSSECADDRESS="root@localhost"
++	OSSECEMAIL="YES"
++	OSSECEMAIL_SUMMARY=" - OSSEC email will be configured."
++fi
++#########################################
++#ELSA email
++#########################################
++if [[ $SERVER -eq 1 ]];then
++	TEXT="Would you like to configure email alerts for ELSA?"
++	YES="Yes"
++	NO="No"
++	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++	ANSWER="$?"
++	if [ $ANSWER -eq 1 ]; then
++        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for ELSA."
++	else
++        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for ELSA."
++		ELSAADDRESS="root@localhost"
++		ELSAEMAIL="YES"
++        	ELSA_USER_CONFIRMED="no"
++		while [ $ELSA_USER_CONFIRMED = "no" ]; do	
++			TEXT="What is the ELSA username to which this email address is associated?"
++        		ELSAUSER=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$SUDO_USER"`
++        		ANSWER="$?"
++			if [ $ANSWER -eq 1 ]; then
++				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
++				exit 1
++			else
++				if [ -z $ELSAUSER ]; then
++                        		zenity --error --title "$TITLE" --text="Please provide a valid response\!"
++                		else
++                        		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring ELSA username."
++					ELSA_USER_CONFIRMED="yes"
++                		fi
++			fi
++		done
++		#########################################
++		# ELSA server IP/Hostname
++        	#########################################
++        	ELSASERVER_CONFIRMED="no"
++		while [ $ELSASERVER_CONFIRMED = "no" ]; do	
++			TEXT="What is the ELSA server IP/hostname for which you wish to alert?"
++        		ELSASERVER=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$IP"`
++        		ANSWER="$?"
++			if [ $ANSWER -eq 1 ]; then 
++				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
++				exit 1
++			else
++				if [ -z $ELSASERVER ]; then 
++                        		zenity --error --title "$TITLE" --text="Please provide a valid response\!"
++                		else
++                        		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring ELSA server."
++					ELSASERVER_CONFIRMED="yes"
++                		fi
++			fi
++		done
++	ELSAEMAIL_SUMMARY=" - ELSA email will be configured.\n\   - ELSA User: $ELSAUSER\n\   - ELSA Server: $ELSASERVER"
++	fi
++fi
++#########################################
++# Summary
++#########################################
++TEXT="The following will be configured for $HOSTNAME:\n\
++\n\
++$NOTIFY_SUMMARY\n\
++$MAILSERVER_SUMMARY\n\
++$SOSTATEMAIL_SUMMARY\n\
++$BROEMAIL_SUMMARY\n\
++$SGUILEMAIL_SUMMARY\n\
++$OSSECEMAIL_SUMMARY\n\
++$ELSAEMAIL_SUMMARY\n\\n\
++Please note, services will restart upon confirmation."
++
++YES="Yes, Continue!"
++NO="No, Quit."
++zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
++ANSWER="$?"
++if [ $ANSWER -eq 1 ]; then
++        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
++	exit 1
++else
++        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuration confirmed."
++fi
++}
++
++function MOVELOG() {
++# Move log file from /tmp/ to /var/log/nsm/
++mv $LOG /var/log/nsm/so-email.log
++LOG="/var/log/nsm/so-email.log"
++}
++
++#########################################
++# Begin function CONFIGURE_EMAIL
++#########################################
++function CONFIGURE_EMAIL() {
++
++#Check if mailutils installed.  If not, install it.
++if dpkg -l | grep -q -i "mailutils"; then
++        :
++else
++	apt-get install -y mailutils >> $LOG 2>&1
++fi
++if dpkg -l | grep -q -i "postfix"; then
++	:
++else
++	apt-get install -y postfix >> $LOG 2>&1
++fi
++echo "10"
++echo "# Configuring system mail..." | tee -a $LOG
++#Configure system 'notification' address
++ALIASES="/etc/aliases"
++if  grep -q "root:" $ALIASES;then
++        sed -i "s|^root:.*$|root: $NOTIFYADDRESS|g" $ALIASES
++else
++        sed -i "/postmaster/a root: $NOTIFYADDRESS" $ALIASES
++fi
++newaliases >> $LOG 2>&1
++#Configure system from address
++POSTFIX="/etc/postfix/main.cf"
++#Configure system mail server
++sed -i "s|^relayhost = .*$|relayhost = $MAILSERVER|g" $POSTFIX
++sed -i "s|^inet_interfaces = .*$|inet_interfaces = loopback-only|g" $POSTFIX
++service postfix restart >> $LOG 2>&1
++#Configure sostat
++if ! [[ "$SOSTATEMAIL" == "NO" ]]; then
++	echo "15"
++	echo "# Configuring sostat mail..." | tee -a $LOG
++	SOSTAT="/etc/cron.d/sostat"
++	touch $SOSTAT
++	echo -e '#/etc/cron.d/sostat\n#\n#crontab entry to run sostat and email its output\n\n\nSHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\nEMAIL=root@localhost\nHOSTNAME='$HOSTNAME'\n\n01 12 * * * root /usr/bin/sostat 2>&1 | mail -aFrom:SecurityOnion@$HOSTNAME -s "Statistics for $HOSTNAME" $EMAIL' > $SOSTAT
++fi
++#Configure Bro
++if ! [[ "$BROEMAIL" == "NO" ]]; then
++	echo "30"
++	echo "# Configuring Bro email..." | tee -a $LOG
++	BROCTL="/opt/bro/etc/broctl.cfg"
++	sed -i "s|^MailTo.*$|MailTo = root@localhost|g" $BROCTL
++        if grep -q "tracesummary=" $BROCTL;then
++        	sed -i "s|^tracesummary=.*$|tracesummary=|g" $BROCTL
++	else
++		sed -i '/MailTo/a tracesummary=' $BROCTL
++        fi
++	LOCALBRO="/opt/bro/share/bro/site/local.bro"
++        if grep -q -i "email" $LOCALBRO;then
++        	:
++        else
++        	echo -e "\n# Bro Notice email configuration\nhook Notice::policy(n: Notice::Info)\n             {       \n      add n\$actions[Notice::ACTION_ALARM];\n         }" >> $LOCALBRO
++        fi
++	nsm_sensor_ps-restart --only-bro >> $LOG 2>&1
++fi
++#Configure Sguil
++if ! [[ "$SGUILEMAIL" == "NO" ]]; then
++	echo "45"
++	echo "# Configuring Sguil email..." | tee -a $LOG
++	SGUILDEMAIL="/etc/nsm/securityonion/sguild.email"
++	sed -i "s|^set EMAIL_EVENTS.*$|set EMAIL_EVENTS 1|g" $SGUILDEMAIL
++        sed -i "s|^set SMTP.*$|set SMTP_SERVER localhost|g" $SGUILDEMAIL
++        sed -i "s|^set EMAIL_RCPT.*$|set EMAIL_RCPT_TO \"root@localhost\"|g" $SGUILDEMAIL
++        sed -i "s|^set EMAIL_FROM.*$|set EMAIL_FROM \"Sguil\"|g" $SGUILDEMAIL
++	nsm_server_ps-restart >> $LOG 2>&1
++fi
++#Configure OSSEC
++if ! [[ "$OSSECEMAIL" == "NO" ]]; then
++	echo "60"
++	echo "# Configuring OSSEC email..." | tee -a $LOG
++	OSSECCONF="/var/ossec/etc/ossec.conf"
++        sed -i 's/.*email_notification.*/     <email_notification>yes<\/email_notification>/' $OSSECCONF
++	if grep -q -i "smtp" $OSSECCONF;then
++		sed -i 's/.*email_to.*/     <email_to>root@localhost<\/email_to>/' $OSSECCONF
++                sed -i 's/.*smtp_server.*/     <smtp_server>localhost<\/smtp_server>/' $OSSECCONF
++                sed -i 's/.*email_from.*/     <email_from>no-reply<\/email_from>/' $OSSECCONF
++                sed -i 's/.*email_maxperhour.*/     <email_maxperhour>20<\/email_maxperhour>/' $OSSECCONF
++        else
++                sed -i '/.*email_notification.*/ a \     <email_to>root@localhost<\/email_to>' $OSSECCONF
++               	sed -i '/.*email_to.*/ a \     <smtp_server>localhost<\/smtp_server>' $OSSECCONF
++                sed -i '/.*smtp_server.*/ a \     <email_from>no-reply<\/email_from>' $OSSECCONF
++                sed -i '/.*email_from.*/ a \     <email_maxperhour>\100\<\/email_maxperhour>' $OSSECCONF
++        fi
++	service ossec-hids-server restart >> $LOG 2>&1
++fi
++#Configure ELSA
++if ! [[ "$ELSAEMAIL" == "NO" ]]; then
++	echo "75"
++	echo "# Configuring ELSA email..." | tee -a $LOG
++	ELSAWEB="/etc/elsa_web.conf"
++	mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "update user_info set email='$ELSAADDRESS' where username='$ELSAUSER';"
++        sed -i 's#.*display_address.*#    "display_address": "ELSA@'$HOSTNAME'",#g' $ELSAWEB
++	sed -i 's#.*base_url.*#    "base_url": "https://'$ELSASERVER'/elsa-query",#g' $ELSAWEB
++	if grep -q -i "smtp" $ELSAWEB;then
++                sed -i 's#.*smtp_server.*#    "smtp_server": "localhost",#g' $ELSAWEB
++        else
++                sed -i '/.*base_url.*/ a \    "smtp_server": "localhost",' $ELSAWEB
++        fi
++	service apache2 restart >> $LOG 2>&1
++fi
++}
++#########################################
++# Options
++#########################################
++
++usage()
++{
++cat <<EOF
++
++Security Onion Email Setup
++
++     Options:
++
++        -h              This message
++        -f <file>       Configure using answer file <file>
++
++Usage: $0
++EOF
++}
++# Check to see if the user provided an answer file
++while getopts "hf:" OPTION
++do
++     case $OPTION in
++         h)
++                usage
++                exit 0
++                ;;
++         f)
++                ANSWERFILE="$OPTARG"
++                # Verify answer file exists and then read it into memory
++                if [ ! -f "$ANSWERFILE" ]; then
++                        echo "Error accessing $ANSWERFILE"
++                        exit 1
++                fi
++             ;;
++     esac
++done
++
++# GUI (Zenity) or CLI?
++# Default to zenity
++OUTPUT="gui"
++# If no X11, then fall back to cli
++[ -z "$DISPLAY" ] && OUTPUT="cli"
++# If user provided an answer file, set to cli
++[ -f "$ANSWERFILE" ] && OUTPUT="cli"
++# If the user didn't provide an answer file, then ask them the questions
++if [ ! -f "$ANSWERFILE" ]; then
++        if [ "$OUTPUT" = "gui" ] ; then
++                ask
++        else
++                echo
++                echo "No X display found."
++                echo
++                echo "You'll need to either:"
++                echo
++                echo "- use SSH X-forwarding (ssh -X)"
++                echo
++                echo "OR"
++                echo
++                echo "- use an answer file (sudo sosetup -f so-email.conf)"
++                echo
++                usage
++                exit 0
++        fi
++else
++        source "$ANSWERFILE"
++        echo
++        echo "Security Onion Email Setup"
++        echo
++        echo "Ready to configure system using parameters in $ANSWERFILE."
++        echo
++        echo "WARNING! Continuing will destroy any existing email configuration."
++        echo "Are you sure you want to continue?"
++        echo "Type yes to continue or anything else to exit."
++        read INPUT
++        [ "$INPUT" != "yes" ] && exit 0
++        echo
++fi
++
++if [ "$OUTPUT" = "gui" ]; then
++	CONFIGURE_EMAIL |
++	zenity --progress --title="$TITLE" --text="Please wait while making changes to the system..." --percentage=0 --auto-close
++else
++        echo "Please wait while..."
++        CONFIGURE_EMAIL | grep --line-buffered "^#" | sed 's|# Please wait while||g'
++fi
++
++MOVELOG
++########################################
++# Setup Complete
++########################################
++TEXT="Security Onion Email Setup is now complete! \n \
++\n\
++If you would like to edit the email configuration manually, please refer to:\n
++https://github.com/Security-Onion-Solutions/security-onion/wiki/Email\n"
++if [ "$OUTPUT" = "gui" ]; then
++	zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
++else
++	echo
++	echo "$TEXT" | sed 's|\\n|\n|g' | sed 's|\\||g' | tee -a $LOG
++	echo
++fi
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -39,12 +39,15 @@ VRT_URL="www.snort.org"
+ # Provide sensible defaults for Quick Setup
+ SGUIL_SERVER_NAME="securityonion"
+ IDS_ENGINE="snort"
+-IDS_RULESET="ETGPL"
++IDS_RULESET="ETOPEN"
++HOME_NET="192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
+ INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)[0-9]+" | awk '{print $1}' | cut -d\: -f1 |sort`
+ ALL_INTERFACES="$INTERFACES"
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
+ SNIFF_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | wc -l`
+ [ $SNIFF_INTERFACES -eq 0 ] && SNIFF_INTERFACES=1
++MTU=`cat "/etc/network/interfaces" | egrep "mtu" | awk '{print $2;exit}'`
++MTU_FIN=`echo $(($MTU+16))`
+ SENSORTAB="/etc/nsm/sensortab"
+ UPDATE_ELSA_SERVER="NO"
+ # PCAP_OPTIONS are passed to netsniff-ng
+@@ -544,15 +547,15 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVE
+ 	# Ask which IDS ruleset to use.
+ 	TEXT="Which IDS ruleset would you like to use?"
+ 	IDS_RULESET=`zenity --width=600 --height=300 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
+-	TRUE "ETGPL" "Emerging Threats GPL"  "no oinkcode required" \
++	TRUE "ETOPEN" "Emerging Threats Open"  "no oinkcode required" \
+ 	FALSE "ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
+ 	FALSE "VRTET" "Snort VRT ruleset and Emerging Threats NoGPL ruleset" "requires Snort VRT oinkcode" \
+ 	FALSE "VRT" "Snort VRT ruleset only and set a VRT policy" "requires Snort VRT oinkcode" `
+ 
+ 	case $IDS_RULESET in
+-	ETGPL)
+-		[ $DEBUG -eq 1 ] &&  echo "DEBUG: Selecting Emerging Threats GPL ruleset."
+-		IDS_RULESET_ACTION="- Download Emerging Threats GPL ruleset.\n"
++	ETOPEN)
++		[ $DEBUG -eq 1 ] &&  echo "DEBUG: Selecting Emerging Threats Open ruleset."
++		IDS_RULESET_ACTION="- Download Emerging Threats Open ruleset.\n"
+ 		;;
+ 	ETPRO)
+ 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting ETPRO ruleset." 
+@@ -692,6 +695,27 @@ If you need to change this setting later
+ 			IDS_LB_PROCS_CONFIRM="- Run a single IDS engine process per interface.\n"
+                 fi
+ 	fi
++	# Ask if user would like to configure a custom HOME_NET
++	if [ "$IDS_ENGINE_ENABLED" == "yes" ]; then
++		HOME_NET_CONFIRMED="no"
++		while [ "$HOME_NET_CONFIRMED" == "no" ];do
++			TEXT="What would you like to configure HOME__NET as?\n\n\Add a comma (no space) after each address range.\n\n\Ex. 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
++			HOME_NET=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$HOME_NET"`
++			ANSWER="$?"
++			if [ $ANSWER -eq 1 ]; then
++				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
++				exit 1
++			else
++				if [ "$HOME_NET" == "" ]; then
++					zenity --error --title "$TITLE" --text="Please provide a value for HOME_NET!"
++				else
++					HOME_NET_CONFIRMED="yes"
++					[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring HOME_NET as $HOME_NET."
++				fi
++			fi
++		done
++	fi
++	IDS_HOME_NET_CONFIRM="- Configure IDS HOME_NET as: $HOME_NET.\n"
+ 	if [ $CUSTOM -eq 1 ]; then
+ 	# Bro
+ 	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\
+@@ -1065,6 +1089,7 @@ $SENSOR_CONFIRM_3\
+ $IDS_LB_PROCS_CONFIRM\
+ $BRO_LB_PROCS_CONFIRM\
+ $IDS_RULESET_ACTION\
++$IDS_HOME_NET_CONFIRM\
+ $ELSA_ACTION_CONFIRM\
+ \n\
+ We're about to make changes to your system!\n\
+@@ -1315,6 +1340,8 @@ for INTERFACE in $ALL_INTERFACES; do
+         cp /etc/nsm/templates/snort/snort.conf /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1
+         cp /etc/nsm/templates/snort/unicode.map /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1
+         cp /etc/nsm/templates/suricata/suricata.yaml.in /etc/nsm/"$SENSORNAME"/suricata.yaml >> $LOG 2>&1
++	sed -i "s|# config snaplen:|config snaplen: $MTU_FIN|g" /etc/nsm/"$SENSORNAME"/snort.conf
++	sed -i "s|^ipvar HOME_NET.*|ipvar HOME_NET \[$HOME_NET\]|g" /etc/nsm/"$SENSORNAME"/snort.conf
+ 	sed -i "s|classification-file: /etc/suricata/classification.config|classification-file: /etc/nsm/$SENSORNAME/classification.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	sed -i "s|reference-config-file: /etc/suricata/reference.config|reference-config-file: /etc/nsm/$SENSORNAME/reference.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	sed -i "s|# threshold-file: /etc/suricata/threshold.config|threshold-file: /etc/nsm/$SENSORNAME/threshold.conf|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+@@ -1322,6 +1349,7 @@ for INTERFACE in $ALL_INTERFACES; do
+ 	#sed -i "s|threads: 1|threads: $IDS_LB_PROCS|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	sed -i "s|interface: eth0|interface: $INTERFACE|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	sed -i "s|cluster-id: 99|cluster-id: $BY2PORT|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
++	sed -i "s|HOME_NET:.*|HOME_NET: \"[$HOME_NET]\"|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	mkdir -p /usr/local/lib/snort_dynamicrules
+ 
+ 	# /etc/nsm/rules/
+@@ -1467,11 +1495,8 @@ EOF
+         fi
+ 	# Finished with node.cfg
+ 	# Now update networks.cfg
+-	if grep "172.16" /opt/bro/etc/networks.cfg >/dev/null; then
+-		echo "/opt/bro/etc/networks.cfg already contains 172.16" >> $LOG 2>&1
+-	else
+-		echo "172.16.0.0/12       Private IP space" >> /opt/bro/etc/networks.cfg
+-	fi
++	sed -i '1,4!d' /opt/bro/etc/networks.cfg
++	echo $HOME_NET | tr , '\n\\' >> /opt/bro/etc/networks.cfg
+ 	# update broctl.cfg
+ 	if grep "nsm" /opt/bro/etc/broctl.cfg >/dev/null; then
+ 		echo "/opt/bro/etc/broctl.cfg already contains nsm" >> $LOG 2>&1
+@@ -1585,8 +1610,8 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 	INTERNET="DOWN"
+ 
+ 	case $IDS_RULESET in
+-	ETGPL)
+-		echo "Already configured for Emerging Threats GPL ruleset." >> $LOG 2>&1
++	ETOPEN)
++		echo "Already configured for Emerging Threats Open ruleset." >> $LOG 2>&1
+ 		# Test Internet access
+ 		curl -s $ET_URL >/dev/null 2>&1 && INTERNET="UP"
+ 		;;
+@@ -2041,14 +2066,14 @@ Mailing Lists\
+ IRC channel\
+ and more!\
+ \
+-http://securityonion.net'
++https://securityonion.net'
+ }
+ 
+ function FIN6() {
+ TEXT='If you need commercial support or training,\
+ please see:\
+ \
+-http://securityonionsolutions.com'
++https://securityonionsolutions.com'
+ }
+ 
+ 
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -315,6 +315,30 @@ if [ $NUM_MON_INTERFACES -gt 0 ]; then
+ 		fi
+ 		SNIFF_TEXT="    - Configure the following interface(s) for sniffing:\n\
+                 $MON_INTERFACES"
++		# Configure default MTU for sniffing interface(s)
++                VALID="no"
++                while [ $VALID = "no" ]; do
++                        TEXT="What is the default MTU of your network?\n\n\Most networks use an MTU of 1500, however, Security Onion will configure a default\n\MTU of 1550, in order to allow for Q-in-Q, MPLS, and VLAN-tagged traffic.\n\\n\Please note, Snort and Suricata will add 16 to whatever value you set here\n\and use the resulting value for snaplen."
++                        MTU=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="1550"`
++                        ANSWER="$?"
++                        if [ $ANSWER -eq 1 ]; then
++                                [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
++                                exit 1
++                        else
++                                if echo $MTU | egrep '^[0-9]+$' >/dev/null 2>&1
++				then
++					if [[ "$MTU" -ge "1" ]] && [[ "$MTU" -le "65000" ]]; then
++						VALID="yes"
++						[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring MTU as $MTU."
++						MTU_TEXT="    - Configure the MTU for the sniffing interface(s):\n\                $MTU"
++					else
++						zenity --error --text="Please provide an integer value between 1 and 65000!"
++					fi
++				else
++					zenity --error --text="Not a number -- please use integers only!"
++				fi
++			fi
++                done
+ 	fi
+    fi
+ fi
+@@ -325,6 +349,7 @@ TEXT="We're about to do the following:\n
+     - Backup existing network configuration to /etc/network/interfaces.bak \n\
+     - $MANAGEMENT_TEXT \n\
+ $SNIFF_TEXT \n\
++$MTU_TEXT
+     \n\
+     We're about to make changes to your system! \n\
+     \n\
+@@ -410,8 +435,8 @@ fi
+ for INTERFACE in $MON_INTERFACES
+ do
+             	# Get max RX size for monitored interface
+-            	MAX_RX=$(ethtool -g $INTERFACE | grep -m 1 RX | cut -d\: -f2 | awk '{sub(/^[ \t]+/, "")};1')
+-    
++		MAX_RX=$(ethtool -g $INTERFACE | grep -m 1 RX | cut -d\: -f2 | awk '{sub(/^[ \t]+/, "")};1')
++
+ cat << EOF >> $FILE
+ auto $INTERFACE
+ iface $INTERFACE inet manual
+@@ -419,7 +444,7 @@ iface $INTERFACE inet manual
+   down ip link set \$IFACE promisc off down
+   post-up ethtool -G \$IFACE rx $MAX_RX; for i in rx tx sg tso ufo gso gro lro; do ethtool -K \$IFACE \$i off; done
+   post-up echo 1 > /proc/sys/net/ipv6/conf/\$IFACE/disable_ipv6
+-
++  mtu $MTU
+ EOF
+ 
+ done
+--- /dev/null
++++ securityonion-setup-20120912/share/securityonion/so-email.conf
+@@ -0,0 +1,57 @@
++#####################
++# so-email.conf
++#####################
++#
++# This file can be used to automate setup for email alerts from Security Onion.
++#
++# Copy this example file to your home directory:
++# cp /usr/share/securityonion/so-email.conf ~
++#
++# Edit your new so-email.conf:
++# nano ~/so-email.conf
++#
++# Run email setup with the -f switch and the path to this file:
++# sudo so-email -f ~/so-email.conf
++#
++###########################################################
++# System mail (Server, Sensor, Standalone)
++# *This section MUST be completed in order to receive mail*
++###########################################################
++NOTIFYADDRESS=""
++MAILSERVER=""
++
++# The following values can be set to "YES" if configuration is desired/applicable.
++# Otherwise, leave the value as "NO".
++
++#################################################
++# Daily sostat Email (Server, Sensor, Standalone)
++#################################################
++SOSTATEMAIL="NO"
++
++#########################
++# Bro Email (Sensor Only)
++#########################
++BROEMAIL="NO"
++
++##########################################
++# OSSEC Email (Server, Sensor, Standalone)
++##########################################
++OSSECEMAIL="NO"
++
++################################## 
++# Sguil Email (Server, Standalone)
++##################################
++SGUILEMAIL="NO"
++
++#################################
++# ELSA Email (Server, Standalone)
++#################################
++ELSAEMAIL="NO"
++
++# Specify ELSA username
++ELSAUSER=""
++
++# Specify ELSA server IP/hostname
++ELSASERVER=""
++
++
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup.conf
+@@ -228,15 +228,15 @@ ARGUS_ENABLED='no'
+ # This setting is only necessary on a master server.
+ # Sensors automatically inherit ruleset from the master server.
+ # Which IDS ruleset would you like to use?
+-# Emerging Threats GPL (no oinkcode required):
+-# ETGPL
++# Emerging Threats Open (no oinkcode required):
++# ETOPEN
+ # Emerging Threats PRO (requires ETPRO oinkcode):
+ # ETPRO
+ # Sourcefire VRT (requires VRT oinkcode):
+ # VRT
+ # VRT and ET (requires VRT oinkcode):
+ # VRTET
+-IDS_RULESET='ETGPL'
++IDS_RULESET='ETOPEN'
+ 
+ # OINKCODE
+ # This setting is only necessary on a master server.
+@@ -273,6 +273,14 @@ IDS_ENGINE='snort'
+ # This value should be lower than your number of CPU cores.
+ IDS_LB_PROCS='1'
+ 
++# HOME_NET
++# Setup by default configures Snort/Suricata's HOME_NET variable
++# as RFC 1918 (192.168.0.0/16,10.0.0.0/8,172.16.0.0/12).
++# If you wish to provide a custom value, enter it below,
++# ensuring a comma is placed after each range, with no spaces in between.
++# Ex. HOME_NET='192.168.0.0/16,10.0.0.0/8,172.16.0.0/12'
++HOME_NET='192.168.0.0/16,10.0.0.0/8,172.16.0.0/12'
++
+ ################################
+ # Bro Config
+ ################################

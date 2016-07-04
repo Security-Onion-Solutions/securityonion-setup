@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion217) trusty; urgency=medium
+
+  * Issue 955: Setup: Nonstandard interface names not being detected 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 04 Jul 2016 11:16:33 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion216) trusty; urgency=medium
 
   * Issues 925 926 948 949 953 

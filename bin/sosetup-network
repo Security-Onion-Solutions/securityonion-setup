@@ -275,7 +275,7 @@ fi
 # Sniffing interfaces
 #########################################
 # Get potential monitor interfaces (i.e., additional interfaces other than previously configured management interface)
-MON_INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' |grep -v "^lo$" | sort | | sed "s|$MGMT_INTERFACE||g"`
+MON_INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' |grep -v "^lo$" | sort | sed "s|$MGMT_INTERFACE||g"`
 
 NUM_MON_INTERFACES=0
 for i in `echo $MON_INTERFACES`; do

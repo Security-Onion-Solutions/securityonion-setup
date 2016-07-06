@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion219) trusty; urgency=medium
+
+  * fix typo 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 06 Jul 2016 10:15:58 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion218) trusty; urgency=medium
 
   * use less strict idiom to identify network interfaces 

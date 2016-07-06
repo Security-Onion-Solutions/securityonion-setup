@@ -74,8 +74,7 @@ fi
 #########################################
 # Get a list of all possible interfaces
 #VALID="no"
-MGMT_INTERFACE=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)\w+" | 
-	awk '{print $1}' | cut -d\: -f1 | sort `
+MGMT_INTERFACE=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' |grep -v "^lo$" | sort`
 # If there's only one interface, then MGMT_INTERFACE will have the right one
 # Otherwise, let the user select
 NUM_MGMT_INTERFACES=0
@@ -93,7 +92,7 @@ elif [ $NUM_MGMT_INTERFACES -gt 1 ]; then
 VALID="no"
 while [ $VALID = "no" ]; do
 	TEXT='Which network interface should be the management interface?'
-	INPUT=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)\w+" | awk '{print $1}' | cut -d\: -f1 | sort | while read INT; do echo -n "FALSE $INT "; done`
+	INPUT=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' |grep -v "^lo$" | sort | while read INT; do echo -n "FALSE $INT "; done`
 	MGMT_INTERFACE=`zenity --list --radiolist --column "1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" $INPUT 2>/dev/null`
 
         if [ $? = 1 ]; then
@@ -276,8 +275,7 @@ fi
 # Sniffing interfaces
 #########################################
 # Get potential monitor interfaces (i.e., additional interfaces other than previously configured management interface)
-MON_INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)\w+" | 
-    awk '{print $1}' | cut -d\: -f1 | sort |sed "s|$MGMT_INTERFACE||g"`
+MON_INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' |grep -v "^lo$" | sort | | sed "s|$MGMT_INTERFACE||g"`
 
 NUM_MON_INTERFACES=0
 for i in `echo $MON_INTERFACES`; do

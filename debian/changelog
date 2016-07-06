@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion218) trusty; urgency=medium
+
+  * use less strict idiom to identify network interfaces 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 06 Jul 2016 09:24:37 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion217) trusty; urgency=medium
 
   * Issue 955: Setup: Nonstandard interface names not being detected 

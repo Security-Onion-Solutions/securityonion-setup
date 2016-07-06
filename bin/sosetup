@@ -41,7 +41,7 @@ SGUIL_SERVER_NAME="securityonion"
 IDS_ENGINE="snort"
 IDS_RULESET="ETOPEN"
 HOME_NET="192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
-INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)\w+" | awk '{print $1}' | cut -d\: -f1 |sort`
+INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' |grep -v "^lo$" | sort`
 ALL_INTERFACES="$INTERFACES"
 NUM_INTERFACES=`echo $INTERFACES | wc -w`
 SNIFF_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | wc -l`
@@ -240,7 +240,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
 	fi
         if [ $NUM_INTERFACES -gt 1 ]; then
                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
-                INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)\w+" | awk '{print $1}' | cut -d\: -f1 | sort`
+                INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' |grep -v "^lo$" | sort`
                 if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
 
 			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
@@ -621,7 +621,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 	# Ask which interface(s) to listen on
 	if [ $NUM_INTERFACES -gt 1 ]; then
 	TEXT="Which network interface(s) should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your monitor interfaces are already selected."
-		INTERFACES=`cat "/proc/net/dev" | egrep "(eth|bond|wlan|br|ath|bge|mon|fe|em|p[0-5]p)\w+" | awk '{print $1}' | cut -d\: -f1 | sort`
+		INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' |grep -v "^lo$" | sort`
 		if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
 		[ $? = 1 ] && exit 1
 			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`

@@ -47,6 +47,10 @@ NUM_INTERFACES=`echo $INTERFACES | wc -w`
 SNIFF_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | wc -l`
 [ $SNIFF_INTERFACES -eq 0 ] && SNIFF_INTERFACES=1
 MTU=`cat "/etc/network/interfaces" | egrep "mtu" | awk '{print $2;exit}'`
+if [ -z "$MTU" ];then
+	sed -i '/.*post-up echo.*/ a \  mtu 1550' /etc/network/interfaces
+	MTU="1550"
+fi
 MTU_FIN=`echo $(($MTU+16))`
 SENSORTAB="/etc/nsm/sensortab"
 UPDATE_ELSA_SERVER="NO"

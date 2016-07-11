@@ -46,12 +46,6 @@ ALL_INTERFACES="$INTERFACES"
 NUM_INTERFACES=`echo $INTERFACES | wc -w`
 SNIFF_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | wc -l`
 [ $SNIFF_INTERFACES -eq 0 ] && SNIFF_INTERFACES=1
-MTU=`cat "/etc/network/interfaces" | egrep "mtu" | awk '{print $2;exit}'`
-if [ -z "$MTU" ];then
-	sed -i '/.*post-up echo.*/ a \  mtu 1550' /etc/network/interfaces
-	MTU="1550"
-fi
-MTU_FIN=`echo $(($MTU+16))`
 SENSORTAB="/etc/nsm/sensortab"
 UPDATE_ELSA_SERVER="NO"
 # PCAP_OPTIONS are passed to netsniff-ng
@@ -1344,6 +1338,12 @@ for INTERFACE in $ALL_INTERFACES; do
         cp /etc/nsm/templates/snort/snort.conf /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1
         cp /etc/nsm/templates/snort/unicode.map /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1
         cp /etc/nsm/templates/suricata/suricata.yaml.in /etc/nsm/"$SENSORNAME"/suricata.yaml >> $LOG 2>&1
+
+	# Grab MTU for interface(s) and add 24 to snaplen for VLAN-tagging, etc
+        MTU=`cat /sys/class/net/$INTERFACE/mtu`
+        MTU_FIN=`echo $(($MTU+24))`
+
+        # Write IDS config to files
 	sed -i "s|# config snaplen:|config snaplen: $MTU_FIN|g" /etc/nsm/"$SENSORNAME"/snort.conf
 	sed -i "s|^ipvar HOME_NET.*|ipvar HOME_NET \[$HOME_NET\]|g" /etc/nsm/"$SENSORNAME"/snort.conf
 	sed -i "s|classification-file: /etc/suricata/classification.config|classification-file: /etc/nsm/$SENSORNAME/classification.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml

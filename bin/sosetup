@@ -1353,7 +1353,7 @@ for INTERFACE in $ALL_INTERFACES; do
 	#sed -i "s|threads: 1|threads: $IDS_LB_PROCS|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|interface: eth0|interface: $INTERFACE|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|cluster-id: 99|cluster-id: $BY2PORT|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
-	sed -i "s|HOME_NET:.*|HOME_NET: \"[$HOME_NET]\"|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+	sed -i "s|    HOME_NET:.*|    HOME_NET: \"[$HOME_NET]\"|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	mkdir -p /usr/local/lib/snort_dynamicrules
 
 	# /etc/nsm/rules/

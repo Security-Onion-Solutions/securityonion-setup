@@ -443,6 +443,7 @@ iface $INTERFACE inet manual
   post-up ethtool -G \$IFACE rx $MAX_RX; for i in rx tx sg tso ufo gso gro lro; do ethtool -K \$IFACE \$i off; done
   post-up echo 1 > /proc/sys/net/ipv6/conf/\$IFACE/disable_ipv6
   mtu $MTU
+
 EOF
 
 done

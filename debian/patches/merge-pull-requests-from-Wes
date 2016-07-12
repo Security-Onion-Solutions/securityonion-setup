@@ -1,0 +1,68 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion220) trusty; urgency=medium
+ .
+   * merge pull requests from Wes
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -46,8 +46,6 @@ ALL_INTERFACES="$INTERFACES"
+ NUM_INTERFACES=`echo $INTERFACES | wc -w`
+ SNIFF_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | wc -l`
+ [ $SNIFF_INTERFACES -eq 0 ] && SNIFF_INTERFACES=1
+-MTU=`cat "/etc/network/interfaces" | egrep "mtu" | awk '{print $2;exit}'`
+-MTU_FIN=`echo $(($MTU+16))`
+ SENSORTAB="/etc/nsm/sensortab"
+ UPDATE_ELSA_SERVER="NO"
+ # PCAP_OPTIONS are passed to netsniff-ng
+@@ -1340,6 +1338,12 @@ for INTERFACE in $ALL_INTERFACES; do
+         cp /etc/nsm/templates/snort/snort.conf /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1
+         cp /etc/nsm/templates/snort/unicode.map /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1
+         cp /etc/nsm/templates/suricata/suricata.yaml.in /etc/nsm/"$SENSORNAME"/suricata.yaml >> $LOG 2>&1
++
++	# Grab MTU for interface(s) and add 24 to snaplen for VLAN-tagging, etc
++        MTU=`cat /sys/class/net/$INTERFACE/mtu`
++        MTU_FIN=`echo $(($MTU+24))`
++
++        # Write IDS config to files
+ 	sed -i "s|# config snaplen:|config snaplen: $MTU_FIN|g" /etc/nsm/"$SENSORNAME"/snort.conf
+ 	sed -i "s|^ipvar HOME_NET.*|ipvar HOME_NET \[$HOME_NET\]|g" /etc/nsm/"$SENSORNAME"/snort.conf
+ 	sed -i "s|classification-file: /etc/suricata/classification.config|classification-file: /etc/nsm/$SENSORNAME/classification.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+@@ -1349,7 +1353,7 @@ for INTERFACE in $ALL_INTERFACES; do
+ 	#sed -i "s|threads: 1|threads: $IDS_LB_PROCS|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	sed -i "s|interface: eth0|interface: $INTERFACE|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	sed -i "s|cluster-id: 99|cluster-id: $BY2PORT|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+-	sed -i "s|HOME_NET:.*|HOME_NET: \"[$HOME_NET]\"|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
++	sed -i "s|    HOME_NET:.*|    HOME_NET: \"[$HOME_NET]\"|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
+ 	mkdir -p /usr/local/lib/snort_dynamicrules
+ 
+ 	# /etc/nsm/rules/
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -443,6 +443,7 @@ iface $INTERFACE inet manual
+   post-up ethtool -G \$IFACE rx $MAX_RX; for i in rx tx sg tso ufo gso gro lro; do ethtool -K \$IFACE \$i off; done
+   post-up echo 1 > /proc/sys/net/ipv6/conf/\$IFACE/disable_ipv6
+   mtu $MTU
++
+ EOF
+ 
+ done

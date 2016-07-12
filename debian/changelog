@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion220) trusty; urgency=medium
+
+  * merge pull requests from Wes 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 12 Jul 2016 18:54:37 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion219) trusty; urgency=medium
 
   * fix typo 

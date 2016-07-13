@@ -285,10 +285,10 @@ done
 # If there are additional interfaces, offer option to configure them as monitor interfaces
 CONFIG_MON_INTERFACES=0
 if [ $NUM_MON_INTERFACES -gt 0 ]; then
-    TEXT='Would you like to configure monitor interfaces?\
+    TEXT='Would you like to configure sniffing (monitor) interfaces?\
     - Choose YES if this is a Standalone or Sensor installation\
     - Choose NO if this is a Server-only installation (only management interface will be configured)'
-    YES='Yes, configure monitor interfaces.'
+    YES='Yes, configure sniffing interfaces.'
     NO='No, only configure a management interface.'
     zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
     ANSWER="$?"
@@ -316,7 +316,7 @@ if [ $NUM_MON_INTERFACES -gt 0 ]; then
 		# Configure default MTU for sniffing interface(s)
                 VALID="no"
                 while [ $VALID = "no" ]; do
-                        TEXT="What MTU would you like to set on your sniffing interface(s)?\n\n\Most networks use an MTU of 1500, however, we recommend a default\n\MTU of 1550 to allow for Q-in-Q, MPLS, and VLAN-tagged traffic.\n\\n\Please note, Snort and Suricata will add 24 to whatever value you set here\n\and use the resulting value for snaplen."
+                        TEXT="What MTU would you like to set on your sniffing interface(s)?\n\n\Most networks use an MTU of 1500, however, we recommend a default\n\MTU of 1550 to allow for Q-in-Q, MPLS, and VLAN-tagged traffic.\n\\n\(Please note, Snort and Suricata will add 24 to whatever value you set here\n\and use the resulting value for snaplen.)"
                         MTU=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="1550"`
                         ANSWER="$?"
                         if [ $ANSWER -eq 1 ]; then
@@ -509,8 +509,8 @@ TEXT="Network configuration complete!\n\
 \n\
 You'll need to reboot before continuing to the second phase of Setup.\n\
 \n\
-If you need to modify MTU or any other settings for your network,
-you can manually update /etc/network/interfaces now before rebooting.
+If you need to manually modify any other network settings,
+you can edit /etc/network/interfaces now before rebooting.
 \n\
 Would you like to reboot now?"
 

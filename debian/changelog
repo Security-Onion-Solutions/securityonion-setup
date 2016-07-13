@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion221) trusty; urgency=medium
+
+  * re-word MTU screen in sosetup-network 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 13 Jul 2016 15:42:36 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion220) trusty; urgency=medium
 
   * merge pull requests from Wes 

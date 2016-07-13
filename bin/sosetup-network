@@ -316,7 +316,7 @@ if [ $NUM_MON_INTERFACES -gt 0 ]; then
 		# Configure default MTU for sniffing interface(s)
                 VALID="no"
                 while [ $VALID = "no" ]; do
-                        TEXT="What is the default MTU of your network?\n\n\Most networks use an MTU of 1500, however, Security Onion will configure a default\n\MTU of 1550, in order to allow for Q-in-Q, MPLS, and VLAN-tagged traffic.\n\\n\Please note, Snort and Suricata will add 16 to whatever value you set here\n\and use the resulting value for snaplen."
+                        TEXT="What MTU would you like to set on your sniffing interface(s)?\n\n\Most networks use an MTU of 1500, however, we recommend a default\n\MTU of 1550 to allow for Q-in-Q, MPLS, and VLAN-tagged traffic.\n\\n\Please note, Snort and Suricata will add 24 to whatever value you set here\n\and use the resulting value for snaplen."
                         MTU=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="1550"`
                         ANSWER="$?"
                         if [ $ANSWER -eq 1 ]; then

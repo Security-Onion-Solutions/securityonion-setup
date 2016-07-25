@@ -138,7 +138,6 @@ HR_MEM=$((TOTAL_MEM / 1000))
 MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 3GB of RAM.\n\n\Please consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
 Click 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n\
 Otherwise, click 'Yes' to continue."
-
 #########################################
 # Debug
 #########################################
@@ -2160,6 +2159,7 @@ Security Onion Setup
         -h              This message
         -f <file>       Configure using answer file <file>
         -w <file>       Create answer file <file>
+	-y 		Configure without prompting
 
 Usage: $0
 EOF
@@ -2171,7 +2171,8 @@ EOF
 #########################################
 
 # Check to see if the user provided an answer file
-while getopts "hf:w:" OPTION
+SKIP=0
+while getopts "hf:yw:" OPTION
 do
      case $OPTION in
          h)
@@ -2189,6 +2190,9 @@ do
          w)
              	WRITEANSWERFILE="$OPTARG"
              ;;
+	 y)
+		SKIP=1
+	     ;;
      esac
 done
 
@@ -2201,7 +2205,7 @@ OUTPUT="gui"
 [ -f "$ANSWERFILE" ] && OUTPUT="cli"
 
 # If the user didn't provide an answer file, then ask them the questions
-if [ ! -f "$ANSWERFILE" ]; then 
+if [ ! -f "$ANSWERFILE" ]; then
 	if [ "$OUTPUT" = "gui" ] ; then
 		ask
 	else
@@ -2224,21 +2228,23 @@ else
 	# copy SNIFFING_INTERFACES into INTERFACES
 	INTERFACES="$SNIFFING_INTERFACES"
 	ADVANCED_SETUP="1"
-	echo
-	echo "Security Onion Setup"
-	echo
-	echo "Ready to configure system using parameters in $ANSWERFILE."
-	echo
-	echo "WARNING! Continuing will destroy any existing data/config."
-	echo "Are you sure you want to continue?"
-	echo "Type yes to continue or anything else to exit."
-	read INPUT
-	[ "$INPUT" != "yes" ] && exit 0
-	echo
-	# If /etc/network/interfaces has not been configured yet, then we need
-	# to run sosetup-network and pass it the answerfile
-	if ! grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1; then
-		/usr/bin/sosetup-network $@
+	if [ $SKIP -ne 1 ];then
+		echo
+		echo "Security Onion Setup"
+		echo
+		echo "Ready to configure system using parameters in $ANSWERFILE."
+		echo
+		echo "WARNING! Continuing will destroy any existing data/config."
+		echo "Are you sure you want to continue?"
+		echo "Type yes to continue or anything else to exit."
+		read INPUT
+		[ "$INPUT" != "yes" ] && exit 0
+		echo
+		# If /etc/network/interfaces has not been configured yet, then we need
+		# to run sosetup-network and pass it the answerfile
+		if ! grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1; then
+			/usr/bin/sosetup-network $@
+		fi
 	fi
 fi
 

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion225) trusty; urgency=medium
+
+  * Issue 980: Setup: sosetup.conf SGUIL_CLIENT_USERNAME alphanumeric only 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 09 Aug 2016 12:59:51 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion224) trusty; urgency=medium
 
   * fix formatting in sosetup.conf 

@@ -294,6 +294,8 @@ if [ $NUM_MON_INTERFACES -gt 0 ]; then
     ANSWER="$?"
     if [ $ANSWER -eq 1 ]; then
         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Configuring management interface only."
+	# Set MON_INTERFACES to null so that later when we iterate over the list it won't do anything
+	MON_INTERFACES=""
     else
         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring monitor interfaces."
         CONFIG_MON_INTERFACES=1

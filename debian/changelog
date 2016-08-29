@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion227) trusty; urgency=medium
+
+  * Setup: use default MTU #986 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 29 Aug 2016 03:56:40 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion226) trusty; urgency=medium
 
   * sosetup-network: bug when configuring management interface only #981 

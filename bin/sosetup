@@ -26,7 +26,8 @@
 #########################################
 DEBUG="0"
 # Window title
-HOSTNAME=`hostname`
+HOST_ORIG=`hostname`
+HOSTNAME=${HOST_ORIG,,}
 IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
 TITLE="Security Onion Setup ($HOSTNAME)"
 # File locations
@@ -1169,6 +1170,7 @@ pkill autossh
 # Make sure MySQL is running so that we can fully delete the NSM databases
 [ $SERVER -eq 1 ] && service mysql start >> $LOG 2>&1
 # Uncomment any disabled sensors so that we can fully delete them
+sed -i "s|^#$HOST_ORIG-|$HOST_ORIG-|g" $SENSORTAB
 sed -i "s|^#$HOSTNAME-|$HOSTNAME-|g" $SENSORTAB
 # Delete all nsm configuration and data
 /usr/sbin/nsm_all_del_quick >> $LOG 2>&1
@@ -1259,7 +1261,8 @@ if [ $SENSOR -eq 1 ]; then
 echo "20"
 echo "# Please wait while creating Sguil sensor(s)..." | tee -a $LOG
 BY2PORT=8000
-HOSTNAME=`hostname`
+HOST_ORIG=`hostname`
+HOSTNAME=${HOST_ORIG,,}
 
 # Configure SSH Key authentication to server if necessary
 if [ "$SERVERNAME" != "localhost" ]; then

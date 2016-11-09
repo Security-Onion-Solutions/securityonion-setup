@@ -24,7 +24,8 @@
 DEBUG="0"
 LOGDIR=/var/log/nsm
 LOG=$LOGDIR/sosetup-network.log
-HOSTNAME=`hostname`
+HOST_ORIG=`hostname`
+HOSTNAME=${HOST_ORIG,,}
 TITLE="Security Onion Setup ($HOSTNAME)"
 
 function ASK_FOR_NETWORK_CONFIG() {

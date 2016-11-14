@@ -1,0 +1,231 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion229) trusty; urgency=medium
+ .
+   * issues 988 1000 989
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -26,7 +26,8 @@
+ #########################################
+ DEBUG="0"
+ # Window title
+-HOSTNAME=`hostname`
++HOST_ORIG=`hostname`
++HOSTNAME=${HOST_ORIG,,}
+ IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+ TITLE="Security Onion Setup ($HOSTNAME)"
+ # File locations
+@@ -35,7 +36,7 @@ LOG=`mktemp /tmp/sosetup.log.XXXXXXXXXX`
+ PP_CONF="/etc/nsm/pulledpork/pulledpork.conf"
+ # URLs
+ ET_URL="rules.emergingthreats.net"
+-VRT_URL="www.snort.org"
++TALOS_URL="www.snort.org"
+ # Provide sensible defaults for Quick Setup
+ SGUIL_SERVER_NAME="securityonion"
+ IDS_ENGINE="snort"
+@@ -208,7 +209,7 @@ as it gives you more control over the de
+ and allows you to build a distributed sensor network.  You choose:\n\
+ - Sguil server, Sguil sensor, or both\n\
+ - which IDS engine to use (Snort or Suricata)\n\
+-- which IDS ruleset(s) to use (Emerging Threats, Snort VRT, or both)\n\
++- which IDS ruleset(s) to use (Emerging Threats, Snort Subscriber (Talos), or both)\n\
+ - how many processes to run for Snort/Suricata/Bro"
+ SETUP=""
+ SETUP=`zenity --list --radiolist \
+@@ -546,8 +547,8 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVE
+ 	IDS_RULESET=`zenity --width=600 --height=300 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
+ 	TRUE "ETOPEN" "Emerging Threats Open"  "no oinkcode required" \
+ 	FALSE "ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
+-	FALSE "VRTET" "Snort VRT ruleset and Emerging Threats NoGPL ruleset" "requires Snort VRT oinkcode" \
+-	FALSE "VRT" "Snort VRT ruleset only and set a VRT policy" "requires Snort VRT oinkcode" `
++	FALSE "TALOSET" "Snort Subscriber (Talos) ruleset and Emerging Threats NoGPL ruleset" "requires Snort Subscriber oinkcode" \
++	FALSE "TALOS" "Snort Subscriber (Talos) ruleset only and set a Snort Subscriber policy" "requires Snort Subscriber oinkcode" `
+ 
+ 	case $IDS_RULESET in
+ 	ETOPEN)
+@@ -561,24 +562,24 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVE
+ 		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered ETPRO oinkcode $OINKCODE"
+ 		IDS_RULESET_ACTION="- Download ETPRO ruleset using oinkcode $OINKCODE.\n"
+ 		;;
+-	VRT)
+-		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting Snort VRT ruleset only and setting a VRT policy."
+-		TEXT="Please enter your Snort VRT oinkcode.\n\nIf you don't already have one, you can obtain one from http://www.snort.org/."
++	TALOS)
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting Snort Subscriber (Talos) ruleset only and setting a Snort Subscriber policy."
++		TEXT="Please enter your Snort Subscriber (Talos) oinkcode.\n\nIf you don't already have one, you can obtain one from http://www.snort.org/."
+ 		OINKCODE=`zenity --title "$TITLE" --entry --text="$TEXT"`
+-		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered Snort VRT oinkcode $OINKCODE"
+-		VRT_POLICY=`zenity --list --radiolist --hide-header --column="1" --column="2" --text="Please choose a VRT policy." --title "$TITLE" \
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered Snort Subscriber (Talos) oinkcode $OINKCODE"
++		TALOS_POLICY=`zenity --list --radiolist --hide-header --column="1" --column="2" --text="Please choose a Snort Subscriber (Talos) policy." --title "$TITLE" \
+ 		FALSE "connectivity" \
+ 		FALSE "balanced" \
+ 		FALSE "security" `
+-		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Snort VRT policy $VRT_POLICY"
+-		IDS_RULESET_ACTION="- Download the Snort VRT ruleset using oinkcode $OINKCODE.\n- Set VRT policy to $VRT_POLICY.\n"
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Snort Subscriber (Talos) policy $TALOS_POLICY"
++		IDS_RULESET_ACTION="- Download the Snort Subscriber (Talos) ruleset using oinkcode $OINKCODE.\n- Set Snort Subscriber (Talos) policy to $TALOS_POLICY.\n"
+ 		;;
+-	VRTET)
+-		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting Snort VRT and Emerging Threats NoGPL ruleset."
+-		TEXT="Please enter your Snort VRT oinkcode.\n\nIf you don't already have one, you can obtain one from http://www.snort.org/."
++	TALOSET)
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting Snort Subscriber (Talos) and Emerging Threats NoGPL ruleset."
++		TEXT="Please enter your Snort Subscriber (Talos) oinkcode.\n\nIf you don't already have one, you can obtain one from http://www.snort.org/."
+ 		OINKCODE=`zenity --entry --title "$TITLE" --text="$TEXT"`
+-		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered Snort VRT oinkcode $OINKCODE"
+-		IDS_RULESET_ACTION="- Download the Snort VRT ruleset using oinkcode $OINKCODE.\n- Download the Emerging Threats NoGPL ruleset.\n"
++		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered Snort Subscriber (Talos) oinkcode $OINKCODE"
++		IDS_RULESET_ACTION="- Download the Snort Subscriber (Talos) ruleset using oinkcode $OINKCODE.\n- Download the Emerging Threats NoGPL ruleset.\n"
+ 		;;
+ 	*)
+ 		[ $? = 1 ] && [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+@@ -1169,6 +1170,7 @@ pkill autossh
+ # Make sure MySQL is running so that we can fully delete the NSM databases
+ [ $SERVER -eq 1 ] && service mysql start >> $LOG 2>&1
+ # Uncomment any disabled sensors so that we can fully delete them
++sed -i "s|^#$HOST_ORIG-|$HOST_ORIG-|g" $SENSORTAB
+ sed -i "s|^#$HOSTNAME-|$HOSTNAME-|g" $SENSORTAB
+ # Delete all nsm configuration and data
+ /usr/sbin/nsm_all_del_quick >> $LOG 2>&1
+@@ -1259,7 +1261,8 @@ if [ $SENSOR -eq 1 ]; then
+ echo "20"
+ echo "# Please wait while creating Sguil sensor(s)..." | tee -a $LOG
+ BY2PORT=8000
+-HOSTNAME=`hostname`
++HOST_ORIG=`hostname`
++HOSTNAME=${HOST_ORIG,,}
+ 
+ # Configure SSH Key authentication to server if necessary
+ if [ "$SERVERNAME" != "localhost" ]; then
+@@ -1628,21 +1631,21 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		# Test Internet access
+ 		curl -s $ET_URL >/dev/null 2>&1 && INTERNET="UP"
+ 		;;
+-	VRT)
+-		echo "Configuring for Snort VRT ruleset only and setting a VRT policy." >> $LOG 2>&1
++	TALOS)
++		echo "Configuring for Snort Subscriber (Talos) ruleset only and setting a Snort Subscriber policy." >> $LOG 2>&1
+ 		# Disable ET.
+ 		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\#rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\g' $PP_CONF >> $LOG 2>&1
+ 		# Enable Snort.
+ 		sed -i "s\#rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|<oinkcode>\rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
+ 		# Enable Snort Community ruleset.
+ 		sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $PP_CONF >> $LOG 2>&1
+-		# Set VRT Policy.
+-		sed -i "s|# ips_policy=security|ips_policy=$VRT_POLICY|g" $PP_CONF >> $LOG 2>&1
++		# Set Snort Subscriber (Talos) Policy.
++		sed -i "s|# ips_policy=security|ips_policy=$TALOS_POLICY|g" $PP_CONF >> $LOG 2>&1
+ 		# Test Internet access
+-		curl -s $VRT_URL >/dev/null 2>&1 && INTERNET="UP"
++		curl -s $TALOS_URL >/dev/null 2>&1 && INTERNET="UP"
+ 		;;
+-	VRTET)
+-		echo "Configuring for Snort VRT and Emerging Threats NoGPL rulesets" >> $LOG 2>&1
++	TALOSET)
++		echo "Configuring for Snort Subscriber (Talos) and Emerging Threats NoGPL rulesets" >> $LOG 2>&1
+ 		# Enable Snort.
+ 		sed -i "s\#rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|<oinkcode>\rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
+ 		# Enable Snort Community ruleset.
+@@ -1650,7 +1653,7 @@ if [ "$SERVERNAME" = "localhost" ]; then
+ 		# Change open to open-nogpl
+ 		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open-nogpl\g' $PP_CONF >> $LOG 2>&1
+ 		# Test Internet access
+-		curl -s $ET_URL >/dev/null 2>&1 && curl -s $VRT_URL >/dev/null 2>&1 && INTERNET="UP"
++		curl -s $ET_URL >/dev/null 2>&1 && curl -s $TALOS_URL >/dev/null 2>&1 && INTERNET="UP"
+ 		;;
+ 	esac
+ 
+--- securityonion-setup-20120912.orig/bin/sosetup-fix-ppconf
++++ securityonion-setup-20120912/bin/sosetup-fix-ppconf
+@@ -3,15 +3,15 @@
+ FILE="/etc/nsm/pulledpork/pulledpork.conf"
+ DATE=`date +%Y%m%d`
+ 
+-# Check to see if pulledpork.conf exists and if Snort VRT ruleset is enabled.
++# Check to see if pulledpork.conf exists and if Snort Subscriber ruleset is enabled.
+ if [ -f $FILE ]; then
+ 	if grep "^rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz" $FILE >/dev/null 2>&1; then
+ 
+-		# Snort VRT ruleset is enabled.
++		# Snort Subscriber ruleset is enabled.
+ 
+ 		# First, check to see if there are any old amazonaws entries that need to be removed.
+ 		if grep "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
+-			echo "Found old Snort VRT amazonaws entries in $FILE."
++			echo "Found old Snort Subscriber amazonaws entries in $FILE."
+ 			echo "Backing up $FILE to $FILE.$DATE."
+ 			cp $FILE $FILE.$DATE
+ 			echo "Removing old amazonaws entries from $FILE."
+@@ -22,12 +22,12 @@ if [ -f $FILE ]; then
+ 		# Next, check to see if there are multiple snort.org community entries.  If so, remove all of them.
+ 		COMMUNITY_ENTRIES=`grep "rule_url=https://snort.org/downloads/community/" $FILE | wc -l`
+ 		if [ "$COMMUNITY_ENTRIES" -gt 1 ]; then
+-			echo "Found multiple Snort VRT community entries in $FILE."
++			echo "Found multiple Snort Subscriber community entries in $FILE."
+ 			if [ ! -f $FILE.$DATE ]; then
+ 				echo "Backing up $FILE to $FILE.$DATE."
+ 				cp $FILE $FILE.$DATE
+ 			fi
+-			echo "Removing all Snort VRT community entries from $FILE."
++			echo "Removing all Snort Subscriber community entries from $FILE."
+ 			grep -v "rule_url=https://snort.org/downloads/community/" $FILE > $FILE.$DATE.without.snort.community
+ 			mv $FILE.$DATE.without.snort.community $FILE
+ 		fi
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -24,7 +24,8 @@
+ DEBUG="0"
+ LOGDIR=/var/log/nsm
+ LOG=$LOGDIR/sosetup-network.log
+-HOSTNAME=`hostname`
++HOST_ORIG=`hostname`
++HOSTNAME=${HOST_ORIG,,}
+ TITLE="Security Onion Setup ($HOSTNAME)"
+ 
+ function ASK_FOR_NETWORK_CONFIG() {
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup.conf
+@@ -233,16 +233,16 @@ ARGUS_ENABLED='no'
+ # ETOPEN
+ # Emerging Threats PRO (requires ETPRO oinkcode):
+ # ETPRO
+-# Sourcefire VRT (requires VRT oinkcode):
+-# VRT
+-# VRT and ET (requires VRT oinkcode):
+-# VRTET
++# Sourcefire Talos (requires Talos oinkcode):
++# TALOS
++# TALOS and ET (requires TALOS oinkcode):
++# TALOSET
+ IDS_RULESET='ETOPEN'
+ 
+ # OINKCODE
+ # This setting is only necessary on a master server.
+ # Sensors automatically inherit ruleset from the master server.
+-# If you're running VRT or ETPRO rulesets, you'll need to supply your
++# If you're running TALOS or ETPRO rulesets, you'll need to supply your
+ # oinkcode here.
+ OINKCODE=''
+ 

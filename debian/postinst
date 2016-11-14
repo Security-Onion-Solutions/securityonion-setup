@@ -16,11 +16,14 @@ case "$1" in
 	FILE="/usr/share/applications/securityonion-setup.desktop"
 	if [ -f $FILE ]; then
 
-		# Copy Setup launcher to existing user accounts
+		# Iterate across home directories
 	        for i in `ls /home/`; do
-			mkdir -p /home/$i/Desktop || echo "Error creating Desktop directory."
-			cp $FILE /home/$i/Desktop/ || echo "Error copying $FILE to Desktop directory."
-			chown $i:$i /home/$i/Desktop/securityonion-setup.desktop || echo "Error setting ownership of launcher."
+			# Copy Setup launcher to home directory, but only if user account already exists
+			if getent passwd $i >/dev/null 2>&1; then 
+				mkdir -p /home/$i/Desktop || echo "Error creating Desktop directory."
+				cp $FILE /home/$i/Desktop/ || echo "Error copying $FILE to Desktop directory."
+				chown $i:$i /home/$i/Desktop/securityonion-setup.desktop || echo "Error setting ownership of launcher."
+			fi
        		done
 
 		# Copy Setup launcher to /etc/skel/Desktop for new users

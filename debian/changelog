@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion229) trusty; urgency=medium
+
+  * issues 988 1000 989 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 14 Nov 2016 10:19:12 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion228) trusty; urgency=medium
 
   * remove MTU from sosetup.conf 

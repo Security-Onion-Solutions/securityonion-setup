@@ -3,15 +3,15 @@
 FILE="/etc/nsm/pulledpork/pulledpork.conf"
 DATE=`date +%Y%m%d`
 
-# Check to see if pulledpork.conf exists and if Snort VRT ruleset is enabled.
+# Check to see if pulledpork.conf exists and if Snort Subscriber ruleset is enabled.
 if [ -f $FILE ]; then
 	if grep "^rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz" $FILE >/dev/null 2>&1; then
 
-		# Snort VRT ruleset is enabled.
+		# Snort Subscriber ruleset is enabled.
 
 		# First, check to see if there are any old amazonaws entries that need to be removed.
 		if grep "rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/" $FILE >/dev/null 2>&1; then
-			echo "Found old Snort VRT amazonaws entries in $FILE."
+			echo "Found old Snort Subscriber amazonaws entries in $FILE."
 			echo "Backing up $FILE to $FILE.$DATE."
 			cp $FILE $FILE.$DATE
 			echo "Removing old amazonaws entries from $FILE."
@@ -22,12 +22,12 @@ if [ -f $FILE ]; then
 		# Next, check to see if there are multiple snort.org community entries.  If so, remove all of them.
 		COMMUNITY_ENTRIES=`grep "rule_url=https://snort.org/downloads/community/" $FILE | wc -l`
 		if [ "$COMMUNITY_ENTRIES" -gt 1 ]; then
-			echo "Found multiple Snort VRT community entries in $FILE."
+			echo "Found multiple Snort Subscriber community entries in $FILE."
 			if [ ! -f $FILE.$DATE ]; then
 				echo "Backing up $FILE to $FILE.$DATE."
 				cp $FILE $FILE.$DATE
 			fi
-			echo "Removing all Snort VRT community entries from $FILE."
+			echo "Removing all Snort Subscriber community entries from $FILE."
 			grep -v "rule_url=https://snort.org/downloads/community/" $FILE > $FILE.$DATE.without.snort.community
 			mv $FILE.$DATE.without.snort.community $FILE
 		fi

@@ -217,3 +217,4 @@ Issue-980:-Setup:-sosetup.conf-SGUIL_CLIENT_USERNAME-alphanumeric-only
 sosetup-network:-bug-when-configuring-management-interface-only-#981
 Setup:-use-default-MTU-#986
 remove-MTU-from-sosetup.conf
+issues-988-1000-989

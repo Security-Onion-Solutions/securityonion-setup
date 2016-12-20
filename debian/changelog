@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion230) trusty; urgency=medium
+
+  * Setup: update for PulledPork 0.7.2 #1035 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 20 Dec 2016 16:43:19 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion229) trusty; urgency=medium
 
   * issues 988 1000 989 

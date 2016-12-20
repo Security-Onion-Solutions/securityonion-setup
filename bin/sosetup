@@ -1603,12 +1603,12 @@ if [ "$SERVERNAME" = "localhost" ]; then
 	# Start from a clean slate (pulledpork.conf.master)
 	# Here are the rule_url directives in pulledpork.conf.master:
 	# (note that the ET ruleset is uncommented and the other two are commented)
+
 	# #rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|<oinkcode>
-	# rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open
-	# # THE FOLLOWING URL is for etpro downloads, note the tarball name change!
-	# # and the et oinkcode requirement!
+	# #rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community
+	# rule_url=https://rules.emergingthreats.net/|emerging.rules.tar.gz|open
 	# #rule_url=https://rules.emergingthreatspro.com/|etpro.rules.tar.gz|<et oinkcode>
-	# 
+
 	cp /etc/nsm/templates/pulledpork/pulledpork.conf.master $PP_CONF >> $LOG 2>&1
 
 	# Start with the assumption that Internet is down
@@ -1624,21 +1624,21 @@ if [ "$SERVERNAME" = "localhost" ]; then
 	ETPRO)
 		echo "Configuring for ETPRO ruleset." >> $LOG 2>&1
 		# Snort is already disabled in pulledpork.conf.master
-		# Disable ET.
-		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\#rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\g' $PP_CONF >> $LOG 2>&1
-		# Enable ETPRO.
+		# Comment out emergingthreats.net
+		sed -i 's\rule_url=https://rules.emergingthreats.net/|emerging.rules.tar.gz|open\#rule_url=https://rules.emergingthreats.net/|emerging.rules.tar.gz|open\g' $PP_CONF >> $LOG 2>&1
+		# Un-comment emergingthreatspro.com
 		sed -i "s\#rule_url=https://rules.emergingthreatspro.com/|etpro.rules.tar.gz|<et oinkcode>\rule_url=https://rules.emergingthreatspro.com/|etpro.rules.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
 		# Test Internet access
 		curl -s $ET_URL >/dev/null 2>&1 && INTERNET="UP"
 		;;
 	TALOS)
 		echo "Configuring for Snort Subscriber (Talos) ruleset only and setting a Snort Subscriber policy." >> $LOG 2>&1
-		# Disable ET.
-		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\#rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\g' $PP_CONF >> $LOG 2>&1
-		# Enable Snort.
+		# Comment out emergingthreats.net
+		sed -i 's\rule_url=https://rules.emergingthreats.net/|emerging.rules.tar.gz|open\#rule_url=https://rules.emergingthreats.net/|emerging.rules.tar.gz|open\g' $PP_CONF >> $LOG 2>&1
+		# Un-comment snort.org reg-rules
 		sed -i "s\#rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|<oinkcode>\rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
-		# Enable Snort Community ruleset.
-		sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $PP_CONF >> $LOG 2>&1
+		# Un-comment snort.org community rules
+		sed -i "s\#rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\g" $PP_CONF >> $LOG 2>&1
 		# Set Snort Subscriber (Talos) Policy.
 		sed -i "s|# ips_policy=security|ips_policy=$TALOS_POLICY|g" $PP_CONF >> $LOG 2>&1
 		# Test Internet access
@@ -1646,19 +1646,16 @@ if [ "$SERVERNAME" = "localhost" ]; then
 		;;
 	TALOSET)
 		echo "Configuring for Snort Subscriber (Talos) and Emerging Threats NoGPL rulesets" >> $LOG 2>&1
-		# Enable Snort.
+		# Un-comment snort.org reg-rules
 		sed -i "s\#rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|<oinkcode>\rule_url=https://www.snort.org/reg-rules/|snortrules-snapshot.tar.gz|$OINKCODE\g" $PP_CONF >> $LOG 2>&1
-		# Enable Snort Community ruleset.
-		sed -i "s\#rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\g" $PP_CONF >> $LOG 2>&1
+		# Un-comment snort.org community rules
+		sed -i "s\#rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\g" $PP_CONF >> $LOG 2>&1
 		# Change open to open-nogpl
-		sed -i 's\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open\rule_url=https://rules.emergingthreatspro.com/|emerging.rules.tar.gz|open-nogpl\g' $PP_CONF >> $LOG 2>&1
+		sed -i 's\rule_url=https://rules.emergingthreats.net/|emerging.rules.tar.gz|open\rule_url=https://rules.emergingthreats.net/|emerging.rules.tar.gz|open-nogpl\g' $PP_CONF >> $LOG 2>&1
 		# Test Internet access
 		curl -s $ET_URL >/dev/null 2>&1 && curl -s $TALOS_URL >/dev/null 2>&1 && INTERNET="UP"
 		;;
 	esac
-
-	# 2015-10-29 The Snort Community URL has changed
-	sed -i 's\rule_url=https://s3.amazonaws.com/snort-org/www/rules/community/|community-rules.tar.gz|Community\rule_url=https://snort.org/downloads/community/|community-rules.tar.gz|Community\g' $PP_CONF >> $LOG 2>&1
 
 	# Disable noisy Suricata rules
 	if ! grep "Security Onion Setup" /etc/nsm/pulledpork/disablesid.conf >/dev/null 2>&1; then

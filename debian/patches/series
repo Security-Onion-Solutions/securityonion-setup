@@ -218,3 +218,4 @@ sosetup-network:-bug-when-configuring-management-interface-only-#981
 Setup:-use-default-MTU-#986
 remove-MTU-from-sosetup.conf
 issues-988-1000-989
+Setup:-update-for-PulledPork-0.7.2-#1035

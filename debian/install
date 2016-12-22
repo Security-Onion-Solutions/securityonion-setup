@@ -1,2 +1,2 @@
-bin usr
+bin/* usr/sbin
 share usr

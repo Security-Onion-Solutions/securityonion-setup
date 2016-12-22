@@ -6,11 +6,11 @@ case "$1" in
     configure)
 
 	# Make sure scripts are executable        
-	chmod +x /usr/bin/sosetup* || echo "Error making sosetup scripts executable."
-	chmod +x /usr/bin/so-allow || echo "Error making so-allow script executable."
+	chmod +x /usr/sbin/sosetup* || echo "Error making sosetup scripts executable."
+	chmod +x /usr/sbin/so-allow || echo "Error making so-allow script executable."
 
 	# Fix PulledPork config
-	/usr/bin/sosetup-fix-ppconf || echo "Error running /usr/bin/sosetup-fix-ppconf"
+	/usr/sbin/sosetup-fix-ppconf || echo "Error running /usr/sbin/sosetup-fix-ppconf"
 
 	# Create desktop launcher
 	FILE="/usr/share/applications/securityonion-setup.desktop"

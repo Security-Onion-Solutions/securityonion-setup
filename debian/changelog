@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion231) trusty; urgency=medium
+
+  * Move scripts from /usr/bin/ to /usr/sbin/ #1042 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 22 Dec 2016 15:01:06 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion230) trusty; urgency=medium
 
   * Setup: update for PulledPork 0.7.2 #1035 

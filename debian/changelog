@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion232) trusty; urgency=medium
+
+  * update path in so-email 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 22 Dec 2016 15:58:04 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion231) trusty; urgency=medium
 
   * Move scripts from /usr/bin/ to /usr/sbin/ #1042 

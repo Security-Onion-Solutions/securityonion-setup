@@ -220,3 +220,4 @@ remove-MTU-from-sosetup.conf
 issues-988-1000-989
 Setup:-update-for-PulledPork-0.7.2-#1035
 Move-scripts-from-usrbin-to-usrsbin-#1042
+update-path-in-so-email

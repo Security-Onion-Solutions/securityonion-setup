@@ -333,7 +333,7 @@ if ! [[ "$SOSTATEMAIL" == "NO" ]]; then
 	echo "# Configuring sostat mail..." | tee -a $LOG
 	SOSTAT="/etc/cron.d/sostat"
 	touch $SOSTAT
-	echo -e '#/etc/cron.d/sostat\n#\n#crontab entry to run sostat and email its output\n\n\nSHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\nEMAIL=root@localhost\nHOSTNAME='$HOSTNAME'\n\n01 12 * * * root /usr/bin/sostat 2>&1 | mail -aFrom:SecurityOnion@$HOSTNAME -s "Statistics for $HOSTNAME" $EMAIL' > $SOSTAT
+	echo -e '#/etc/cron.d/sostat\n#\n#crontab entry to run sostat and email its output\n\n\nSHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\nEMAIL=root@localhost\nHOSTNAME='$HOSTNAME'\n\n01 12 * * * root /usr/sbin/sostat 2>&1 | mail -aFrom:SecurityOnion@$HOSTNAME -s "Statistics for $HOSTNAME" $EMAIL' > $SOSTAT
 fi
 #Configure Bro
 if ! [[ "$BROEMAIL" == "NO" ]]; then

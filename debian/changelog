@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion233) trusty; urgency=medium
+
+  * postinst - update cron jobs to use new /usr/sbin/ path
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 22 Dec 2016 16:04:55 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion232) trusty; urgency=medium
 
   * update path in so-email 

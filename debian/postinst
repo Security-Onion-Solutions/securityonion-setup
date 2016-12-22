@@ -70,6 +70,10 @@ case "$1" in
 			fi
 		fi
 	done
+
+	# Update any old cron entries with new path
+	sed -i 's|/usr/bin/sostat|/usr/sbin/sostat|g' /etc/cron.d/* || echo "Error updating cron jobs to use new path."
+
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

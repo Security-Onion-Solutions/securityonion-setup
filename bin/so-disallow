@@ -37,6 +37,7 @@ echo
 echo "What kind of device do you want to disallow?"
 echo
 echo "[a] - analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
+echo "[c] - apt-cacher-ng client - port 3142/tcp"
 echo "[l] - syslog device - port 514"
 echo "[o] - ossec agent - port 1514/udp"
 echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
@@ -50,7 +51,7 @@ echo "https://github.com/Security-Onion-Solutions/security-onion/wiki/Firewall"
 device="none"
 while [ "$device" = "none" ]; do
 	echo
-	echo "Please enter your selection (a - analyst, l - syslog, o - ossec, or s - Security Onion sensor):"
+	echo "Please enter your selection (a - analyst, c - apt-cacher-ng client,  l - syslog, o - ossec, or s - Security Onion sensor):"
 	read input
 
 	case $input in
@@ -59,6 +60,11 @@ while [ "$device" = "none" ]; do
 			proto="proto tcp"
 			port="22,443,7734"
 			;;
+		c)
+                        device="apt-cacher-ng client"
+                        proto="proto tcp"
+                        port="3142"
+                        ;;
 		l)
 			device="syslog"
 			proto=""

@@ -1,0 +1,176 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion234) trusty; urgency=medium
+ .
+   * update so-allow and add so-disallow
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/so-allow
++++ securityonion-setup-20120912/bin/so-allow
+@@ -37,6 +37,7 @@ echo
+ echo "What kind of device do you want to allow?"
+ echo
+ echo "[a] - analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
++echo "[c] - apt-cacher-ng client - port 3142/tcp"
+ echo "[l] - syslog device - port 514"
+ echo "[o] - ossec agent - port 1514/udp"
+ echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
+@@ -50,7 +51,7 @@ echo "https://github.com/Security-Onion-
+ device="none"
+ while [ "$device" = "none" ]; do
+ 	echo
+-	echo "Please enter your selection (a - analyst, l - syslog, o - ossec, or s - Security Onion sensor):"
++	echo "Please enter your selection (a - analyst, c - apt-cacher-ng client, l - syslog, o - ossec, or s - Security Onion sensor):"
+ 	read input
+ 
+ 	case $input in
+@@ -59,6 +60,11 @@ while [ "$device" = "none" ]; do
+ 			proto="proto tcp"
+ 			port="22,443,7734"
+ 			;;
++		c)
++                        device="apt-cacher-ng client"
++                        proto="proto tcp"
++                        port="3142"
++                        ;;
+ 		l)
+ 			device="syslog"
+ 			proto=""
+--- /dev/null
++++ securityonion-setup-20120912/bin/so-disallow
+@@ -0,0 +1,117 @@
++#!/bin/bash
++
++#########################################
++# function to validate IP address
++#########################################
++is_ip() {
++            case "$*" in
++                ""|*[!0-9.]*) return 1 ;;
++            esac
++            oldIFS=$IFS
++            IFS='.'
++            set -- $*
++            IFS=$oldIFS
++            [ $# -eq 4 ] || return 1
++            for ipseg in $1 $2 $3 $4
++              do
++              case $ipseg in
++                  *[!0-9]*) return 1 ;;
++              esac
++              [ $ipseg -le 255 ] || return 1
++            done
++}
++
++#########################################
++# check for root privileges
++#########################################
++if [[ $(/usr/bin/id -u) -ne 0 ]]; then
++	echo "This script needs to be run as root.  Please try again using sudo."
++	exit
++fi
++
++#########################################
++# Prompt user for kind of device
++#########################################
++echo "This program allows you to remove firewall rules to disallow connections from previously allowed devices."
++echo
++echo "What kind of device do you want to disallow?"
++echo
++echo "[a] - analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
++echo "[c] - apt-cacher-ng client - port 3142/tcp"
++echo "[l] - syslog device - port 514"
++echo "[o] - ossec agent - port 1514/udp"
++echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
++echo
++echo "If you need to add any ports other than those listed above,"
++echo "you can do so using the standard 'ufw' utility."
++echo
++echo "For more information, please see the Firewall page on our Wiki:"
++echo "https://github.com/Security-Onion-Solutions/security-onion/wiki/Firewall"
++
++device="none"
++while [ "$device" = "none" ]; do
++	echo
++	echo "Please enter your selection (a - analyst, c - apt-cacher-ng client,  l - syslog, o - ossec, or s - Security Onion sensor):"
++	read input
++
++	case $input in
++		a)
++			device="analyst"
++			proto="proto tcp"
++			port="22,443,7734"
++			;;
++		c)
++                        device="apt-cacher-ng client"
++                        proto="proto tcp"
++                        port="3142"
++                        ;;
++		l)
++			device="syslog"
++			proto=""
++			port="514"
++			;;
++		o)
++			device="ossec agent"
++			proto="proto udp"
++			port="1514"
++			;;
++		s)
++			device="Security Onion sensor"
++			proto="proto tcp"
++			port="22,4505,4506,7736"
++			;;
++	esac
++done
++
++#########################################
++# Prompt user for IP address
++#########################################
++valid="no"
++while [ "$valid" = "no" ]; do
++	echo "Please enter the IP address of the $device you'd like to disallow connections to the following port(s) $port:"
++	read address
++	is_ip $address && valid="yes"
++done
++
++#########################################
++# Confirm rule before adding
++#########################################
++echo "We're going to disallow connections from $address to port(s) $port."
++echo
++echo "Here's the firewall rule we're about to remove:"
++rule="sudo ufw delete allow $proto from $address to any port $port"
++echo $rule
++echo
++echo "To continue and remove this rule, press Enter."
++echo "Otherwise, press Ctrl-c to exit."
++read input
++
++#########################################
++# Run the command to add the firewall rule
++#########################################
++$rule
++
++echo "Rule has been removed."
++echo
++echo "Here is the entire firewall ruleset:"
++ufw status

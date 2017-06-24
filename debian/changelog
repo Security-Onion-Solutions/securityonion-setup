@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion234) trusty; urgency=medium
+
+  * update so-allow and add so-disallow 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 23 Jun 2017 20:33:31 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion233) trusty; urgency=medium
 
   * postinst - update cron jobs to use new /usr/sbin/ path

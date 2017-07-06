@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion236) trusty; urgency=medium
+
+  * inform user of OSSEC server restart for so-disallow 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 06 Jul 2017 10:09:27 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion235) trusty; urgency=medium
 
   * Issue 1111: so-allow analyst mode should add IP address to OSSEC whitelist 

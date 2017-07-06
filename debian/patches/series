@@ -223,3 +223,4 @@ Move-scripts-from-usrbin-to-usrsbin-#1042
 update-path-in-so-email
 update-so-allow-and-add-so-disallow
 Issue-1111:-so-allow-analyst-mode-should-add-IP-address-to-OSSEC-whitelist
+inform-user-of-OSSEC-server-restart-for-so-disallow

@@ -102,6 +102,10 @@ echo "Here's the firewall rule we're about to remove:"
 rule="sudo ufw delete allow $proto from $address to any port $port"
 echo $rule
 echo
+if [ $device == "analyst" ]; then
+	echo "We're also removing $address from OSSEC's Active Response whitelist in /var/ossec/etc/ossec.conf."
+fi
+echo
 echo "To continue and remove this rule, press Enter."
 echo "Otherwise, press Ctrl-c to exit."
 read input
@@ -110,8 +114,16 @@ read input
 # Run the command to add the firewall rule
 #########################################
 $rule
-
 echo "Rule has been removed."
 echo
 echo "Here is the entire firewall ruleset:"
 ufw status
+if grep -q "Address $address" /var/ossec/etc/ossec.conf; then
+	sed -i "/Address $address/,+3d" /var/ossec/etc/ossec.conf
+	sed -i '/^$/N;/^\n$/D' /var/ossec/etc/ossec.conf
+        echo "Restarting OSSEC Server..."
+        service ossec-hids-server restart
+        echo
+        echo "$address has been removed from OSSEC's Active Response whitelist in /var/ossec/etc/ossec.conf."
+        echo
+fi

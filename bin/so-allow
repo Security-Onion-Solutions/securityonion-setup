@@ -102,6 +102,10 @@ echo "Here's the firewall rule we're about to add:"
 rule="sudo ufw allow $proto from $address to any port $port"
 echo $rule
 echo
+if [ $device == "analyst" ]; then
+        echo "We're also whitelisting $address in /var/ossec/etc/ossec.conf to prevent OSSEC Active Response from blocking it.  Keep in mind, the OSSEC server will be restarted once configuration is complete." 
+fi
+echo
 echo "To continue and add this rule, press Enter."
 echo "Otherwise, press Ctrl-c to exit."
 read input
@@ -115,3 +119,17 @@ echo "Rule has been added."
 echo
 echo "Here is the entire firewall ruleset:"
 ufw status
+echo
+if [ $device == "analyst" ]; then
+        if ! grep -q "<white_list>$address</white_list>" /var/ossec/etc/ossec.conf ; then
+                DATE=`date`
+                sed -i 's/<\/ossec_config>//' /var/ossec/etc/ossec.conf
+                sed -i '/^$/N;/^\n$/D' /var/ossec/etc/ossec.conf
+                echo -e "<!--Address $address added by /usr/sbin/so-allow on "$DATE"-->\n  <global>\n    <white_list>$address</white_list>\n  </global>\n</ossec_config>" >> /var/ossec/etc/ossec.conf
+                echo "Added whitelist entry for $address in /var/ossec/etc/ossec.conf."
+                echo
+                echo "Restarting OSSEC Server..."
+                service ossec-hids-server restart
+        fi
+fi
+echo

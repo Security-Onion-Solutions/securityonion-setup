@@ -222,3 +222,4 @@ Setup:-update-for-PulledPork-0.7.2-#1035
 Move-scripts-from-usrbin-to-usrsbin-#1042
 update-path-in-so-email
 update-so-allow-and-add-so-disallow
+Issue-1111:-so-allow-analyst-mode-should-add-IP-address-to-OSSEC-whitelist

@@ -1,0 +1,56 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion237) trusty; urgency=medium
+ .
+   * so-allow/disallow: fix wrong number of arguments error
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/so-allow
++++ securityonion-setup-20120912/bin/so-allow
+@@ -102,7 +102,7 @@ echo "Here's the firewall rule we're abo
+ rule="sudo ufw allow $proto from $address to any port $port"
+ echo $rule
+ echo
+-if [ $device == "analyst" ]; then
++if [ "$device" == "analyst" ]; then
+         echo "We're also whitelisting $address in /var/ossec/etc/ossec.conf to prevent OSSEC Active Response from blocking it.  Keep in mind, the OSSEC server will be restarted once configuration is complete." 
+ fi
+ echo
+@@ -120,7 +120,7 @@ echo
+ echo "Here is the entire firewall ruleset:"
+ ufw status
+ echo
+-if [ $device == "analyst" ]; then
++if [ "$device" == "analyst" ]; then
+         if ! grep -q "<white_list>$address</white_list>" /var/ossec/etc/ossec.conf ; then
+                 DATE=`date`
+                 sed -i 's/<\/ossec_config>//' /var/ossec/etc/ossec.conf
+--- securityonion-setup-20120912.orig/bin/so-disallow
++++ securityonion-setup-20120912/bin/so-disallow
+@@ -102,7 +102,7 @@ echo "Here's the firewall rule we're abo
+ rule="sudo ufw delete allow $proto from $address to any port $port"
+ echo $rule
+ echo
+-if [ $device == "analyst" ]; then
++if [ "$device" == "analyst" ]; then
+ 	echo "We're also removing $address from OSSEC's Active Response whitelist in /var/ossec/etc/ossec.conf.  Keep in mind, the OSSEC server will be restarted once configuration is complete."
+ fi
+ echo

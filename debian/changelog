@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion237) trusty; urgency=medium
+
+  * so-allow/disallow: fix wrong number of arguments error 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 24 Jul 2017 16:30:46 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion236) trusty; urgency=medium
 
   * inform user of OSSEC server restart for so-disallow 

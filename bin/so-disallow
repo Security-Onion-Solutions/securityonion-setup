@@ -102,7 +102,7 @@ echo "Here's the firewall rule we're about to remove:"
 rule="sudo ufw delete allow $proto from $address to any port $port"
 echo $rule
 echo
-if [ $device == "analyst" ]; then
+if [ "$device" == "analyst" ]; then
 	echo "We're also removing $address from OSSEC's Active Response whitelist in /var/ossec/etc/ossec.conf.  Keep in mind, the OSSEC server will be restarted once configuration is complete."
 fi
 echo

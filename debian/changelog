@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion238) trusty; urgency=medium
+
+  * update for elastic 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 29 Aug 2017 10:57:35 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion237) trusty; urgency=medium
 
   * so-allow/disallow: fix wrong number of arguments error 

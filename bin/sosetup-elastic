@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2010-2016 Doug Burks and Security Onion
+# Copyright (C) 2010-2017 Doug Burks and Security Onion
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 as
@@ -157,9 +157,19 @@ function ask() {
 #########################################
 # Welcome screen
 #########################################
-TEXT="Welcome to Security Onion Setup!\n\
+TEXT="WARNINGS AND DISCLAIMERS!\n\
 \n\
-This program will allow you to configure Security Onion on $HOSTNAME.\n\
+Experimental Mode is ALPHA, BLEEDING EDGE, and TOTALLY UNSUPPORTED!\n\
+If this breaks your system, you get to keep both pieces!\n\
+This is a work in progress and is in constant flux.\n\
+This is intended to build a quick prototype proof of concept so you can see what our\n\
+ultimate Elastic configuration might look like.  This configuration will change drastically\n\
+over time leading up to the final release.\n\
+Do NOT run this on a system that you care about!\n\
+Do NOT run this on a system that has data that you care about!\n\
+This should only be run on a TEST box with TEST data!\n\
+This is only designed for standalone boxes and does NOT support distributed deployments.\n\
+Experimental Mode may result in nausea, vomiting, or a burning sensation.\n\
 \n\
 Would you like to continue?"
 if [ "$WRITEANSWERFILE" ]; then
@@ -191,35 +201,6 @@ if [ -z "$WRITEANSWERFILE" ]; then # Network config not yet supported when gener
 ANSWER="$?"
 # If there were errors in sosetup-network, then exit
 [ $ANSWER -eq 1 ] && exit
-fi
-
-#########################################
-# Stable Setup or Experimental Setup
-#########################################
-TEXT="Stable Setup or Experimental Setup?\n\
-\n\
-Choosing Stable Setup will run the current stable version of Setup.\n\
-Stable Setup will configure ELSA and is the recommended option for most users at this time.\n\
-If you are unsure, choose Stable Setup.\n\
-\n\
-Choosing Experimental Setup will run the experimental version of Setup.\n\
-Experimental Setup will configure the Elastic stack (Elasticsearch, Logstash, and Kibana).\n\
-This is still experimental and should NOT be used in production!"
-SETUP=""
-SETUP=`zenity --list --radiolist \
-        --column "1" --column "2" --hide-header --title="$TITLE" \
-        TRUE "Stable Setup" FALSE "Experimental Setup" --text="$TEXT"`
-if [ $? = 1 ]; then
-	if [ $DEBUG -eq 1 ]; then
-		echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-	else
-		exit 1
-	fi
-fi
-[ "$SETUP" == "" ] && exit
-if [ "$SETUP" == "Experimental Setup" ]; then
-	/usr/sbin/sosetup-elastic
-	exit $?
 fi
 
 #########################################
@@ -453,7 +434,7 @@ fi
 if [ $SERVER -eq 1 ]; then
 	USERNAME_CONFIRMED="no"
 	while [ $USERNAME_CONFIRMED = "no" ]; do
-		TEXT="What would you like your Sguil username to be?\r\rThis will be used when logging into Sguil, Squert, and ELSA.\r\rPlease use alphanumeric characters only."
+		TEXT="What would you like your Sguil username to be?\r\rThis will be used when logging into Sguil, Squert, and Kibana.\r\rPlease use alphanumeric characters only."
 		SGUIL_CLIENT_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
 		if [ $? = 1 ]; then
 			if [ $DEBUG -eq 1 ]; then
@@ -484,7 +465,7 @@ if [ $SERVER -eq 1 ]; then
 \n\
 Password must be at least 6 characters.\n\
 \n\
-This password will be used for Sguil, Squert, and ELSA.\n\
+This password will be used for Sguil, Squert, and Kibana.\n\
 \n\
 Once you've logged into these interfaces using this initial password, you can change it in the Sguil client."
 		SGUIL_CLIENT_PASSWORD_1=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
@@ -1065,7 +1046,7 @@ if [ "$ELSA" = "NO" ]; then
 	ELSA_ACTION_CONFIRM="- Disable ELSA."
 else
 	if [ $SERVER -eq 1 ]; then
-	    	ELSA_ACTION_CONFIRM="- Configure ELSA as a Log Node and enable web interface.\n"
+	    	ELSA_ACTION_CONFIRM="- Configure Elastic stack.\n"
 	else
     		ELSA_ACTION_CONFIRM="- Configure ELSA as a Log Node.\n"
 
@@ -1877,12 +1858,12 @@ EOF
 	sed -i 's|https://localhost|https://localhost/squert|g' $SQUERT_LAUNCHER
 	sed -i 's|Name=README|Name=Squert|g' $SQUERT_LAUNCHER
 
-	# Use README launcher as template to create ELSA launcher (if enabled)
+	# Use README launcher as template to create Kibana launcher (if enabled)
 	if [ "$ELSA" = "YES" ]; then
-		ELSA_LAUNCHER="$DIR/securityonion-elsa.desktop"
-		cp $README_LAUNCHER $ELSA_LAUNCHER
-		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA_LAUNCHER
-		sed -i 's|Name=README|Name=ELSA|g' $ELSA_LAUNCHER
+		KIBANA_LAUNCHER="$DIR/securityonion-kibana.desktop"
+		cp $README_LAUNCHER $KIBANA_LAUNCHER
+		sed -i 's|https://localhost|https://localhost/app/kibana|g' $KIBANA_LAUNCHER
+		sed -i 's|Name=README|Name=Kibana|g' $KIBANA_LAUNCHER
 	fi
 
 	# Use README launcher as template to create Xplico launcher (if enabled)
@@ -1918,34 +1899,50 @@ fi
 #########################################
 if [ "$ELSA" = "YES" ]; then
     echo "90"
-    echo "# Please wait while configuring ELSA..." | tee -a $LOG
+    echo "# Please wait while configuring Elastic..." | tee -a $LOG
 
     # update LOG_SIZE_LIMIT
-    sed -i "s|\"log_size_limit\" :.*$|\"log_size_limit\" : $LOG_SIZE_LIMIT,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-node.conf
+    #sed -i "s|\"log_size_limit\" :.*$|\"log_size_limit\" : $LOG_SIZE_LIMIT,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-node.conf
 
-    # check if there is an ELSA directive already
-    ELSA_USE=$(grep "ELSA=" $CONF)
-    if [ ! $? -eq 0 ]; then
-	echo "" >> $CONF
-	echo "# ELSA" >> $CONF
-        echo "ELSA=YES" >> $CONF
-    else
-        sed -i 's,ELSA=NO,ELSA=YES,' $CONF
-    fi
+        HTTP_LOGS=""
+        SENSORS=$(grep -v "^#" /etc/nsm/sensortab | cut -f 4)
+        COUNT=0
+        for token in $SENSORS; do
+                COUNT=$((COUNT+1))
+        done
+        #echo $COUNT
 
-    # Delete sphinxsearch binlog files
-    rm -f /var/lib/sphinxsearch/data/binlog.*
+        if [ $COUNT -eq 1 ]; then
+                if grep "type=standalone" /opt/bro/etc/node.cfg > /dev/null; then
+                        echo "* Leaving syslog-ng.conf bro_http entry unmolested." >> $LOG 2>&1
+			cp /opt/elsa/contrib/securityonion/contrib/securityonion-syslog-ng.conf /etc/syslog-ng/syslog-ng.conf
+                else
+                        echo "* Altering syslog-ng.conf bro_http entry for single interface cluster-mode" >> $LOG 2>&1
+                        # Pull the interface bro is listening for from node.cfg
+                        BRO_IFACE=$(grep "interface=" /opt/bro/etc/node.cfg | cut -d'=' -f2)
+                        # Alter syslog-ng.conf's entry for http
+                        sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|\tfile(\"/nsm/bro/logs/current/http_$BRO_IFACE.log\" flags(no-parse) program_override(\"bro_http\"));\n|" /opt/elsa/contrib/securityonion/contrib/securityonion-syslog-ng.conf > /etc/syslog-ng/syslog-ng.conf
+                fi
+        fi
 
-    # Configure all Log Node and Web Node functionality if we are a server
-    if [ $SERVER -eq 1 ]; then
-        /usr/bin/securityonion-elsa-config.sh -t WEB >> $LOG 2>&1
-	# restart apache to update ELSA APIKEY
-	apache2ctl restart >> $LOG 2>&1
-    else
-        /usr/bin/securityonion-elsa-config.sh -t LOG >> $LOG 2>&1
-        # Update the securityonion group
-        echo "usermod -a -G securityonion $SSH_USERNAME" >> $SOSETUPSCP
-    fi
+        if [ $COUNT -gt 1 ]; then
+                echo "* Altering syslog-ng.conf bro_http entries for multiple interfaces" >> $LOG 2>&1
+                for i in $SENSORS; do
+                        HTTP_LOGS=$HTTP_LOGS"\tfile(\"/nsm/bro/logs/current/http_$i.log\" flags(no-parse) program_override(\"bro_http\"));\n"
+                done
+                sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|$HTTP_LOGS|" /opt/elsa/contrib/securityonion/contrib/securityonion-syslog-ng.conf > /etc/syslog-ng/syslog-ng.conf
+        fi
+
+        echo "* Restarting syslog-ng" >> $LOG 2>&1
+        service syslog-ng restart >> $LOG 2>&1
+
+    	echo "91"
+	echo "# Please wait while downloading Elastic components..." | tee -a $LOG
+	/usr/sbin/so-elastic-download >> $LOG 2>&1
+    	echo "95"
+	echo "# Please wait while configuring Elastic..." | tee -a $LOG
+	/usr/sbin/so-elastic-configure >> $LOG 2>&1
+
 fi
 }
 
@@ -2035,9 +2032,9 @@ TEXT="Security Onion Setup is now complete! \n \
 Setup log can be found here:\n \
 $LOG\n \
 \n \
-You may view IDS alerts using Sguil, Squert, or ELSA (if enabled). \n \
+You may view IDS alerts using Sguil, Squert, or Kibana (if enabled). \n \
 \n \
-Bro logs can be found in ELSA (if enabled) and the following location: \n \
+Bro logs can be found in Kibana (if enabled) and the following location: \n \
 /nsm/bro/"
 }
 

@@ -196,6 +196,7 @@ fi
 #########################################
 # Stable Setup or Experimental Setup
 #########################################
+if [ -f /usr/sbin/sosetup-elastic ] && [ -d /opt/elastic/src ]; then
 TEXT="Stable Setup or Experimental Setup?\n\
 \n\
 Choosing Stable Setup will run the current stable version of Setup.\n\
@@ -220,6 +221,7 @@ fi
 if [ "$SETUP" == "Experimental Setup" ]; then
 	/usr/sbin/sosetup-elastic skipnetwork
 	exit $?
+fi
 fi
 
 #########################################

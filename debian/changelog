@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion240) trusty; urgency=medium
+
+  * check for sosetup-elastic and /opt/elastic/src before offering Experimental option 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 29 Aug 2017 13:24:41 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion239) trusty; urgency=medium
 
   * skip sosetup-network when passing from sosetup to sosetup-elastic 

@@ -227,3 +227,4 @@ inform-user-of-OSSEC-server-restart-for-so-disallow
 so-allowdisallow:-fix-wrong-number-of-arguments-error
 update-for-elastic
 skip-sosetup-network-when-passing-from-sosetup-to-sosetup-elastic
+check-for-sosetup-elastic-and-optelasticsrc-before-offering-Experimental-option

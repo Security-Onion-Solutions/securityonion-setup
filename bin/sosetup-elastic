@@ -139,6 +139,8 @@ HR_MEM=$((TOTAL_MEM / 1000))
 MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 3GB of RAM.\n\n\Please consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
 Click 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n\
 Otherwise, click 'Yes' to continue."
+ARGS=("$@")
+
 #########################################
 # Debug
 #########################################
@@ -196,11 +198,11 @@ fi
 #########################################
 # sosetup-network
 #########################################
-if [ -z "$WRITEANSWERFILE" ]; then # Network config not yet supported when generating an answer file
-[ -f /usr/sbin/sosetup-network ] && /usr/sbin/sosetup-network
-ANSWER="$?"
-# If there were errors in sosetup-network, then exit
-[ $ANSWER -eq 1 ] && exit
+# Network config not yet supported when generating an answer file
+if [ -z "$WRITEANSWERFILE" ] && [ "${ARGS[0]}" != "skipnetwork" ] && [ -f /usr/sbin/sosetup-network ]; then
+	/usr/sbin/sosetup-network
+	# If there were errors in sosetup-network, then exit
+	[ $? -eq 1 ] && exit
 fi
 
 #########################################

@@ -218,7 +218,7 @@ if [ $? = 1 ]; then
 fi
 [ "$SETUP" == "" ] && exit
 if [ "$SETUP" == "Experimental Setup" ]; then
-	/usr/sbin/sosetup-elastic
+	/usr/sbin/sosetup-elastic skipnetwork
 	exit $?
 fi
 

@@ -1050,7 +1050,7 @@ else
 	if [ $SERVER -eq 1 ]; then
 	    	ELSA_ACTION_CONFIRM="- Configure Elastic stack.\n"
 	else
-    		ELSA_ACTION_CONFIRM="- Configure Elastic stack cross cluster.\n"
+    		ELSA_ACTION_CONFIRM="- Configure Elastic stack cross cluster search.\n"
 
 		# Ask if they want to update the SERVER and restart Apache
 #		TEXT="Would you like to automatically update the ELSA server?\n\
@@ -1960,10 +1960,13 @@ function SERVER_QUEUE() {
 # Send all queued commands to server
 #########################################
 if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
-	echo "echo Match User $SSH_USERNAME >> /etc/ssh/sshd_config" >> $SOSETUPSCP
-	echo "echo '   GatewayPorts clientspecified' >> /etc/ssh/sshd_config" >> $SOSETUPSCP
-	echo "sudo service ssh restart" >> $SOSETUPSCP
-	echo "sudo ufw allow proto tcp from 172.18.0.0/24 to 172.18.0.1 port 50000" >> $SOSETUPSCP
+cat << EOF >> $SOSETUPSCP
+echo Match User $SSH_USERNAME >> /etc/ssh/sshd_config
+echo '   GatewayPorts clientspecified' >> /etc/ssh/sshd_config
+service ssh restart
+ufw allow proto tcp from 172.18.0.0/24 to 172.18.0.1 port 50000
+curl -XPUT http://localhost:9200/_cluster/settings -d'{"persistent": {"search": {"remote": {"sensor1": {"seeds": ["172.18.0.1:50000"]}}}}}'
+EOF
 fi
 
 if [ "$SERVERNAME" != "localhost" ]; then

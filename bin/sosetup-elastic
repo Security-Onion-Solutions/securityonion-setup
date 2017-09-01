@@ -1050,24 +1050,24 @@ else
 	if [ $SERVER -eq 1 ]; then
 	    	ELSA_ACTION_CONFIRM="- Configure Elastic stack.\n"
 	else
-    		ELSA_ACTION_CONFIRM="- Configure ELSA as a Log Node.\n"
+    		ELSA_ACTION_CONFIRM="- Configure Elastic stack cross cluster.\n"
 
 		# Ask if they want to update the SERVER and restart Apache
-		TEXT="Would you like to automatically update the ELSA server?\n\
-\n\
-This will restart Apache on the ELSA server which will disrupt\n\
-any ELSA queries running at the time."
-		YES="Yes, update ELSA server!"
-		NO="No, do not update ELSA server."
-		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
-		ANSWER="$?"
-		if [ $ANSWER -eq 0 ]; then
-		    	[ $DEBUG -eq 1 ] && echo "DEBUG: Update ELSA Server."
-    			UPDATE_ELSA_SERVER="YES"
-		else
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Do not update ELSA server."
-    			UPDATE_ELSA_SERVER="NO"
-		fi
+#		TEXT="Would you like to automatically update the ELSA server?\n\
+#\n\
+#This will restart Apache on the ELSA server which will disrupt\n\
+#any ELSA queries running at the time."
+#		YES="Yes, update ELSA server!"
+#		NO="No, do not update ELSA server."
+#		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
+#		ANSWER="$?"
+#		if [ $ANSWER -eq 0 ]; then
+#		    	[ $DEBUG -eq 1 ] && echo "DEBUG: Update ELSA Server."
+#    			UPDATE_ELSA_SERVER="YES"
+#		else
+#			[ $DEBUG -eq 1 ] && echo "DEBUG: Do not update ELSA server."
+#    			UPDATE_ELSA_SERVER="NO"
+#		fi
   	fi
 fi
 
@@ -2004,7 +2004,7 @@ if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
     if pgrep autossh>/dev/null; then 
         kill -SIGINT `pgrep autossh`
         # Restart the autossh tunnel
-        /usr/bin/autossh -M 0 -f -q -N -o "ServerAliveInterval 60" -o "ServerAliveCountMax 3" -i "$KEY" -L 3306:127.0.0.1:3306 -R 50000:localhost:9300 $SSH_USERNAME@$SERVERNAME
+        /usr/bin/autossh -M 0 -f -q -N -o "ServerAliveInterval 60" -o "ServerAliveCountMax 3" -i "$KEY" -L 3306:127.0.0.1:3306 -R 172.18.0.1:50000:localhost:9300 $SSH_USERNAME@$SERVERNAME
     fi
     #if [ "$UPDATE_ELSA_SERVER" = "YES" ]; then
         # Instruct the server to restart apache2.

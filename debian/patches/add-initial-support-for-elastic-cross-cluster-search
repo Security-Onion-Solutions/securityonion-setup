@@ -1,0 +1,115 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion241) trusty; urgency=medium
+ .
+   * add initial support for Elastic cross cluster search
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-elastic
++++ securityonion-setup-20120912/bin/sosetup-elastic
+@@ -1944,6 +1944,13 @@ if [ "$ELSA" = "YES" ]; then
+     	echo "95"
+ 	echo "# Please wait while configuring Elastic..." | tee -a $LOG
+ 	/usr/sbin/so-elastic-configure >> $LOG 2>&1
++	if [ $SERVER -ne 1 ]; then
++		ELASTIC_CONFIG="/etc/elasticsearch/elasticsearch.yml"
++		echo "transport.bind_host: 0.0.0.0" >> $ELASTIC_CONFIG
++		echo "transport.publish_host: 172.18.0.1" >> $ELASTIC_CONFIG
++		echo "transport.publish_port: 50000" >> $ELASTIC_CONFIG
++		docker restart so-elasticsearch
++	fi
+ 
+ fi
+ }
+@@ -1952,6 +1959,13 @@ function SERVER_QUEUE() {
+ #########################################
+ # Send all queued commands to server
+ #########################################
++if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
++	echo "echo Match User $SSH_USERNAME >> /etc/ssh/sshd_config" >> $SOSETUPSCP
++	echo "echo '   GatewayPorts clientspecified' >> /etc/ssh/sshd_config" >> $SOSETUPSCP
++	echo "sudo service ssh restart" >> $SOSETUPSCP
++	echo "sudo ufw allow proto tcp from 172.18.0.0/24 to 172.18.0.1 port 50000" >> $SOSETUPSCP
++fi
++
+ if [ "$SERVERNAME" != "localhost" ]; then
+ 	# Copy the script over
+ 	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
+@@ -1968,38 +1982,39 @@ fi
+ 
+ if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
+     # Register the log node and restart the server.
+-    SSH_CMD="/usr/bin/securityonion_elsa_register.rb --register --peer-name `hostname` --force"
+-    ELSA_REGISTER_RESPONSE=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME $SSH_CMD`
+-    ELSA_PORT=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f1`
+-    ELSA_APIKEY=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f2`
++    #SSH_CMD="/usr/bin/securityonion_elsa_register.rb --register --peer-name `hostname` --force"
++    #ELSA_REGISTER_RESPONSE=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME $SSH_CMD`
++    #ELSA_PORT=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f1`
++    #ELSA_APIKEY=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f2`
+     # If ELSA_PORT is not already in SSH_CONF, then store it for future use.
+-    if grep "ELSA_PORT=" $SSH_CONF >/dev/null 2>&1; then
+-	echo "ELSA_PORT already exists in $SSH_CONF." >> $LOG 2>&1
+-    else
+-	echo "ELSA_PORT=$ELSA_PORT" >> $SSH_CONF
+-    fi
++    #if grep "ELSA_PORT=" $SSH_CONF >/dev/null 2>&1; then
++	#echo "ELSA_PORT already exists in $SSH_CONF." >> $LOG 2>&1
++    #else
++	#echo "ELSA_PORT=$ELSA_PORT" >> $SSH_CONF
++    #fi
+     # Update the local ELSA API key
+-    /usr/bin/securityonion_elsa_register.rb --update-apikey $ELSA_APIKEY >> $LOG 2>&1
++    #/usr/bin/securityonion_elsa_register.rb --update-apikey $ELSA_APIKEY >> $LOG 2>&1
+     # Restart starman for new API key
+-    service starman stop >> $LOG 2>&1
+-    service starman start >> $LOG 2>&1
++    #service starman stop >> $LOG 2>&1
++    #service starman start >> $LOG 2>&1
++
+     # Since the securityonion service started before we the ELSA ports
+     # were determined, we need to tear down the SSH tunnel and restart it.
+     # Kill autossh with SIGINT
+     if pgrep autossh>/dev/null; then 
+         kill -SIGINT `pgrep autossh`
+         # Restart the autossh tunnel
+-        /usr/bin/autossh -M 0 -f -q -N -o "ServerAliveInterval 60" -o "ServerAliveCountMax 3" -i "$KEY" -L 3306:127.0.0.1:3306 -R $ELSA_PORT:localhost:3154 $SSH_USERNAME@$SERVERNAME
++        /usr/bin/autossh -M 0 -f -q -N -o "ServerAliveInterval 60" -o "ServerAliveCountMax 3" -i "$KEY" -L 3306:127.0.0.1:3306 -R 50000:localhost:9300 $SSH_USERNAME@$SERVERNAME
+     fi
+-    if [ "$UPDATE_ELSA_SERVER" = "YES" ]; then
++    #if [ "$UPDATE_ELSA_SERVER" = "YES" ]; then
+         # Instruct the server to restart apache2.
+         # Run the script with sudo
+-        if [ "$OUTPUT" = "gui" ]; then
+-                xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart
+-        else
+-        	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart >> $LOG 2>&1
+-	fi
+-    fi
++        #if [ "$OUTPUT" = "gui" ]; then
++        #        xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart
++        #else
++        #	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart >> $LOG 2>&1
++	#fi
++    #fi
+ fi
+ }
+ 

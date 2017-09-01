@@ -228,3 +228,4 @@ so-allowdisallow:-fix-wrong-number-of-arguments-error
 update-for-elastic
 skip-sosetup-network-when-passing-from-sosetup-to-sosetup-elastic
 check-for-sosetup-elastic-and-optelasticsrc-before-offering-Experimental-option
+add-initial-support-for-elastic-cross-cluster-search

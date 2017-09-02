@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion245) trusty; urgency=medium
+
+  * remove deleted files from package 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 02 Sep 2017 11:56:26 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion244) trusty; urgency=medium
 
   * move sosetup-elastic to securityonion-elastic package to allow more frequent updates

@@ -231,3 +231,4 @@ check-for-sosetup-elastic-and-optelasticsrc-before-offering-Experimental-option
 add-initial-support-for-elastic-cross-cluster-search
 fix-autossh
 cross-cluster-json
+remove-deleted-files-from-package

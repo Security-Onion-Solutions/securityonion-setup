@@ -2264,17 +2264,20 @@ else
 	INTERFACES="$SNIFFING_INTERFACES"
 	ADVANCED_SETUP="1"
 	if [ $SKIP -ne 1 ];then
-		echo
-		echo "Security Onion Setup"
-		echo
-		echo "Ready to configure system using parameters in $ANSWERFILE."
-		echo
-		echo "WARNING! Continuing will destroy any existing data/config."
-		echo "Are you sure you want to continue?"
-		echo "Type yes to continue or anything else to exit."
-		read INPUT
-		[ "$INPUT" != "yes" ] && exit 0
-		soconf=$2
+		if [ "$ELASTIC" != "YES" ]; then
+			echo
+			echo "Security Onion Setup"
+			echo
+			echo "Ready to configure system using parameters in $ANSWERFILE."
+			echo
+			echo "WARNING! Continuing will destroy any existing data/config."
+			echo "Are you sure you want to continue?"
+			echo "Type yes to continue or anything else to exit."
+			read INPUT
+			[ "$INPUT" != "yes" ] && exit 0
+		else
+			SETUPCONF=$2
+		fi
 		echo
 		# If /etc/network/interfaces has not been configured yet, then we need
 		# to run sosetup-network and pass it the answerfile
@@ -2282,8 +2285,7 @@ else
 			/usr/sbin/sosetup-network $@
 		fi
 		if [ "$ELASTIC" == "YES" ]; then
-			echo "switching to Elastic setup!"
-			/usr/sbin/sosetup-elastic -f $soconf skipnetwork
+			/usr/sbin/sosetup-elastic -f $SETUPCONF skipnetwork
 			exit $?
 		fi
 	fi

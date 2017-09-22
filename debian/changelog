@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion246) trusty; urgency=medium
+
+  * add support for Elastic via sosetup.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 22 Sep 2017 14:24:57 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion245) trusty; urgency=medium
 
   * remove deleted files from package 

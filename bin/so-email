@@ -37,8 +37,12 @@ SGUILEMAIL_SUMMARY=" - Sguil email will not be configured."
 ELSAEMAIL="NO"
 # Default ELSA confirmation verbiage
 ELSAEMAIL_SUMMARY=" - ELSA email will not be configured."
+# Current version of script/config
+CURRENT_CONF_VERSION="1.1"
+
 # Get notification address from /etc/aliases if it already exists
 [ -f /etc/aliases ] && ADMINADDR=`grep -o 'root:.*' /etc/aliases | cut -f2- -d' '`
+
 # Get SMTP server from main.cf if it already exists
 if [ -f /etc/postfix/main.cf ];then
 	SMTP=`grep -o 'relayhost =.*' /etc/postfix/main.cf | cut -f2- -d'='| cut -f2 -d' '`
@@ -458,14 +462,29 @@ if [ ! -f "$ANSWERFILE" ]; then
                 echo
                 echo "OR"
                 echo
-                echo "- use an answer file (sudo sosetup -f so-email.conf)"
+                echo "- use an answer file (sudo so-email -f so-email.conf)"
                 echo
                 usage
                 exit 0
         fi
 else
         source "$ANSWERFILE"
-        echo
+        # Check to see if we have the right config file
+	if [ "$TYPE" != "EMAIL" ]; then
+        	echo
+        	echo "Incorrect config file!"  
+        	echo "Please copy the correct config file from /usr/share/securityonion/so-email.conf"
+        	echo 
+        	exit 1;
+	else
+        	if [ "$VERSION" != "$CURRENT_CONF_VERSION" ]; then
+                	echo
+                	echo "Version mismatch.  Please check config file!"
+                	echo
+                	exit 1;
+        	fi
+	fi
+	echo
         echo "Security Onion Email Setup"
         echo
         echo "Ready to configure system using parameters in $ANSWERFILE."

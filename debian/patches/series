@@ -233,3 +233,4 @@ fix-autossh
 cross-cluster-json
 remove-deleted-files-from-package
 add-support-for-Elastic-via-sosetup.conf
+so-email:-fix-any-references-to-sosetup-#1161

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion247) trusty; urgency=medium
+
+  * so-email: fix any references to sosetup #1161 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 07 Nov 2017 15:34:14 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion246) trusty; urgency=medium
 
   * add support for Elastic via sosetup.conf 

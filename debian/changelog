@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion248) trusty; urgency=medium
+
+  * Issue 1163: Setup: disable Xplico when choosing Evaluation Mode 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 08 Nov 2017 08:44:37 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion247) trusty; urgency=medium
 
   * so-email: fix any references to sosetup #1161 

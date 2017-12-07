@@ -30,6 +30,15 @@ if [[ $(/usr/bin/id -u) -ne 0 ]]; then
 fi
 
 #########################################
+# Check if Elastic is enabled
+#########################################
+. /etc/nsm/securityonion.conf
+if [ "$LOGSTASH_ENABLED" = "yes" ]; then
+        /usr/sbin/so-allow-elastic
+	exit 0
+fi
+
+#########################################
 # Prompt user for kind of device
 #########################################
 echo "This program allows you to add a firewall rule to allow connections from a new IP address."

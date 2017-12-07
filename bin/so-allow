@@ -33,7 +33,7 @@ fi
 # Check if Elastic is enabled
 #########################################
 . /etc/nsm/securityonion.conf
-if [ "$LOGSTASH_ENABLED" = "yes" ] | [ "$ELASTICSEARCH_ENABLED" = "yes" ]; then
+if [ "$LOGSTASH_ENABLED" = "yes" ] || [ "$ELASTICSEARCH_ENABLED" = "yes" ] && [ -x /usr/sbin/so-allow-elastic ] ; then
         /usr/sbin/so-allow-elastic
 	exit 0
 fi

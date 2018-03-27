@@ -198,19 +198,18 @@ fi
 # Stable Setup or Experimental Setup
 #########################################
 if [ -f /usr/sbin/sosetup-elastic ] && [ -d /opt/elastic/src ]; then
-TEXT="Stable Setup or Experimental Setup?\n\
+TEXT="ELSA Setup or Elastic Setup?\n\
 \n\
-Choosing Stable Setup will run the current stable version of Setup.\n\
-Stable Setup will configure ELSA and is the recommended option for most users at this time.\n\
-If you are unsure, choose Stable Setup.\n\
+Choosing ELSA Setup will run the old ELSA version of Setup.\n\
+Please note that ELSA will reach EOL soon!\n\
 \n\
-Choosing Experimental Setup will run the experimental version of Setup.\n\
-Experimental Setup will configure the Elastic stack (Elasticsearch, Logstash, and Kibana).\n\
-This is still experimental and should NOT be used in production!"
+Choosing Elastic Setup will run the Elastic version of Setup.\n\
+This will configure the Elastic stack (Elasticsearch, Logstash, and Kibana).\n\
+If you are unsure, choose Elastic Setup."
 SETUP=""
 SETUP=`zenity --list --radiolist \
         --column "1" --column "2" --hide-header --title="$TITLE" \
-        TRUE "Stable Setup" FALSE "Experimental Setup" --text="$TEXT"`
+        TRUE "Elastic Setup" FALSE "ELSA Setup" --text="$TEXT"`
 if [ $? = 1 ]; then
 	if [ $DEBUG -eq 1 ]; then
 		echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
@@ -219,7 +218,7 @@ if [ $? = 1 ]; then
 	fi
 fi
 [ "$SETUP" == "" ] && exit
-if [ "$SETUP" == "Experimental Setup" ]; then
+if [ "$SETUP" == "Elastic Setup" ]; then
 	ELASTIC="YES"
 fi
 if [ "$ELASTIC" == "YES" ]; then

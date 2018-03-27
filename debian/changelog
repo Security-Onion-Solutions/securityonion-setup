@@ -1,3 +1,15 @@
+securityonion-setup (20120912-0ubuntu0securityonion250) trusty; urgency=medium
+
+  * default to Elastic 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 27 Mar 2018 19:42:42 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion249) trusty; urgency=medium
+
+  * merge pr 32 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 08 Dec 2017 09:01:49 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion248) trusty; urgency=medium
 
   * Issue 1163: Setup: disable Xplico when choosing Evaluation Mode 

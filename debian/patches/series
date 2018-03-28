@@ -237,3 +237,4 @@ so-email:-fix-any-references-to-sosetup-#1161
 Issue-1163:-Setup:-disable-Xplico-when-choosing-Evaluation-Mode
 merge-pr-32
 default-to-Elastic
+update-sosetup.conf

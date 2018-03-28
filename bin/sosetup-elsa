@@ -198,14 +198,14 @@ fi
 # Stable Setup or Experimental Setup
 #########################################
 if [ -f /usr/sbin/sosetup-elastic ] && [ -d /opt/elastic/src ]; then
-TEXT="ELSA Setup or Elastic Setup?\n\
-\n\
-Choosing ELSA Setup will run the old ELSA version of Setup.\n\
-Please note that ELSA will reach EOL soon!\n\
+TEXT="Elastic Setup or ELSA Setup?\n\
 \n\
 Choosing Elastic Setup will run the Elastic version of Setup.\n\
 This will configure the Elastic stack (Elasticsearch, Logstash, and Kibana).\n\
-If you are unsure, choose Elastic Setup."
+If you are unsure, choose Elastic Setup.\n\
+\n\
+Choosing ELSA Setup will run the old ELSA version of Setup.\n\
+Please note that ELSA will reach EOL soon!"
 SETUP=""
 SETUP=`zenity --list --radiolist \
         --column "1" --column "2" --hide-header --title="$TITLE" \

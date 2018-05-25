@@ -45,12 +45,6 @@ case "$1" in
 		echo
 	fi
 
-	# Remove old launchers
-	echo -n "Checking for old Snorby launchers..."
-	rm -f /etc/skel/Desktop/snorby.desktop || echo -n "."
-	rm -f /home/*/Desktop/snorby.desktop || echo -n "."
-	echo
-
 	# Check for old login.keyring files
 	for FILE in /home/*/.local/share/keyrings/login.keyring /etc/skel/.local/share/keyrings/login.keyring; do
 		if [ -f $FILE ] ; then

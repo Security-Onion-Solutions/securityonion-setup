@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion268) xenial; urgency=medium
+
+  * remove snorby from postinst 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 25 May 2018 13:18:07 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion267) xenial; urgency=medium
 
   * if mysql root password not set, set random password 

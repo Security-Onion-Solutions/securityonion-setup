@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion269) xenial; urgency=medium
+
+  * add remote nodes to ossec whitelist on master 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 25 May 2018 14:13:55 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion268) xenial; urgency=medium
 
   * remove snorby from postinst 

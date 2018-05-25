@@ -1257,6 +1257,16 @@ if [ "$SERVER" -ne 1 ]; then
 	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
 	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
 
+	# Need to whitelist sensor IP address to prevent Active Response
+	cat << EOF >> $SOSETUPSCP
+if ! grep -q "<white_list>\$IPADDRESS</white_list>" /var/ossec/etc/ossec.conf ; then
+	sed -i 's/<\/ossec_config>//' /var/ossec/etc/ossec.conf
+	sed -i '/^$/N;/^\n$/D' /var/ossec/etc/ossec.conf
+	echo -e "<!--Address \$IPADDRESS added by sosetup -->\n  <global>\n    <white_list>\$IPADDRESS</white_list>\n  </global>\n</ossec_config>" >> /var/ossec/etc/ossec.conf
+	service ossec-hids-server restart
+fi
+EOF
+
 	# Copy the script over
 	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
 

@@ -254,3 +254,4 @@ fix-sosetup-forward.conf
 streamline-setup
 avoid-duplicating-OSSEC_AGENT_ENABLED-in-securityonion.conf
 if-mysql-root-password-not-set,-set-random-password
+add-remote-nodes-to-ossec-whitelist-on-master

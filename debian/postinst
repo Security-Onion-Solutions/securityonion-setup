@@ -7,12 +7,7 @@ case "$1" in
 
 	# Make sure scripts are executable        
 	chmod +x /usr/sbin/sosetup* || echo "Error making sosetup scripts executable."
-	chmod +x /usr/sbin/so-allow || echo "Error making so-allow script executable."
-
-	# sosetup is now a symlink to sosetup-elastic
-	if [ -f /usr/sbin/sosetup-elastic ]; then
-		ln -s sosetup-elastic /usr/sbin/sosetup || echo "Error creating sosetup symlink."
-	fi
+	chmod +x /usr/sbin/so-allow* || echo "Error making so-allow script executable."
 
 	# Fix PulledPork config
 	/usr/sbin/sosetup-fix-ppconf || echo "Error running /usr/sbin/sosetup-fix-ppconf"

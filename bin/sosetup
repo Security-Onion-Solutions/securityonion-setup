@@ -1,6 +1,7 @@
 #!/bin/bash
 #
-# Copyright (C) 2010-2016 Doug Burks and Security Onion
+# Copyright (C) 2010-2014 Doug Burks
+# Copyright (C) 2015-2018 Security Onion Solutions, LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 as
@@ -32,7 +33,7 @@ IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.
 TITLE="Security Onion Setup ($HOSTNAME)"
 # File locations
 CONF="/etc/nsm/securityonion.conf"
-LOG=`mktemp /tmp/sosetup.log.XXXXXXXXXX`
+LOG=`mktemp /tmp/sosetup-elastic.log.XXXXXXXXXX`
 PP_CONF="/etc/nsm/pulledpork/pulledpork.conf"
 # URLs
 ET_URL="rules.emergingthreats.net"
@@ -120,12 +121,11 @@ SOSETUPSCP=`mktemp`
 SECURITYONION_CONF_MASTER=`mktemp`
 # CUSTOM gives access to all options
 CUSTOM=0
-# ELSA is now enabled by default
-ELSA="YES"
-ELASTIC="NO"
+# Elastic is now enabled by default
+ELASTIC="yes"
 # Create /nsm if it doesn't already exist
 mkdir -p /nsm
-# Calculate half of available disk space for ELSA log_size_limit
+# Calculate half of available disk space for Elastic logs
 DISK_SIZE_K=`df /nsm |grep -v "^Filesystem" | awk '{print $2}'`
 let DISK_SIZE=DISK_SIZE_K*1000
 let LOG_SIZE_LIMIT=DISK_SIZE/2
@@ -137,9 +137,20 @@ TOTAL_MEM=`grep MemTotal /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'`
 # Make RAM # human readable (GB)
 HR_MEM=$((TOTAL_MEM / 1000))
 # Text for minimum memory check
-MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 3GB of RAM.\n\n\Please consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
+MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 8GB of RAM.\n\n\Please consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
 Click 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n\
 Otherwise, click 'Yes' to continue."
+# Text for minimum core check
+CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\For best performance, please ensure the machine is allocated at least 2 processor cores.\n\n\Please consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
+Click 'No' to stop setup and adjust the number of processor cores allocated to this machine.\n\
+Otherwise, click 'Yes' to continue."
+ARGS=("$@")
+REVERSE_PORT=50000
+DOCKER_INTERFACE="172.18.0.1"
+DOCKER_NETWORK="172.18.0.0/24"
+LOGSTASH_OUTPUT_REDIS="no"
+LOGSTASH_INPUT_REDIS="no"
+
 #########################################
 # Debug
 #########################################
@@ -158,9 +169,18 @@ function ask() {
 #########################################
 # Welcome screen
 #########################################
-TEXT="Welcome to Security Onion Setup!\n\
+TEXT="Welcome to Security Onion Elastic Setup!\n\
 \n\
-This program will allow you to configure Security Onion on $HOSTNAME.\n\
+Elastic Setup will configure the following services:\n\
+\n\
+Elasticsearch\n\
+Logstash\n\
+Kibana\n\
+Squert\n\
+Sguil\n\
+Bro\n\
+Snort/Suricata\n\
+netsniff-ng\n\
 \n\
 Would you like to continue?"
 if [ "$WRITEANSWERFILE" ]; then
@@ -187,44 +207,25 @@ fi
 #########################################
 # sosetup-network
 #########################################
-if [ -z "$WRITEANSWERFILE" ]; then # Network config not yet supported when generating an answer file
-[ -f /usr/sbin/sosetup-network ] && /usr/sbin/sosetup-network
-ANSWER="$?"
-# If there were errors in sosetup-network, then exit
-[ $ANSWER -eq 1 ] && exit
+# Network config not yet supported when generating an answer file
+if [ -z "$WRITEANSWERFILE" ] && [ "${ARGS[0]}" != "skipnetwork" ] && [ -f /usr/sbin/sosetup-network ]; then
+	/usr/sbin/sosetup-network
+	# If there were errors in sosetup-network, then exit
+	[ $? -eq 1 ] && exit
 fi
 
 #########################################
-# Stable Setup or Experimental Setup
+# CHeck hardware requirements
 #########################################
-if [ -f /usr/sbin/sosetup-elastic ] && [ -d /opt/elastic/src ]; then
-TEXT="Elastic Setup or ELSA Setup?\n\
-\n\
-Choosing Elastic Setup will run the Elastic version of Setup.\n\
-This will configure the Elastic stack (Elasticsearch, Logstash, and Kibana).\n\
-If you are unsure, choose Elastic Setup.\n\
-\n\
-Choosing ELSA Setup will run the old ELSA version of Setup.\n\
-Please note that ELSA will reach EOL soon!"
-SETUP=""
-SETUP=`zenity --list --radiolist \
-        --column "1" --column "2" --hide-header --title="$TITLE" \
-        TRUE "Elastic Setup" FALSE "ELSA Setup" --text="$TEXT"`
-if [ $? = 1 ]; then
-	if [ $DEBUG -eq 1 ]; then
-		echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-	else
-		exit 1
-	fi
+
+if [ $TOTAL_MEM -lt 8000 ]; then zenity --question --title="$TITLE" --text="$MEM_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	[ $? = 1 ] && exit 1
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
 fi
-[ "$SETUP" == "" ] && exit
-if [ "$SETUP" == "Elastic Setup" ]; then
-	ELASTIC="YES"
-fi
-if [ "$ELASTIC" == "YES" ]; then
-	/usr/sbin/sosetup-elastic skipnetwork
-	exit $?
-fi
+
+if [ $CORES -lt 2 ]; then zenity --question --title="$TITLE" --text="$CORE_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	[ $? = 1 ] && exit 1
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low core count."
 fi
 
 #########################################
@@ -236,40 +237,24 @@ Evaluation Mode is recommended for first-time users or standalone VMs:\n\
 - ideal for quickly evaluating Security Onion\n\
 - will automatically configure most details of your system\n\
 - configures Snort and Bro to monitor one network interface\n\
-- NOT intended for a production sensor\n\
+- NOT intended for a production deployment\n\
 \n\
 Production Mode is recommended for production deployments\n\
 as it gives you more control over the details of your system\n\
-and allows you to build a distributed sensor network.  You choose:\n\
-- Sguil server, Sguil sensor, or both\n\
-- which IDS engine to use (Snort or Suricata)\n\
-- which IDS ruleset(s) to use (Emerging Threats, Snort Subscriber (Talos), or both)\n\
-- how many processes to run for Snort/Suricata/Bro"
+and allows you to build a distributed deployment.  You choose:\n\
+- build a new master server or connect to an existing master server\n\
+- enable or disable network sensor services\n\
+- store logs locally or forward to master server\n"
 SETUP=""
 SETUP=`zenity --list --radiolist \
         --column "1" --column "2" --hide-header --title="$TITLE" \
         TRUE "Evaluation Mode" FALSE "Production Mode" --text="$TEXT"`
-if [ $? = 1 ]; then
-	if [ $DEBUG -eq 1 ]; then
-		echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-	else
-		exit 1
-	fi
-fi
+[ $? = 1 ] && exit 1
+
 [ "$SETUP" == "" ] && exit
 [ "$SETUP" == "Production Mode" ] && ADVANCED_SETUP="1" || ADVANCED_SETUP="0"
 if [ $ADVANCED_SETUP -eq 0 ]; then
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Evaluation Mode."
-	if [ $TOTAL_MEM -lt 3000 ]; then zenity --question --title="$TITLE" --text="$MEM_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap 
-		if [ $? = 1 ]; then
-			if [ $DEBUG -eq 1 ]; then
-				echo "DEBUG: Clicked No.  Exiting." && exit 1
-			else
-				exit 1
-			fi
-		fi
-	[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
-	fi
         if [ $NUM_INTERFACES -gt 1 ]; then
                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
                 INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' | grep -v "^lo$" | grep -v "^docker" | grep -v "^br-" | grep -v "^veth" | sort`
@@ -295,92 +280,44 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
         fi
 	SERVER=1
 	SENSOR=1
-        ELSA="YES"
+        ELASTIC="yes"
 	SERVERNAME="localhost"
 	SENSOR_CONFIRM_1="- Configure Snort and Bro to monitor the following interface:\n"
 	SENSOR_CONFIRM_2="$INTERFACES\n"
 else
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Production Mode."
-	# Ask which components to configure
-	TEXT="If this is the first machine in a distributed deployment, choose Server.\n\
-This machine will only run Sguil, Squert, and ELSA and will not monitor any network interfaces.\n\
+	TEXT="Do you want to build a new Security Onion deployment or add to an existing deployment?\n\
 \n\
-If this is a sensor for a distributed deployment (you've already installed the Server), choose Sensor.\n\
-You will need to be able to SSH to the existing Server box with an account with sudo privileges.\n\
+If you choose New, this machine will be the master server and will run the Kibana and Squert web interfaces.\n\
 \n\
-Otherwise, choose Standalone to configure both Server and Sensor components on this box."
-	COMPONENTS=`zenity --height=300 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Server FALSE Sensor FALSE Standalone`
-	case $COMPONENTS in
-        Standalone)
-                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Standalone."
+If you already have a master server, choose Existing.\n\
+You will need to be able to SSH to the existing master server with an account that has sudo privileges.\n"
+	DEPLOYMENT=`zenity --height=250 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE New FALSE Existing`
+	case $DEPLOYMENT in
+	New)
+                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected New."
 		SERVER=1
-		SENSOR=1
-		SERVERNAME="localhost"
-		if [ $TOTAL_MEM -lt 3000 ];then zenity --question --title="$TITLE" --text="$MEM_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-			if [ $? = 1 ]; then
-				if [ $DEBUG -eq 1 ]; then
-					echo "DEBUG: Clicked No.  Exiting." && exit 1
-				else
-					exit 1
-				fi
-			fi
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
-		fi
-		;;
-	Server)
-                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Server."
-		SERVER=1
-		SENSOR=0
 		SERVERNAME="localhost"
 		IDS_LB_PROCS_CONFIRM=""
 		BRO_LB_PROCS_CONFIRM=""
-		if [ $TOTAL_MEM -lt 2000 ];then zenity --question --title="$TITLE" --text="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 2GB of RAM.\n\n\Consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
-Click 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n\
-Otherwise, click 'Yes' to continue." --ok-label="$YES" --cancel-label="$NO" --no-wrap
-			if [ $? = 1 ]; then
-				if [ $DEBUG -eq 1 ]; then
-					echo "DEBUG: Clicked No.  Exiting." && exit 1
-				else
-					exit 1
-				fi
-			fi
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
-		fi
 		;;
-	Sensor)
-                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Sensor."
+	Existing)
+                [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Existing."
 		SERVER=0
-		SENSOR=1
-		TEXT="What is the hostname or IP address of the master server that this sensor should connect to?"
+		TEXT="What is the hostname or IP address of the master server that this node should connect to?"
 		SERVERNAME_CONFIRMED="no"
-		if [ $TOTAL_MEM -lt 3000 ];then zenity --question --title="$TITLE" --text="$MEM_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-			if [ $? = 1 ]; then
-				if [ $DEBUG -eq 1 ]; then
-					echo "DEBUG: Clicked No.  Exiting." && exit 1
-				else
-					exit 1
-				fi
-			fi
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
-		fi
 		while [ $SERVERNAME_CONFIRMED = "no" ]; do
 			SERVERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
-			if [ $? = 1 ]; then
-				if [ $DEBUG -eq 1 ]; then
-					echo "DEBUG: Clicked Cancel.  Exiting."  && exit 1
-				else
-					exit 1
-				fi
-			fi
+			[ $? = 1 ] && exit 1
 			# Did the user enter the hostname or IP address of the local box?
 			if [ "$SERVERNAME" = "$HOSTNAME" ]; then
 				zenity --error --title "$TITLE" --text="That is the hostname of this box\!\r \
 \r \
-Since you chose a sensor-only installation, the master server should be a separate box."
+Since you chose a node installation, the master server should be a separate box."
 			elif [ "$SERVERNAME" = "$IP" ]; then
 				zenity --error --title "$TITLE" --text="That is the IP address of this box\!\r \
 \r \
-Since you chose a sensor-only installation, the master server should be a separate box."
+Since you chose a node installation, the master server should be a separate box."
 			elif [ "x$SERVERNAME" = "x" ]; then
 				zenity --error --title "$TITLE" --text="No server defined\!\r \
 \r \
@@ -390,7 +327,7 @@ Please provide the hostname or IP address of a valid master server."
 				# nc will result in OSSEC Active Response blocking the IP address
 				# nc -vz $SERVERNAME 22 -w 5 2>&1 | grep "succeeded\!" >/dev/null 2>&1 && SERVERNAME_CONFIRMED="yes"
 				# so use ssh instead:
-				ssh $SERVERNAME -o ConnectTimeout=5 -o BatchMode=yes 2>&1 | egrep 'Connection timed out|Could not resolve hostname' >/dev/null 2>&1 || SERVERNAME_CONFIRMED="yes"
+				ssh $SERVERNAME -o ConnectTimeout=5 -o BatchMode=yes 2>&1 | egrep 'Connection timed out|No route to host|Could not resolve hostname' >/dev/null 2>&1 || SERVERNAME_CONFIRMED="yes"
 				[ $DEBUG -eq 1 ] && echo "DEBUG: Hostname/IP set to $SERVERNAME."
 				if [ $SERVERNAME_CONFIRMED = "no" ]; then
 					zenity --error --title "$TITLE" --text="Couldn't connect to $SERVERNAME on port 22\!\r \
@@ -404,13 +341,7 @@ firewall rules."
 		SENSOR_CONFIRM_3="no"
 		while [[ $SENSOR_CONFIRM_3 = "no" ]]; do
 		SSH_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
-                        if [ $? = 1 ]; then
-                                if [ $DEBUG -eq 1 ]; then
-                                        echo "DEBUG: Clicked Cancel.  Exiting."  && exit 1
-                                else
-                                        exit 1
-                                fi
-                        fi
+			[ $? = 1 ] && exit 1
 			if [ x$SSH_USERNAME = "x" ]; then
 				zenity --error --title "$TITLE" --text="No username defined\!\r \
 \r\ \
@@ -426,29 +357,8 @@ Please provide a username that can SSH to the master server and execute sudo."
                 ;;
         esac
 
-	TEXT="Best Practices or Custom?\n\
-\n\
-If you'd like to use the Best Practices defaults, please select Best Practices.\n\
-\n\
-If you'd like to see all options, choose Custom."
-	CUSTOM=""
-	CUSTOM=`zenity --list --radiolist \
-        --column "1" --column "2" --hide-header --title="$TITLE" \
-        TRUE "Best Practices" FALSE "Custom" --text="$TEXT"`
-	if [ $? = 1 ]; then
-		if [ $DEBUG -eq 1 ]; then
-			echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-		else
-			exit 1
-		fi
-	fi
-	[ "$CUSTOM" == "" ] && exit
-	[ "$CUSTOM" == "Custom" ] && CUSTOM="1" || CUSTOM="0"
-	if [ $CUSTOM -eq 0 ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Best Practices."
-	else
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Custom."
-	fi
+
+
 fi
 
 #########################################
@@ -457,15 +367,17 @@ fi
 if [ $SERVER -eq 1 ]; then
 	USERNAME_CONFIRMED="no"
 	while [ $USERNAME_CONFIRMED = "no" ]; do
-		TEXT="What would you like your Sguil username to be?\r\rThis will be used when logging into Sguil, Squert, and ELSA.\r\rPlease use alphanumeric characters only."
+		TEXT="Let's create our first user account.\n\
+\n\
+This account will be used when logging into Kibana, Squert, and Sguil.\n\
+\n\
+What would you like the username to be?\n\
+\n\
+Please use alphanumeric characters only.\n\
+\n\
+You can create other usernames later using so-user-add."
 		SGUIL_CLIENT_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
-		if [ $? = 1 ]; then
-			if [ $DEBUG -eq 1 ]; then
-				echo "DEBUG: Clicked Cancel. Exiting." && exit 1
-			else
-				exit 1
-			fi
-		fi
+		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $SGUIL_CLIENT_USERNAME | sed -e 's/[^[:alnum:]]//g')"
 		if [ "$COMPRESSED" != "$SGUIL_CLIENT_USERNAME" ] || [ x$SGUIL_CLIENT_USERNAME = "x" ] ; then
 	    		zenity --error --title "$TITLE" --text="Invalid username\! \r \
@@ -484,33 +396,21 @@ fi
 if [ $SERVER -eq 1 ]; then
 	SGUIL_CLIENT_PASSWORD_CONFIRMED="no"
 	while [ $SGUIL_CLIENT_PASSWORD_CONFIRMED = "no" ]; do
-		TEXT="What would you like to set your password to?\n\
+		TEXT="Now let's set the password for this first user account.\n\
 \n\
-Password must be at least 6 characters.\n\
+This password will be used for Kibana, Squert, and Sguil.\n\
 \n\
-This password will be used for Sguil, Squert, and ELSA.\n\
+This password must be at least 6 characters.\n\
 \n\
-Once you've logged into these interfaces using this initial password, you can change it in the Sguil client."
+You can change this password later in the Sguil client or with so-user-passwd."
 		SGUIL_CLIENT_PASSWORD_1=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
-		if [ $? = 1 ]; then
-			if [ $DEBUG -eq 1 ]; then
-				echo "DEBUG: Clicked Cancel.  Exiting."  && exit 1
-			else
-				exit 1
-			fi
-		fi
+		[ $? = 1 ] && exit 1
 	        if [ "${#SGUIL_CLIENT_PASSWORD_1}" -lt "6" ]; then
 			zenity --error --title "$TITLE" --text="Password must be at least 6 characters\!"
 		else
 			TEXT="Please confirm what you would like to set your password to."
 			SGUIL_CLIENT_PASSWORD_2=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
-			if [ $? = 1 ]; then
-				if [ $DEBUG -eq 1 ]; then
-					echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-				else
-					exit 1
-				fi
-			fi
+			[ $? = 1 ] && exit 1
 			if [ "$SGUIL_CLIENT_PASSWORD_1" = "$SGUIL_CLIENT_PASSWORD_2" ]; then
 				SGUIL_CLIENT_PASSWORD_CONFIRMED="yes"
 				[ $DEBUG -eq 1 ] && echo "DEBUG: Password set."
@@ -520,7 +420,78 @@ Once you've logged into these interfaces using this initial password, you can ch
 		fi
 	done
 	SERVER_CONFIRM="- Create a Sguil server named $SGUIL_SERVER_NAME. \n"
-	SERVER_USER_CONFIRM="- Create a Sguil user named $SGUIL_CLIENT_USERNAME. \n"
+	SERVER_USER_CONFIRM="- Create a user account named $SGUIL_CLIENT_USERNAME. \n"
+fi
+
+#########################################
+# If node is enabled, pick from 3 node types
+#########################################
+NODE="Master"
+if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -ne 1 ]; then
+	TEXT="To add to your existing deployment, please select a node type for this node.\n\
+\n\
+Forward Nodes generate and collect logs and forward them to the master server.\n\
+Full packet capture remains on Forward Nodes.\n\
+Forward Nodes do not run any Elastic stack processes.\n\
+Forward Nodes require less hardware than Heavy Nodes, but typically use more network bandwidth.\n\
+\n\
+Heavy Nodes generate and collect logs and store them locally.\n\
+Heavy Nodes run Elasticsearch and Logstash.\n\
+The master server queries Heavy Nodes via cross cluster search.\n\
+Heavy Nodes require more hardware than Forward Nodes, but typically use less network bandwidth.\n\
+\n\
+Storage Nodes do not generate logs themselves but simply extend the storage of the master server.\n\
+They require that the master server has already been configured to load balance to additional Storage Nodes.\n\
+Storage Nodes run Elasticsearch and Logstash.\n\
+The master server queries Storage Nodes via cross cluster search.\n"
+	NODE=`zenity --height=450 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Forward FALSE Heavy FALSE Storage`
+	case $NODE in
+	Forward)
+		SENSOR=1
+		FORWARD="yes"
+		ELASTIC="no"
+		ELASTIC_ACTION_CONFIRM="- Forward logs to master server.\n"
+		;;
+	Heavy)
+		SENSOR=1
+		ELASTIC="yes"
+		;;	
+	Storage)
+		SENSOR=0
+		ELASTIC="yes"
+		LOGSTASH_INPUT_REDIS="yes"
+		IDS_LB_PROCS_CONFIRM=""
+		BRO_LB_PROCS_CONFIRM=""
+		SENSOR_CONFIRM_3=""
+		ELASTIC_ACTION_CONFIRM="- Configure as Elastic storage node.\n"
+		;;
+	*)
+                exit
+                ;;
+        esac
+fi
+
+#########################################
+# Best Practices or Custom
+#########################################
+if [ $ADVANCED_SETUP -eq 1 ] && [ $NODE != "Storage" ]; then
+TEXT="Best Practices or Custom?\n\
+\n\
+If you'd like to use the Best Practices defaults, please select Best Practices.\n\
+\n\
+If you'd like to see all options, choose Custom."
+	CUSTOM=""
+	CUSTOM=`zenity --list --radiolist \
+	--column "1" --column "2" --hide-header --title="$TITLE" \
+	TRUE "Best Practices" FALSE "Custom" --text="$TEXT"`
+	[ $? = 1 ] && exit 1
+	[ "$CUSTOM" == "" ] && exit
+	[ "$CUSTOM" == "Custom" ] && CUSTOM="1" || CUSTOM="0"
+	if [ $CUSTOM -eq 0 ]; then
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Best Practices."
+	else
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Custom."
+	fi
 fi
 
 #########################################
@@ -532,14 +503,8 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	# Ask for DAYSTOKEEP        
 	DAYSTOKEEP_CONFIRMED="no"
 	while [ $DAYSTOKEEP_CONFIRMED = "no" ]; do
-		DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="How many days of data do you want to keep in your Sguil database?\n\nThis includes things like IDS alerts, PADS events, and PRADS session data.\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days." --entry-text=30`
-		if [ $? = 1 ]; then
-			if [ $DEBUG -eq 1 ]; then
-				echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-			else
-				exit 1
-			fi
-		fi
+		DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="How many days of alerts do you want to keep in your Sguil database?\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days." --entry-text=30`
+		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $DAYSTOKEEP | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$DAYSTOKEEP" ] || [ x$DAYSTOKEEP = "x" ]; then
 			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
@@ -552,13 +517,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	DAYSTOREPAIR_CONFIRMED="no"
 	while [ $DAYSTOREPAIR_CONFIRMED = "no" ]; do
 		DAYSTOREPAIR=`zenity --entry --title "$TITLE" --text="How many days of data do you want to repair in your Sguil database?\n\nA daily cronjob stops Sguil, repairs the MySQL tables for the last X days, and then starts Sguil back up.\n\nIf you choose a higher value, Sguil will be down for longer.\n\nIf you need to change this later, you can change DAYSTOREPAIR in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 7 days." --entry-text=7`
-		if [ $? = 1 ];then
-			if [ $DEBUG -eq 1 ];then
-				echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-			else
-				exit 1
-			fi
-		fi
+		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $DAYSTOREPAIR | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$DAYSTOREPAIR" ] || [ x$DAYSTOREPAIR = "x" ]; then
 			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
@@ -568,16 +527,16 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	done
 	fi
 
-	# Ask which IDS engine to use.
-	TEXT="Which IDS Engine would you like to use?"
-	IDS_ENGINE=`zenity --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Snort FALSE Suricata`
-	#[ -z $IDS_ENGINE ]
-	[ $? = 1 ] && [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected $IDS_ENGINE."
-
 	# Ask which IDS ruleset to use.
-	TEXT="Which IDS ruleset would you like to use?"
-	IDS_RULESET=`zenity --width=600 --height=300 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
+	TEXT="Which IDS ruleset would you like to use?\n\
+\n\
+This master server is responsible for downloading the IDS ruleset from the Internet.\n\
+\n\
+Sensors then pull a copy of this ruleset from the master server.\n\
+\n\
+If you select a commercial ruleset, it is your responsibility to purchase enough licenses\n\
+for all of your sensors in compliance with your vendor's policies.\n"
+	IDS_RULESET=`zenity --width=750 --height=350 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
 	TRUE "ETOPEN" "Emerging Threats Open"  "no oinkcode required" \
 	FALSE "ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
 	FALSE "TALOSET" "Snort Subscriber (Talos) ruleset and Emerging Threats NoGPL ruleset" "requires Snort Subscriber oinkcode" \
@@ -615,10 +574,46 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 		IDS_RULESET_ACTION="- Download the Snort Subscriber (Talos) ruleset using oinkcode $OINKCODE.\n- Download the Emerging Threats NoGPL ruleset.\n"
 		;;
 	*)
-		[ $? = 1 ] && [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
+		[ $? = 1 ] && exit 1
 		;;
 	esac
+
+	# Ask which IDS engine to use.
+	TEXT="Which IDS Engine would you like to use?\n\
+\n\
+For best results, use the corresponding engine for the ruleset you chose in the previous screen.\n\
+\n\
+For example, if you chose the Snort Talos ruleset, you should probably choose the Snort engine.\n\
+\n\
+Likewise, if you chose an Emerging Threats ruleset, you should probably choose the Suricata engine.\n"
+	IDS_ENGINE=`zenity --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Snort FALSE Suricata`
+	#[ -z $IDS_ENGINE ]
+	[ $? = 1 ] && exit 1
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected $IDS_ENGINE."
+
 	# End of ADVANCED SETUP - SERVER
+fi
+
+#########################################
+# Network Sensor Services
+#########################################
+if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
+TEXT="Network sensor services include:\n\
+\n\
+- Snort or Suricata for NIDS alerts\n\
+- Bro for protocol logging\n\
+- netsniff-ng for full packet capture\n\
+\n\
+For best performance, we recommend disabling network sensor services on master servers.\n\
+\n\
+Would you like to enable or disable network sensor services?"
+	SENSOR=""
+	SENSOR=`zenity --list --radiolist \
+	--column "1" --column "2" --hide-header --title="$TITLE" \
+	TRUE "Enable network sensor services" FALSE "Disable network sensor services" --text="$TEXT"`
+	[ $? = 1 ] && exit 1
+	[ "$SENSOR" == "" ] && exit
+	[ "$SENSOR" == "Enable network sensor services" ] && SENSOR="1" || SENSOR="0"
 fi
 
 #########################################
@@ -633,13 +628,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
 	PF_RING_SLOTS_CONFIRMED="no"
 	while [ $PF_RING_SLOTS_CONFIRMED = "no" ]; do
 		PF_RING_SLOTS=`zenity --entry --title "$TITLE" --text="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module." --entry-text=4096`
-		if [ $? = 1 ]; then
-			if [ $DEBUG -eq 1 ]; then
-				echo "DEBUG: Clicked Cancel.  Exiting." && exit 1
-			else
-				exit 1
-			fi
-		fi
+		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $PF_RING_SLOTS | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$PF_RING_SLOTS" ] || [ x$PF_RING_SLOTS = "x" ]; then
 			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
@@ -759,7 +748,6 @@ Would you like to enable Bro?"
 	if [ $ANSWER -eq 1 ]; then
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling Bro."
 		BRO_ENABLED="no"
-		HTTP_AGENT_ENABLED="no"
 	else
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling Bro."
 	fi
@@ -810,69 +798,6 @@ If you need to change this setting later, you can change the lb_procs variable i
 	fi
 
 	if [ $CUSTOM -eq 1 ]; then
-	# http_agent
-	if [ "$BRO_ENABLED" == "yes" ]; then
-		TEXT="http_agent sends Bro's http.log to the Sguil database.\n\
-\n\
-If you plan to access Bro's http.log via ELSA,\n\
-you may want to disable http_agent to avoid duplication of effort.\n\
-\n\
-Would you like to enable http_agent?"
-		YES="Yes, enable http__agent!"
-		NO="No, disable http__agent."
-		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-		ANSWER="$?"
-		if [ $ANSWER -eq 1 ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling http_agent."
-			HTTP_AGENT_ENABLED="no"
-		else
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling http_agent."
-			HTTP_AGENT_ENABLED="yes"
-		fi
-	fi
-
-	# Argus
-	TEXT="Argus listens on the chosen interfaces and logs session data to the filesystem.\n\
-\n\
-If you plan to use other forms of session data (like Bro's conn.log or Prads),\n\
-you may want to disable Argus to avoid duplication of effort.\n\
-\n\
-Would you like to enable Argus?"
-	YES="Yes, enable Argus!"
-	NO="No, disable Argus."
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-	ANSWER="$?"
-	if [ $ANSWER -eq 1 ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling Argus."
-		ARGUS_ENABLED="no"
-	else
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling Argus."
-		ARGUS_ENABLED="yes"
-	fi
-
-	# Prads
-	TEXT="Prads listens on the chosen interfaces and provides session and asset data for Sguil.\n\
-\n\
-If you plan to use other forms of session data (like Bro's conn.log or Argus)\n\
-and/or you plan to use other forms of asset data (like Bro's software.log),\n\
-you may want to disable Prads to avoid duplication of effort.\n\
-\n\
-Would you like to enable Prads?"
-	YES="Yes, enable Prads!"
-	NO="No, disable Prads."
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-	ANSWER="$?"
-	if [ $ANSWER -eq 1 ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling Prads."
-		PRADS_ENABLED="no"
-		PADS_AGENT_ENABLED="no"
-		SANCP_AGENT_ENABLED="no"
-	else
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling Prads."
-		PRADS_ENABLED="yes"
-		PADS_AGENT_ENABLED="yes"
-		SANCP_AGENT_ENABLED="yes"
-	fi
 
 	# PCAP
 	TEXT="Full packet capture writes all monitored traffic to disk.\n\
@@ -941,19 +866,6 @@ Would you like to enable mmap I/O?"
 				PCAP_RING_SIZE_CONFIRMED="yes"
 			fi
 		done
-	else
-	# Note about disabling full packet capture
-	YES="Yes, Continue."
-	NO="No, Quit."
-	zenity --title "$TITLE" --question --text="Please note, if you choose not to enable full packet capture, you will not\nbe able to pivot from Sguil to PCAP, or to CapME to retrieve PCAP data.\n\nClick 'Yes' to continue without enabling full packet capture.\n\nOtherwise, click 'No' to exit setup and re-run it to enable the capture of this valuable data." --ok-label="$YES" --cancel-label="$NO" --no-wrap
-		if [ $? = 1 ]; then
-			if [ $DEBUG -eq 1 ]; then
-				echo "DEBUG: Clicked No.  Exiting." && exit 1
-			else
-				exit 1
-			fi
-		fi
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Continuing without enabling full packet capture."
 	fi
 
 	# Ask for CRIT_DISK_USAGE
@@ -981,7 +893,7 @@ fi # End of ADVANCED SETUP - SENSOR
 if [ $ADVANCED_SETUP -eq 1 ] && dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 	SALT="yes"
 	if [ $CUSTOM -eq 1 ]; then
-TEXT="Salt can be enabled to help manage your entire sensor deployment.\n\
+TEXT="Salt can be enabled to help manage your entire Security Onion deployment.\n\
 \n\
 By default, Salt will automatically keep the following updated:\n\
 * OS user accounts\n\
@@ -989,7 +901,7 @@ By default, Salt will automatically keep the following updated:\n\
 * IDS rulesets\n\
 \n\
 Salt can also be used for remote execution, so you can run a command\n\
-and have it execute on all sensors across your deployment.\n\
+and have it execute on all boxes across your deployment.\n\
 \n\
 Would you like to enable Salt?"
 		YES="Yes, enable Salt!"
@@ -1006,92 +918,99 @@ Would you like to enable Salt?"
 	fi
 fi
 
-# End of ADVANCED SETUP
-
 #########################################
-# Ask whether or not to use ELSA
+# Ask whether or not to use Elastic
 #########################################
-if [ $CUSTOM -eq 1 ]; then
-TEXT="ELSA (Enterprise Log Search and Archive) is a centralized syslog framework\n\
-built on Syslog-NG, MySQL, and Sphinx full-text search.\n\
+if [ $CUSTOM -eq 1 ] && [ $SERVER -eq 1 ]; then
+TEXT="The Elastic Stack is a platform for data ingestion, formatting, and visualization\n\
+built on ElasticSearch, Logstash, and Kibana.  Our customized stack also includes \n\
+Curator and Elastalert.\n\
 \n\
-It provides a distributed database with a web-based interface\n\
+The Elastic Stack provides a search engine and and web interface\n\
 for hunting through your logs, including:\n\
 * Bro logs\n\
 * OSSEC alerts/logs\n\
 * Snort/Suricata logs\n\
 * standard syslog\n\
 \n\
-In a distributed deployment with separate server and sensor(s),\n\
-you'll want to enable/disable ELSA on all boxes.  So if you want\n\
-to use ELSA, you should enable it on the master server and all sensors.\n\
-\n\
-Would you like to enable ELSA?"
-	YES="Yes, enable ELSA!"
-	NO="No, disable ELSA."
+Would you like to enable the Elastic Stack?"
+	YES="Yes, enable the Elastic Stack."
+	NO="No, disable the Elastic Stack."
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	ANSWER="$?"
 	if [ $ANSWER -eq 0 ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Enable ELSA."
-		ELSA="YES"
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Enable Elastic Stack."
+		ELASTIC="yes"
 	else
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Disable ELSA."
-		ELSA="NO"
-	fi
-
-	# If user chose to enable ELSA, ask about log_size_limit
-	if [ "$ELSA" = "YES" ]; then
-		# If Advanced Setup, ask user
-		if [ $ADVANCED_SETUP -eq 1 ]; then
-			LOG_SIZE_LIMIT_CONFIRMED="no"
-			while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
-				LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="How much disk space (in GigaBytes) should be allocated for ELSA to store logs?\n\nPlease enter an integer greater than 0.  The default is half your disk size.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify log__size__limit in the /etc/elsa__node.conf file." --entry-text=$LOG_SIZE_LIMIT_GB`
-				[ $? = 1 ] && exit
-				if [ x$LOG_SIZE_LIMIT_GB = "x" ]; then
-				zenity --error --title "$TITLE" --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size."
-				else
-				COMPRESSED="$(echo $LOG_SIZE_LIMIT_GB | sed -e 's/[^[:digit:]]//g')"
-				[ "$COMPRESSED" == "$LOG_SIZE_LIMIT_GB" ] && 
-				[ $LOG_SIZE_LIMIT_GB -gt 0 ] && 
-				[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB ] && 
-				LOG_SIZE_LIMIT_CONFIRMED="yes" || 
-				zenity --error --title "$TITLE" --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size." 
-				fi
-			done
-			let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000
-			[ $DEBUG -eq 1 ] && echo "DEBUG: LOG_SIZE_LIMIT set to $LOG_SIZE_LIMIT."
-		fi
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Disable Elastic Stack."
+		ELASTIC="no"
 	fi
 fi
 
-# Set ELSA_ACTION_CONFIRM and ask about updating ELSA server if applicable
-if [ "$ELSA" = "NO" ]; then
-	ELSA_ACTION_CONFIRM="- Disable ELSA."
+#########################################
+# Configure master to output to redis?
+#########################################
+if [ "$ELASTIC" = "yes" ] && [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
+	TEXT="By default, the master server stores logs in its own local Elasticsearch database via a local Logstash instance.\n\
+\n\
+If you want to forward logs from multiple nodes to this master server, then you may overwhelm those single instances of Logstash and Elasticsearch.\n\
+You may want to consider load balancing these forwarded logs to additional storage nodes.\n\
+\n\
+Would you like to store logs locally on $HOSTNAME?"
+	YES="Yes, store logs locally."
+	NO="No, I will add storage nodes for load balancing."
+	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	ANSWER="$?"
+	if [ $ANSWER -eq 0 ]; then
+		LOGSTASH_OUTPUT_REDIS="no"
+	else
+		LOGSTASH_OUTPUT_REDIS="yes"
+		FORWARD_CONFIRM="- Load balance to additional storage nodes."
+	fi
+fi
+
+#########################################
+# ES LOG_SIZE_LIMIT
+#########################################
+if [ "$ELASTIC" = "yes" ] && [ $ADVANCED_SETUP -eq 1 ] && [ "$FORWARD" != "yes" ] && [ "$LOGSTASH_OUTPUT_REDIS" != "yes" ]; then
+	LOG_SIZE_LIMIT_CONFIRMED="no"
+	while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
+		LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\
+\n\
+Please enter an integer greater than 0.\n\
+\n\
+Please make sure that the value you set here is less than the size of your disk!\n\
+\n\
+If you need to adjust this later, you can modify LOG__SIZE__LIMIT in /etc/nsm/securityonion.conf." --entry-text=$LOG_SIZE_LIMIT_GB`
+		[ $? = 1 ] && exit
+		if [ x$LOG_SIZE_LIMIT_GB = "x" ]; then
+			zenity --error --title "$TITLE" --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size."
+		else
+			COMPRESSED="$(echo $LOG_SIZE_LIMIT_GB | sed -e 's/[^[:digit:]]//g')"
+			[ "$COMPRESSED" == "$LOG_SIZE_LIMIT_GB" ] && 
+			[ $LOG_SIZE_LIMIT_GB -gt 0 ] && 
+			[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB ] && 
+			LOG_SIZE_LIMIT_CONFIRMED="yes" || 
+			zenity --error --title "$TITLE" --text "Invalid log size limit!\n\nPlease use integers greater than 0 and less than your disk size." 
+		fi
+	done
+
+	let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000
+	[ $DEBUG -eq 1 ] && echo "DEBUG: LOG_SIZE_LIMIT set to $LOG_SIZE_LIMIT."
+fi
+
+# Set ELASTIC_ACTION_CONFIRM
+if [ "$ELASTIC" = "no" ]; then
+	ELASTIC_ACTION_CONFIRM="- Disable Elastic stack."
 else
 	if [ $SERVER -eq 1 ]; then
-	    	ELSA_ACTION_CONFIRM="- Configure ELSA as a Log Node and enable web interface.\n"
+	    	ELASTIC_ACTION_CONFIRM="- Configure Elastic Stack.\n"
 	else
-    		ELSA_ACTION_CONFIRM="- Configure ELSA as a Log Node.\n"
-
-		# Ask if they want to update the SERVER and restart Apache
-		TEXT="Would you like to automatically update the ELSA server?\n\
-\n\
-This will restart Apache on the ELSA server which will disrupt\n\
-any ELSA queries running at the time."
-		YES="Yes, update ELSA server!"
-		NO="No, do not update ELSA server."
-		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
-		ANSWER="$?"
-		if [ $ANSWER -eq 0 ]; then
-		    	[ $DEBUG -eq 1 ] && echo "DEBUG: Update ELSA Server."
-    			UPDATE_ELSA_SERVER="YES"
-		else
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Do not update ELSA server."
-    			UPDATE_ELSA_SERVER="NO"
+		if [ "$FORWARD" = "no" ]; then
+    			ELASTIC_ACTION_CONFIRM="- Configure Elastic Stack cross cluster search.\n"
 		fi
   	fi
 fi
-
 
 #########################################
 # If just writing a file, do it and exit
@@ -1103,7 +1022,6 @@ if [ "$WRITEANSWERFILE" ]; then
 	zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
 	exit 0
 fi
-
 
 #########################################
 # Confirm all choices before proceeding
@@ -1121,7 +1039,8 @@ $IDS_LB_PROCS_CONFIRM\
 $BRO_LB_PROCS_CONFIRM\
 $IDS_RULESET_ACTION\
 $IDS_HOME_NET_CONFIRM\
-$ELSA_ACTION_CONFIRM\
+$ELASTIC_ACTION_CONFIRM\
+$FORWARD_CONFIRM\
 \n\
 We're about to make changes to your system!\n\
 \n\
@@ -1144,11 +1063,12 @@ fi
 function CONFIGURE_SERVICES() {
 
 #########################################
-# Remove any tmp files from previous run
+# Remove old files
 #########################################
 rm -f /tmp/GeoIP.dat
 rm -f /tmp/GeoLiteCity.dat
 rm -f /tmp/GeoLiteCity.dat.gz
+rm -f /opt/bro/etc/node.cfg
 
 #########################################
 # Create files/dirs as necessary
@@ -1162,23 +1082,19 @@ mkdir -p /var/log/nsm/
 #########################################
 echo "2"
 echo "# Please wait while setting OS timezone to UTC..." | tee -a $LOG
-echo "Etc/UTC" > /etc/timezone
-dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
+#echo "Etc/UTC" > /etc/timezone
+#dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
+# Need to use timedatectl for Ubuntu 16.04 Server
+timedatectl set-timezone Etc/UTC >> $LOG 2>&1
 date >> $LOG 2>&1
-
-if pgrep rsyslog>/dev/null; then 
-	echo "4"
-	echo "# Please wait while restarting rsyslog..." | tee -a $LOG
-	service rsyslog restart >> $LOG 2>&1
-fi
 
 echo "4"
 echo "# Please wait while setting OSSEC timezone to UTC..." | tee -a $LOG
 cp /etc/localtime /var/ossec/etc/localtime
 chown root:ossec /var/ossec/etc/localtime
 
-# If user enabled ELSA, configure OSSEC to send alerts to local syslog
-if [ "$ELSA" = "YES" ]; then
+# If user enabled ELASTIC, configure OSSEC to send alerts to local syslog
+if [ "$ELASTIC" = "yes" ]; then
 grep "syslog_output" /var/ossec/etc/ossec.conf >/dev/null || sed -i 's|  <rules>|  <syslog_output>\
       <server>127.0.0.1</server>\
   </syslog_output>\
@@ -1192,62 +1108,95 @@ echo "# Please wait while restarting OSSEC..." | tee -a $LOG
 service ossec-hids-server restart >> $LOG 2>&1
 
 #########################################
+# Configure services to start on boot
+#########################################
+echo "7"
+echo "# Please wait while enabling securityonion.service in systemd..." | tee -a $LOG
+systemctl enable securityonion.service >> $LOG 2>&1
+
+#########################################
 # Stop all Sguil services and delete config
 #########################################
 echo "8"
-echo "# Please wait while stopping all NSM services..." | tee -a $LOG
-service nsm stop >> $LOG 2>&1
+echo "# Please wait while stopping services..." | tee -a $LOG
+
+# Stop Elasticsearch and all other processes
+so-stop >> $LOG 2>&1
 pkill suricata
 pkill snort
 pkill autossh
+
+# Delete any Elasticsearch or Logstash data
+rm -rf /nsm/elasticsearch/nodes
+rm -rf /nsm/logstash/queue/main/*
+rm -f /etc/elasticsearch/elasticsearch.yml
+
 # Make sure MySQL is running so that we can fully delete the NSM databases
 [ $SERVER -eq 1 ] && service mysql start >> $LOG 2>&1
+
 # Uncomment any disabled sensors so that we can fully delete them
 sed -i "s|^#$HOST_ORIG-|$HOST_ORIG-|g" $SENSORTAB
 sed -i "s|^#$HOSTNAME-|$HOSTNAME-|g" $SENSORTAB
+
 # Delete all nsm configuration and data
 /usr/sbin/nsm_all_del_quick >> $LOG 2>&1
 
 # Delete any existing ELSA databases.
-if [ "$ELSA" = "YES" ]; then
-	if [ -d /var/lib/mysql/elsa_web/ ]; then
-		mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database elsa_web" >> $LOG 2>&1
-	fi
-	if [ -d /var/lib/mysql/syslog/ ]; then
-		mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database syslog" >> $LOG 2>&1
-	fi
-	if [ -d /var/lib/mysql/syslog_data/ ]; then
-		mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database syslog_data" >> $LOG 2>&1
-	fi
+if [ -d /var/lib/mysql/elsa_web/ ]; then
+	mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database elsa_web" >> $LOG 2>&1
+fi
+if [ -d /var/lib/mysql/syslog/ ]; then
+	mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database syslog" >> $LOG 2>&1
+fi
+if [ -d /var/lib/mysql/syslog_data/ ]; then
+	mysql --defaults-file=/etc/mysql/debian.cnf -e "drop database syslog_data" >> $LOG 2>&1
 fi
 
 #########################################
-# MySQL tuning
+# MySQL
 #########################################
-
-# Make changes in /etc/mysql/conf.d/
-mkdir -p /etc/mysql/conf.d/
-
-# https://code.google.com/p/security-onion/issues/detail?id=416
-# sguild may try to open lots of files
-# (especially if you are sending prads session data into the sancp table)
-# so increase open_files_limit on master server
 if [ $SERVER -eq 1 ]; then
+
+	# Make changes in /etc/mysql/conf.d/
+	mkdir -p /etc/mysql/conf.d/
+
+	# https://code.google.com/p/security-onion/issues/detail?id=416
+	# sguild may try to open lots of files
+	# so increase open_files_limit on master server
 	cat << EOF > /etc/mysql/conf.d/securityonion-sguild.cnf	
 [mysqld]
 open_files_limit = 90000
 EOF
-fi
 
-# https://code.google.com/p/security-onion/issues/detail?id=388
-# http://stackoverflow.com/questions/3456159/how-to-shrink-purge-ibdata1-file-in-mysql
-cat << EOF > /etc/mysql/conf.d/securityonion-ibdata1.cnf	
+	# https://code.google.com/p/security-onion/issues/detail?id=388
+	# http://stackoverflow.com/questions/3456159/how-to-shrink-purge-ibdata1-file-in-mysql
+	cat << EOF > /etc/mysql/conf.d/securityonion-ibdata1.cnf	
 [mysqld]
 innodb_file_per_table
 EOF
 
-# Restart mysql to make changes take effect
-pgrep -lf mysqld >/dev/null && restart mysql >> $LOG 2>&1
+	# Enable MySQL
+	systemctl enable mysql.service >> $LOG 2>&1
+
+	# Reset debian.cnf
+	rm /etc/mysql/debian.cnf >> $LOG 2>&1
+	dpkg-reconfigure --frontend noninteractive mysql-server-5.7 >> $LOG 2>&1
+
+	# If root password is blank, set random password
+	if echo "quit" | mysql -uroot 2>/dev/null; then
+		PASSWORD=$(LC_ALL=C </dev/urandom tr -dc '[:alnum:]' | head -c 32)
+		mysql --defaults-file=/etc/mysql/debian.cnf -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSWORD';"
+	fi
+
+	# Restart mysql to make changes take effect
+	#pgrep -lf mysqld >/dev/null && service mysql restart >> $LOG 2>&1
+
+else
+
+	# If we're not a server, we can stop mysql
+	service mysql stop >> $LOG 2>&1
+
+fi
 
 #########################################
 # PF_RING
@@ -1279,26 +1228,19 @@ pkill -f ossec_agent
 # Add the Sguil server if necessary
 #########################################
 if [ $SERVER -eq 1 ]; then
-# If this box was previously a slave, we need to remove securityonion_ssh.conf
-rm -f /root/.ssh/securityonion_ssh.conf
-echo "10"
-echo "# Please wait while creating the Sguil server..." | tee -a $LOG
-/usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
-
+	# If this box was previously a slave, we need to remove $SSH_CONF
+	rm -f $SSH_CONF
+	echo "10"
+	echo "# Please wait while creating the Sguil server..." | tee -a $LOG
+	/usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
 fi
 
 #########################################
-# Sguil Sensor(s) if necessary
+# If not master server, configure SSH Key authentication to master server
 #########################################
-if [ $SENSOR -eq 1 ]; then
-echo "20"
-echo "# Please wait while creating Sguil sensor(s)..." | tee -a $LOG
-BY2PORT=8000
-HOST_ORIG=`hostname`
-HOSTNAME=${HOST_ORIG,,}
+if [ "$SERVER" -ne 1 ]; then
 
-# Configure SSH Key authentication to server if necessary
-if [ "$SERVERNAME" != "localhost" ]; then
+	# Create an ssh keypair
 	mkdir -p $SSH_DIR		
 	[ -f "$KEY" ] && mv $KEY $KEY.old
         ssh-keygen -f "$KEY" -N '' >> $LOG 2>&1
@@ -1314,14 +1256,17 @@ if [ "$SERVERNAME" != "localhost" ]; then
 	# Need to open ports in server firewall to allow connections from sensor
 	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
 	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
+
 	# Copy the script over
 	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
+
 	# Run the script on the master server using sudo
 	if [ "$OUTPUT" = "gui" ]; then
 		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP
 	else
 		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP >> $LOG 2>&1
 	fi
+
 	# Cleanup
 	rm -f $SOSETUPSCP
 	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f $SOSETUPSCP >> $LOG 2>&1
@@ -1352,6 +1297,16 @@ if [ "$SERVERNAME" != "localhost" ]; then
 	echo "SSH_USERNAME=$SSH_USERNAME" > $SSH_CONF
 	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF
 fi
+
+#########################################
+# Network Sensor(s) if necessary
+#########################################
+if [ $SENSOR -eq 1 ]; then
+echo "15"
+echo "# Please wait while creating Sguil sensor(s)..." | tee -a $LOG
+BY2PORT=8000
+HOST_ORIG=`hostname`
+HOSTNAME=${HOST_ORIG,,}
 
 # NIDS sensor(s)
 for INTERFACE in $ALL_INTERFACES; do	
@@ -1524,13 +1479,6 @@ EOF
 			fi
                 done
 
-		# Bro 2.2 should support PF_RING on multiple interfaces properly now, so comment this out.
-		# If monitoring more than one interface, disable PF_RING:
-		# http://securityonion.blogspot.com/2013/02/important-note-for-those-monitoring.html
-		#if [ `echo $INTERFACES | wc -w` -gt 1 ]; then
-		#	sed -i 's|^lb_method=pf_ring|#lb_method=pf_ring|g' /opt/bro/etc/node.cfg
-		#	sed -i 's|^lb_procs|#lb_procs|g' /opt/bro/etc/node.cfg
-		#fi
         fi
 	# Finished with node.cfg
 	# Now update networks.cfg
@@ -1561,6 +1509,8 @@ EOF
 		sed -i 's|^@load file-extraction|#@load file-extraction|g' /opt/bro/share/bro/site/local.bro
 	fi
 
+	# Configure Bro to log in JSON
+	/usr/sbin/so-elastic-configure-bro >> $LOG 2>&1
 fi
 
 fi
@@ -1568,7 +1518,7 @@ fi
 #########################################
 # /etc/nsm/securityonion.conf
 #########################################
-echo "30"
+echo "20"
 echo "# Please wait while configuring $CONF..." | tee -a $LOG
 DATE=`date`
 IDS_ENGINE_LOWER=`echo ${IDS_ENGINE,,}`
@@ -1605,12 +1555,12 @@ OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED
 # OSSEC_AGENT_LEVEL specifies the level at which OSSEC alerts are sent to sguild.
 OSSEC_AGENT_LEVEL=$OSSEC_AGENT_LEVEL
 
-# Do you want to run Xplico?  yes/no
+# Xplico is no longer included in Security Onion
 XPLICO_ENABLED=$XPLICO_ENABLED
 
 # LOCAL_HIDS_RULE_TUNING
-# If set to no (default), sensor will copy OSSEC rules from master server as-is (no changes).
-# If set to yes, sensor will keep its own copy of the OSSEC rules.
+# If set to no (default), this node will copy OSSEC rules from master server as-is (no changes).
+# If set to yes, this node will keep its own copy of the OSSEC rules.
 LOCAL_HIDS_RULE_TUNING=no
 
 # LOCAL_NIDS_RULE_TUNING
@@ -1631,7 +1581,7 @@ EOF
 # Download rules using Pulledpork
 #########################################
 if [ "$SERVERNAME" = "localhost" ]; then
-	echo "40"
+	echo "25"
 	echo "# Please wait while configuring IDS Ruleset..." | tee -a $LOG
 	# Start from a clean slate (pulledpork.conf.master)
 	# Here are the rule_url directives in pulledpork.conf.master:
@@ -1701,7 +1651,7 @@ EOF
 	fi
 
 	if [ "$INTERNET" = "UP" ]; then
-		echo "45"
+		echo "30"
 		echo "# Please wait while executing PulledPork to download rules..." | tee -a $LOG
 		echo "LOCAL_NIDS_RULE_TUNING=no" >> $CONF
 		date > /var/log/nsm/pulledpork.log
@@ -1715,17 +1665,17 @@ fi
 #########################################
 # Apache configuration
 #########################################
-SSH_DIR="/root/.ssh"
-SSH_CONF="$SSH_DIR/securityonion_ssh.conf"
-echo "50"
+echo "35"
 if [ -f $SSH_CONF ]; then
         # We are a SENSOR  
 	echo "# Please wait while stopping and disabling Apache..." | tee -a $LOG
+
 	# Sensors don't need the Apache web server, so stop and disable it
 	service apache2 stop >> $LOG 2>&1
 	update-rc.d -f apache2 disable >> $LOG 2>&1
 else
-	# We are the MASTER.
+	# We are the MASTER
+	echo "# Please wait while configuring and restarting Apache..." | tee -a $LOG
 
 	# Make sure that the Apache web server is enabled
 	update-rc.d -f apache2 enable >> $LOG 2>&1
@@ -1736,16 +1686,6 @@ else
 	# Disable old default-ssl site
 	a2dissite default-ssl >> $LOG 2>&1
 
-	# Determine IP address to be used below in Squert database
-        IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
-
-	# Pivot from Squert to ELSA
-	#URL="https://$IP/elsa-query/?query_string=\"\${var}\"%20groupby:program"
-	# We can use a relative hyperlink now that Apache is proxying ELSA at /elsa-query
-	URL="/elsa-query/?query_string=\"\${var}\"%20groupby:program"
-	HEXVAL=$(xxd -pu -c 256 <<< "$URL")
-	[ "$ELSA" = "YES" ] && mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
-
 	# Restart web server
 	apache2ctl restart >> $LOG 2>&1
 fi
@@ -1753,16 +1693,15 @@ fi
 #########################################
 # Configure Salt
 #########################################
-echo "70"
+echo "40"
 echo "# Please wait while configuring salt..." | tee -a $LOG
 if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 	if [ "$SALT" = "no" ]; then
-		# Stop both running salt services
+		# Stop and disable both salt-master and salt-minion
 		service salt-master stop >> $LOG 2>&1
 		service salt-minion stop >> $LOG 2>&1
-		# Disable both salt services
-		[ -f /etc/init/salt-master.conf ] && echo "manual" > /etc/init/salt-master.override
-		[ -f /etc/init/salt-minion.conf ] && echo "manual" > /etc/init/salt-minion.override
+		systemctl disable salt-master >> $LOG 2>&1
+		systemctl disable salt-minion >> $LOG 2>&1
 		# If the box had previously been configured with salt, we need to remove the cron job
 		[ -f /etc/cron.d/salt-update ] && rm -f /etc/cron.d/salt-update
 	else
@@ -1785,20 +1724,13 @@ if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 			echo "   '$FQDN':" 	>> $TOPSLS
 			echo "      - backend" 	>> $TOPSLS
 			echo ""			>> $TOPSLS
-			# If salt-master is DISABLED we need to enable it
-			[ -f /etc/init/salt-master.DISABLED ] && mv /etc/init/salt-master.DISABLED /etc/init/salt-master.conf
-			[ -f /etc/init/salt-master.override ] && rm -f /etc/init/salt-master.override
-			# Start salt-master
+			# Enable and restart salt-master
+			systemctl enable salt-master >> $LOG 2>&1
 			service salt-master restart >> $LOG 2>&1
-			# We no longer open the salt port by default
-			# This is now done when the sensor runs Setup
-			#ufw allow salt >> $LOG 2>&1
 		else
-			# If this box is not a Master we need to disable salt-master
-			# Stop salt-master
+			# If this box is not a Master we need to stop and disable salt-master
 			service salt-master stop >> $LOG 2>&1
-			# Disable salt-master
-			[ -f /etc/init/salt-master.conf ] && echo "manual" > /etc/init/salt-master.override
+			systemctl disable salt-master >> $LOG 2>&1
 			# Tell the salt-master that we are a sensor
 			cat << EOF >> $SOSETUPSCP
 if ! grep "'$FQDN':" /opt/onionsalt/salt/top.sls >/dev/null 2>&1; then
@@ -1812,9 +1744,9 @@ EOF
 		# All boxes run salt-minion
 		# Configure minion
 		echo "master: $SERVERNAME" > /etc/salt/minion.d/onionsalt.conf
-		# If salt-minion is DISABLED, enable it
-		[ -f /etc/init/salt-minion.DISABLED ] && mv /etc/init/salt-minion.DISABLED /etc/init/salt-minion.conf
-		[ -f /etc/init/salt-minion.override ] && rm -f /etc/init/salt-minion.override
+		echo "$FQDN" > /etc/salt/minion_id
+		# Enable and restart salt-minion
+		systemctl enable salt-minion >> $LOG 2>&1
 		service salt-minion restart >> $LOG 2>&1
 	
 		# salt-master needs to accept the key from salt-minion
@@ -1841,13 +1773,25 @@ EOF
 fi
 
 #########################################
+# Forward Node AutoSSH
+#########################################
+if [ "$FORWARD" = "yes" ]; then
+	# If AUTOSSH_OPTIONS is already in SSH_CONF, remove it and replace it with new value.
+	if grep "AUTOSSH_OPTIONS=" $SSH_CONF >/dev/null 2>&1; then
+		sed -i 's/AUTOSSH_OPTIONS.*/AUTOSSH_OPTIONS="-L 6050:localhost:6050"/' $SSH_CONF >> $LOG 2>&1
+	else
+		echo 'AUTOSSH_OPTIONS="-L 6050:localhost:6050"' >> $SSH_CONF
+	fi
+fi
+
+#########################################
 # Start securityonion services
 #########################################
 # disable the snorby output in all barnyard config files
 sed -i 's|^output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|#output database: alert, mysql, user=root dbname=snorby host=127.0.0.1|g' /etc/nsm/*/barnyard2*.conf >> $LOG 2>&1
-echo "80"
+echo "45"
 echo "# Please wait while starting all Security Onion services..." | tee -a $LOG
-/sbin/start securityonion >> $LOG 2>&1
+/usr/sbin/so-start >> $LOG 2>&1
 sleep 10s
 
 #########################################
@@ -1881,12 +1825,12 @@ EOF
 	sed -i 's|https://localhost|https://localhost/squert|g' $SQUERT_LAUNCHER
 	sed -i 's|Name=README|Name=Squert|g' $SQUERT_LAUNCHER
 
-	# Use README launcher as template to create ELSA launcher (if enabled)
-	if [ "$ELSA" = "YES" ]; then
-		ELSA_LAUNCHER="$DIR/securityonion-elsa.desktop"
-		cp $README_LAUNCHER $ELSA_LAUNCHER
-		sed -i 's|https://localhost|https://localhost/elsa|g' $ELSA_LAUNCHER
-		sed -i 's|Name=README|Name=ELSA|g' $ELSA_LAUNCHER
+	# Use README launcher as template to create Kibana launcher (if enabled)
+	if [ "$ELASTIC" = "yes" ]; then
+		KIBANA_LAUNCHER="$DIR/securityonion-kibana.desktop"
+		cp $README_LAUNCHER $KIBANA_LAUNCHER
+		sed -i 's|https://localhost|https://localhost/app/kibana|g' $KIBANA_LAUNCHER
+		sed -i 's|Name=README|Name=Kibana|g' $KIBANA_LAUNCHER
 	fi
 
 	# Copy web launchers to /usr/share/applications
@@ -1910,38 +1854,186 @@ EOF
 fi
 
 #########################################
-# Configure ELSA
+# syslog-ng
 #########################################
-if [ "$ELSA" = "YES" ]; then
-    echo "90"
-    echo "# Please wait while configuring ELSA..." | tee -a $LOG
+echo "49"
+echo "# Please wait while configuring syslog-ng..." | tee -a $LOG
 
-    # update LOG_SIZE_LIMIT
-    sed -i "s|\"log_size_limit\" :.*$|\"log_size_limit\" : $LOG_SIZE_LIMIT,|g" /opt/elsa/contrib/securityonion/contrib/securityonion-elsa-node.conf
+# We need to copy a new syslog-ng.conf into place
+SYSLOGNGCONFSRC="/opt/elastic/src/etc/syslog-ng/syslog-ng.conf"
+SYSLOGNGCONFDST="/etc/syslog-ng/syslog-ng.conf"
 
-    # check if there is an ELSA directive already
-    ELSA_USE=$(grep "ELSA=" $CONF)
-    if [ ! $? -eq 0 ]; then
-	echo "" >> $CONF
-	echo "# ELSA" >> $CONF
-        echo "ELSA=YES" >> $CONF
-    else
-        sed -i 's,ELSA=NO,ELSA=YES,' $CONF
-    fi
+# Initialize HTTP_LOGS
+HTTP_LOGS=""
 
-    # Delete sphinxsearch binlog files
-    rm -f /var/lib/sphinxsearch/data/binlog.*
+# Get a list of sensors from /etc/nsm/sensortab
+SENSORS=$(grep -v "^#" /etc/nsm/sensortab | cut -f 4)
 
-    # Configure all Log Node and Web Node functionality if we are a server
-    if [ $SERVER -eq 1 ]; then
-        /usr/bin/securityonion-elsa-config.sh -t WEB >> $LOG 2>&1
-	# restart apache to update ELSA APIKEY
-	apache2ctl restart >> $LOG 2>&1
-    else
-        /usr/bin/securityonion-elsa-config.sh -t LOG >> $LOG 2>&1
-        # Update the securityonion group
-        echo "usermod -a -G securityonion $SSH_USERNAME" >> $SOSETUPSCP
-    fi
+# Determine the number of sensor interfaces
+COUNT=0
+for token in $SENSORS; do
+	COUNT=$((COUNT+1))
+done
+
+# If master server only, copy syslog-ng.conf into place
+if [ $COUNT -eq 0 ]; then
+	cp $SYSLOGNGCONFSRC $SYSLOGNGCONFDST
+fi
+
+# If single sensor interface, we need to determine if Bro is running in standalone mode or cluster mode
+if [ $COUNT -eq 1 ]; then
+	if grep "type=standalone" /opt/bro/etc/node.cfg > /dev/null; then
+		echo "* Leaving syslog-ng.conf bro_http entry unmolested." >> $LOG 2>&1
+		cp $SYSLOGNGCONFSRC $SYSLOGNGCONFDST
+	else
+		echo "* Altering syslog-ng.conf bro_http entry for single interface cluster-mode" >> $LOG 2>&1
+		# Pull the interface bro is listening for from node.cfg
+		BRO_IFACE=$(grep "interface=" /opt/bro/etc/node.cfg | cut -d'=' -f2)
+		# Alter syslog-ng.conf's entry for http
+		sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|\tfile(\"/nsm/bro/logs/current/http_$BRO_IFACE.log\" flags(no-parse) program_override(\"bro_http\"));\n|" $SYSLOGNGCONFSRC > $SYSLOGNGCONFDST
+	fi
+fi
+
+# If multiple sensor interfaces, Bro must be running in cluster mode and we need to watch multiple http logs
+if [ $COUNT -gt 1 ]; then
+	echo "* Altering syslog-ng.conf bro_http entries for multiple interfaces" >> $LOG 2>&1
+	for i in $SENSORS; do
+		HTTP_LOGS=$HTTP_LOGS"\tfile(\"/nsm/bro/logs/current/http_$i.log\" flags(no-parse) program_override(\"bro_http\"));\n"
+	done
+	sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|$HTTP_LOGS|" $SYSLOGNGCONFSRC > $SYSLOGNGCONFDST
+fi
+
+/usr/sbin/so-elastic-configure-syslog-ng >> $LOG 2>&1
+
+#########################################
+# Elastic
+#########################################
+if [ "$ELASTIC" = "yes" ]; then
+
+	if ! dpkg -L docker-ce >/dev/null 2>&1; then
+		echo "50"
+		echo "# Please wait while downloading Elastic components..." | tee -a $LOG
+		/usr/sbin/so-elastic-download >> $LOG 2>&1
+	fi
+
+	echo "75"
+	echo "# Please wait while configuring Elastic..." | tee -a $LOG
+
+	if ! grep -q LOG_SIZE_LIMIT $CONF; then
+        cat << EOF >> $CONF
+
+# Log size limit (GB) for Elasticsearch logs
+LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT_GB
+EOF
+	else
+        	sed "s/LOG_SIZE_LIMIT=.*/LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT_GB/" $CONF
+	fi
+
+	if [ $SERVER -eq 1 ] && [ $LOGSTASH_OUTPUT_REDIS = "yes" ]; then
+		echo "LOGSTASH_OUTPUT_REDIS=$LOGSTASH_OUTPUT_REDIS" >> $CONF
+	fi
+
+	if [ $SERVER -ne 1 ]; then
+		echo 'KIBANA_ENABLED="no"' >> $CONF
+		echo 'ELASTALERT_ENABLED="no"' >> $CONF
+		echo 'FREQ_SERVER_ENABLED="no"' >> $CONF
+		echo 'DOMAIN_STATS_ENABLED="no"' >> $CONF
+
+		if [ "$FORWARD" = "yes" ]; then
+			echo 'ELASTICSEARCH_ENABLED="no"' >> $CONF
+			echo 'LOGSTASH_ENABLED="no"' >> $CONF
+			echo 'CURATOR_ENABLED="no"' >> $CONF
+		fi
+
+		if [ "$LOGSTASH_INPUT_REDIS" = "yes" ]; then
+			echo 'LOGSTASH_INPUT_REDIS="yes"' >> $CONF
+			if grep OSSEC_AGENT_ENABLED $CONF >/dev/null 2>&1; then
+				sed -i 's|OSSEC_AGENT_ENABLED.*$|OSSEC_AGENT_ENABLED=no|g' $CONF
+			else
+				echo 'OSSEC_AGENT_ENABLED=no' >> $CONF
+			fi
+		fi
+	fi
+
+	/usr/sbin/so-elastic-configure >> $LOG 2>&1
+
+	if [ $SERVER -ne 1 ]; then
+    		echo "95"
+		echo "# Please wait while performing final node configuration..." | tee -a $LOG
+
+		if [ "$LOGSTASH_INPUT_REDIS" = "yes" ]; then
+	                if grep "AUTOSSH_OPTIONS=" $SSH_CONF >/dev/null 2>&1; then
+	                        sed -i 's/AUTOSSH_OPTIONS.*/AUTOSSH_OPTIONS="-L 172.18.0.1:6379:localhost:6379"/' $SSH_CONF >> $LOG 2>&1
+	                else
+	                        echo 'AUTOSSH_OPTIONS="-L 172.18.0.1:6379:localhost:6379"' >> $SSH_CONF
+	                fi
+			ufw allow proto tcp from 172.18.0.0/24 to 172.18.0.1 port 6379 >> $LOG 2>&1
+		fi
+
+		# We need to determine a few things from the master server:
+
+		# DOCKER_INTERFACE, DOCKER_NETWORK, and REVERSE_PORT
+
+		# DOCKER_INTERFACE
+		SSH_CMD="sudo /usr/sbin/so-elastic-network | jq '.[0].IPAM.Config[0].Gateway'"
+		SSH_OUTPUT=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME "$SSH_CMD"`
+		DOCKER_INTERFACE=$(echo $SSH_OUTPUT | cut -d\" -f2)
+		echo "DOCKER_INTERFACE is $DOCKER_INTERFACE" >> $LOG 2>&1
+
+		# DOCKER_NETWORK
+		SSH_CMD="sudo /usr/sbin/so-elastic-network | jq '.[0].IPAM.Config[0].Subnet'"
+		SSH_OUTPUT=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME "$SSH_CMD"`
+		DOCKER_NETWORK=$(echo $SSH_OUTPUT | cut -d\" -f2)
+		echo "DOCKER_NETWORK is $DOCKER_NETWORK" >> $LOG 2>&1
+
+		# REVERSE_PORT
+		SSH_CMD='sudo /usr/sbin/so-crossclustercheck | jq "." | grep ":5" | cut -d: -f2 | cut -d\" -f1 | sort | tail -1'
+		HIGHEST_REVERSE_PORT=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME "$SSH_CMD"`
+		if [ "$HIGHEST_REVERSE_PORT" = "" ]; then
+			echo "Found no other nodes." >> $LOG 2>&1
+			REVERSE_PORT=50000
+		else
+			echo "HIGHEST_REVERSE_PORT is $HIGHEST_REVERSE_PORT" >> $LOG 2>&1
+			if [ ${HIGHEST_REVERSE_PORT} -gt 49999 ] && [ ${HIGHEST_REVERSE_PORT} -lt 59999 ]; then
+				let REVERSE_PORT=HIGHEST_REVERSE_PORT+1
+			fi
+		fi
+		echo "REVERSE_PORT is $REVERSE_PORT" >> $LOG 2>&1
+
+		# Now that we've determined those 3 values, we need to store DOCKER_INTERFACE and REVERSE_PORT in SSH_CONF.
+
+ 		# If DOCKER_INTERFACE is not already in SSH_CONF, then store it for future use.
+		if grep "DOCKER_INTERFACE=" $SSH_CONF >/dev/null 2>&1; then
+			echo "DOCKER_INTERFACE already exists in $SSH_CONF." >> $LOG 2>&1
+		else
+			echo "DOCKER_INTERFACE=$DOCKER_INTERFACE" >> $SSH_CONF
+		fi
+
+    		# If REVERSE_PORT is not already in SSH_CONF, then store it for future use.
+		if grep "REVERSE_PORT=" $SSH_CONF >/dev/null 2>&1; then
+			echo "REVERSE_PORT already exists in $SSH_CONF." >> $LOG 2>&1
+		else
+			echo "REVERSE_PORT=$REVERSE_PORT" >> $SSH_CONF
+		fi
+
+		# Configure Elasticsearch
+		ELASTIC_CONFIG="/etc/elasticsearch/elasticsearch.yml"
+		echo "transport.bind_host: 0.0.0.0" >> $ELASTIC_CONFIG
+		echo "transport.publish_host: $DOCKER_INTERFACE" >> $ELASTIC_CONFIG
+		echo "transport.publish_port: $REVERSE_PORT" >> $ELASTIC_CONFIG
+		docker restart so-elasticsearch >> $LOG 2>&1
+		cat << EOF >> $SOSETUPSCP
+if ! grep "Match User $SSH_USERNAME" /etc/ssh/sshd_config >/dev/null 2>&1; then
+echo Match User $SSH_USERNAME >> /etc/ssh/sshd_config
+echo '   GatewayPorts clientspecified' >> /etc/ssh/sshd_config
+service ssh restart
+fi
+ufw allow proto tcp from $DOCKER_NETWORK to $DOCKER_INTERFACE port $REVERSE_PORT
+source /etc/nsm/securityonion.conf
+curl -XPUT http://\$ELASTICSEARCH_HOST:\$ELASTICSEARCH_PORT/_cluster/settings -H'Content-Type: application/json' -d '{"persistent": {"search": {"remote": {"$HOSTNAME": {"skip_unavailable": "true", "seeds": ["$DOCKER_INTERFACE:$REVERSE_PORT"]}}}}}'
+EOF
+
+	fi
 fi
 }
 
@@ -1963,40 +2055,12 @@ if [ "$SERVERNAME" != "localhost" ]; then
 	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f $SOSETUPSCP >> $LOG 2>&1
 fi
 
-if [ $SERVER -ne 1 ] && [ "$ELSA" = "YES" ]; then
-    # Register the log node and restart the server.
-    SSH_CMD="/usr/bin/securityonion_elsa_register.rb --register --peer-name `hostname` --force"
-    ELSA_REGISTER_RESPONSE=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME $SSH_CMD`
-    ELSA_PORT=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f1`
-    ELSA_APIKEY=`echo $ELSA_REGISTER_RESPONSE | cut -d',' -f2`
-    # If ELSA_PORT is not already in SSH_CONF, then store it for future use.
-    if grep "ELSA_PORT=" $SSH_CONF >/dev/null 2>&1; then
-	echo "ELSA_PORT already exists in $SSH_CONF." >> $LOG 2>&1
-    else
-	echo "ELSA_PORT=$ELSA_PORT" >> $SSH_CONF
-    fi
-    # Update the local ELSA API key
-    /usr/bin/securityonion_elsa_register.rb --update-apikey $ELSA_APIKEY >> $LOG 2>&1
-    # Restart starman for new API key
-    service starman stop >> $LOG 2>&1
-    service starman start >> $LOG 2>&1
-    # Since the securityonion service started before we the ELSA ports
-    # were determined, we need to tear down the SSH tunnel and restart it.
-    # Kill autossh with SIGINT
-    if pgrep autossh>/dev/null; then 
-        kill -SIGINT `pgrep autossh`
-        # Restart the autossh tunnel
-        /usr/bin/autossh -M 0 -f -q -N -o "ServerAliveInterval 60" -o "ServerAliveCountMax 3" -i "$KEY" -L 3306:127.0.0.1:3306 -R $ELSA_PORT:localhost:3154 $SSH_USERNAME@$SERVERNAME
-    fi
-    if [ "$UPDATE_ELSA_SERVER" = "YES" ]; then
-        # Instruct the server to restart apache2.
-        # Run the script with sudo
-        if [ "$OUTPUT" = "gui" ]; then
-                xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart
-        else
-        	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo service apache2 restart >> $LOG 2>&1
+if [ $SERVER -ne 1 ] && [ "$ELASTIC" = "yes" ]; then
+	# Now that the server side configuration is done, we need to tear down the ssh tunnel and restart it.
+	if pgrep autossh>/dev/null; then 
+		kill -SIGINT `pgrep autossh`
+		/usr/sbin/so-autossh-start >> $LOG 2>&1
 	fi
-    fi
 fi
 }
 
@@ -2031,9 +2095,9 @@ TEXT="Security Onion Setup is now complete! \n \
 Setup log can be found here:\n \
 $LOG\n \
 \n \
-You may view IDS alerts using Sguil, Squert, or ELSA (if enabled). \n \
+You may view IDS alerts using Sguil, Squert, or Kibana (if enabled). \n \
 \n \
-Bro logs can be found in ELSA (if enabled) and the following location: \n \
+Bro logs can be found in Kibana (if enabled) and the following location: \n \
 /nsm/bro/"
 }
 
@@ -2134,9 +2198,6 @@ save()
 	echo "SGUIL_CLIENT_USERNAME='$SGUIL_CLIENT_USERNAME'" >> $WRITEANSWERFILE
 	echo "SGUIL_CLIENT_PASSWORD_1='$SGUIL_CLIENT_PASSWORD_1'" >> $WRITEANSWERFILE
 	echo "XPLICO_ENABLED=$XPLICO_ENABLED" >> $WRITEANSWERFILE
-	echo "ELSA=$ELSA" >> $WRITEANSWERFILE
-	echo "UPDATE_ELSA_SERVER=$UPDATE_ELSA_SERVER" >> $WRITEANSWERFILE
-	echo "LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT" >> $WRITEANSWERFILE
 	echo "OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED" >> $WRITEANSWERFILE
 	echo "OSSEC_AGENT_LEVEL=$OSSEC_AGENT_LEVEL" >> $WRITEANSWERFILE
 	echo "SALT=$SALT" >> $WRITEANSWERFILE
@@ -2166,6 +2227,10 @@ save()
 	echo "CRIT_DISK_USAGE=$CRIT_DISK_USAGE" >> $WRITEANSWERFILE
 	echo "DAYSTOKEEP=$DAYSTOKEEP" >> $WRITEANSWERFILE
 	echo "DAYSTOREPAIR=$DAYSTOREPAIR" >> $WRITEANSWERFILE
+	echo "LOGSTASH_OUTPUT_REDIS=$LOGSTASH_OUTPUT_REDIS" >> $WRITEANSWERFILE
+	echo "LOGSTASH_INPUT_REDIS=$LOGSTASH_INPUT_REDIS" >> $WRITEANSWERFILE
+	echo "ELASTIC=$ELASTIC" >> $WRITEANSWERFILE
+	echo "LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT" >> $WRITEANSWERFILE
 }
 
 
@@ -2254,33 +2319,25 @@ else
 	INTERFACES="$SNIFFING_INTERFACES"
 	ADVANCED_SETUP="1"
 	if [ $SKIP -ne 1 ];then
-		if [ "$ELASTIC" != "YES" ]; then
-			echo
-			echo "Security Onion Setup"
-			echo
-			echo "Ready to configure system using parameters in $ANSWERFILE."
-			echo
-			echo "WARNING! Continuing will destroy any existing data/config."
-			echo "Are you sure you want to continue?"
-			echo "Type yes to continue or anything else to exit."
-			read INPUT
-			[ "$INPUT" != "yes" ] && exit 0
-		else
-			SETUPCONF=$2
-		fi
+		echo
+		echo "Security Onion Setup"
+		echo
+		echo "Ready to configure system using parameters in $ANSWERFILE."
+		echo
+		echo "WARNING! Continuing will destroy any existing data/config."
+		echo "Are you sure you want to continue?"
+		echo "Type yes to continue or anything else to exit."
+		read INPUT
+		[ "$INPUT" != "yes" ] && exit 0
 		echo
 		# If /etc/network/interfaces has not been configured yet, then we need
 		# to run sosetup-network and pass it the answerfile
 		if ! grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1; then
 			/usr/sbin/sosetup-network $@
 		fi
-		if [ "$ELASTIC" == "YES" ]; then
-			/usr/sbin/sosetup-elastic -f $SETUPCONF skipnetwork
-			exit $?
-		fi
 	fi
 fi
- 
+
 # Perform the requested actions, handling output differently for gui vs cli
 if [ "$OUTPUT" = "gui" ]; then
 	CONFIGURE_SERVICES |

@@ -454,8 +454,10 @@ done
 
 function SET_UTC() {
 
-echo "Etc/UTC" > /etc/timezone
-dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
+#echo "Etc/UTC" > /etc/timezone
+#dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
+# Need to use timedatectl for Ubuntu 16.04 Server
+timedatectl set-timezone Etc/UTC >> $LOG 2>&1
 cp /etc/localtime /var/ossec/etc/localtime
 chown root:ossec /var/ossec/etc/localtime
 

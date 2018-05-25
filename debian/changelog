@@ -1,3 +1,99 @@
+securityonion-setup (20120912-0ubuntu0securityonion267) xenial; urgency=medium
+
+  * if mysql root password not set, set random password 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 25 May 2018 12:48:26 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion266) xenial; urgency=medium
+
+  * avoid duplicating OSSEC_AGENT_ENABLED in securityonion.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 22 May 2018 09:21:46 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion265) xenial; urgency=medium
+
+  * streamline setup 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 19 May 2018 07:17:38 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion264) xenial; urgency=medium
+
+  * update sosetup-forward.conf 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 18 May 2018 17:43:41 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion263) xenial; urgency=medium
+
+  * more forward node fixes 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 18 May 2018 17:29:43 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion262) xenial; urgency=medium
+
+  * fix custom forward node and Elastic prompt 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 17 May 2018 15:30:21 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion261) xenial; urgency=medium
+
+  * update sosetup conf files to new eth device naming convention 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 17 May 2018 08:35:22 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion260) xenial; urgency=medium
+
+  * control salt with systemd 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 17 May 2018 08:18:46 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion259) xenial; urgency=medium
+
+  * remove salt workaround and fix in onionsalt package instead 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 16 May 2018 16:01:27 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion258) xenial; urgency=medium
+
+  * workaround bug in 16.04 salt package 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 16 May 2018 15:21:48 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion257) xenial; urgency=medium
+
+  * update /etc/salt/minion_id 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 15 May 2018 18:17:55 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion256) xenial; urgency=medium
+
+  * set timezone using timedatectl 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 05 May 2018 15:05:51 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion255) xenial; urgency=medium
+
+  * enabled systemd script and move so-allow scripts to this package 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 04 May 2018 08:56:08 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion254) xenial; urgency=medium
+
+  * add back 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 03 May 2018 15:55:49 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion253) xenial; urgency=medium
+
+  * remove old stuff 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 03 May 2018 15:32:52 -0400
+
+securityonion-setup (20120912-0ubuntu0securityonion252) xenial; urgency=medium
+
+  * fix references to restart 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 03 May 2018 14:45:23 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion251) trusty; urgency=medium
 
   * update sosetup.conf 

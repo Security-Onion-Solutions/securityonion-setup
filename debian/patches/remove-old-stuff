@@ -1,0 +1,114 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion253) xenial; urgency=medium
+ .
+   * remove old stuff
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -89,18 +89,12 @@ BRO_LB_PROCS_CONFIRM="- Run a single Bro
+ BRO_ENABLED="yes"
+ OSSEC_AGENT_ENABLED="yes"
+ OSSEC_AGENT_LEVEL=5
+-XPLICO_ENABLED="no"
+ # /etc/nsm/HOSTNAME-INTERFACE/sensor.conf services enabled by default
+ PCAP_ENABLED="yes"
+ PCAP_AGENT_ENABLED="yes"
+ SNORT_AGENT_ENABLED="yes"
+ IDS_ENGINE_ENABLED="yes"
+ BARNYARD2_ENABLED="yes"
+-PRADS_ENABLED="no"
+-SANCP_AGENT_ENABLED="no"
+-PADS_AGENT_ENABLED="no"
+-ARGUS_ENABLED="no"
+-HTTP_AGENT_ENABLED="no"
+ # Salt is disabled by default
+ SALT="no"
+ # Number of days to keep in Sguil database
+@@ -500,7 +494,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVE
+ 	# Ask for DAYSTOKEEP        
+ 	DAYSTOKEEP_CONFIRMED="no"
+ 	while [ $DAYSTOKEEP_CONFIRMED = "no" ]; do
+-		DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="How many days of data do you want to keep in your Sguil database?\n\nThis includes things like IDS alerts, PADS events, and PRADS session data.\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days." --entry-text=30`
++		DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="How many days of alerts do you want to keep in your Sguil database?\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days." --entry-text=30`
+ 		[ $? = 1 ] && exit 1
+ 		COMPRESSED="$(echo $DAYSTOKEEP | sed -e 's/[^[:digit:]]//g')"
+ 		if [ "$COMPRESSED" != "$DAYSTOKEEP" ] || [ x$DAYSTOKEEP = "x" ]; then
+@@ -1150,7 +1144,6 @@ mkdir -p /etc/mysql/conf.d/
+ 
+ # https://code.google.com/p/security-onion/issues/detail?id=416
+ # sguild may try to open lots of files
+-# (especially if you are sending prads session data into the sancp table)
+ # so increase open_files_limit on master server
+ if [ $SERVER -eq 1 ]; then
+ 	cat << EOF > /etc/mysql/conf.d/securityonion-sguild.cnf	
+@@ -1337,7 +1330,7 @@ for INTERFACE in $ALL_INTERFACES; do
+ 
+         # Create symbolic links for individual bpf-*.conf files pointing to the sensor bpf.conf (which points to the GLOBAL bpf.conf)
+ 	cd /etc/nsm/"$SENSORNAME"
+-	for FILENAME in bpf-bro.conf bpf-ids.conf bpf-pcap.conf bpf-prads.conf
++	for FILENAME in bpf-bro.conf bpf-ids.conf bpf-pcap.conf
+ 	do
+ 	        ln -s bpf.conf $FILENAME >> $LOG 2>&1
+ 	done
+@@ -1353,11 +1346,6 @@ for INTERFACE in $ALL_INTERFACES; do
+ 	echo "SNORT_AGENT_ENABLED=\"$SNORT_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 	echo "IDS_ENGINE_ENABLED=\"$IDS_ENGINE_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 	echo "BARNYARD2_ENABLED=\"$BARNYARD2_ENABLED\""		>> /etc/nsm/"$SENSORNAME"/sensor.conf
+-	echo "PRADS_ENABLED=\"$PRADS_ENABLED\""			>> /etc/nsm/"$SENSORNAME"/sensor.conf
+-	echo "SANCP_AGENT_ENABLED=\"$SANCP_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+-	echo "PADS_AGENT_ENABLED=\"$PADS_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+-	echo "ARGUS_ENABLED=\"$ARGUS_ENABLED\""			>> /etc/nsm/"$SENSORNAME"/sensor.conf
+-	echo "HTTP_AGENT_ENABLED=\"$HTTP_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+ 
+ 	# Create symbolic link for sensor rules directory on server
+ 	# Since a user may have as many Snort/Suricata instances as they have CPU cores,
+@@ -1531,9 +1519,6 @@ OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED
+ # OSSEC_AGENT_LEVEL specifies the level at which OSSEC alerts are sent to sguild.
+ OSSEC_AGENT_LEVEL=$OSSEC_AGENT_LEVEL
+ 
+-# Do you want to run Xplico?  yes/no
+-XPLICO_ENABLED=$XPLICO_ENABLED
+-
+ # LOCAL_HIDS_RULE_TUNING
+ # If set to no (default), this node will copy OSSEC rules from master server as-is (no changes).
+ # If set to yes, this node will keep its own copy of the OSSEC rules.
+@@ -2190,7 +2175,6 @@ save()
+ 	echo "SGUIL_SERVER_NAME=$SGUIL_SERVER_NAME" >> $WRITEANSWERFILE
+ 	echo "SGUIL_CLIENT_USERNAME='$SGUIL_CLIENT_USERNAME'" >> $WRITEANSWERFILE
+ 	echo "SGUIL_CLIENT_PASSWORD_1='$SGUIL_CLIENT_PASSWORD_1'" >> $WRITEANSWERFILE
+-	echo "XPLICO_ENABLED=$XPLICO_ENABLED" >> $WRITEANSWERFILE
+ 	echo "OSSEC_AGENT_ENABLED=$OSSEC_AGENT_ENABLED" >> $WRITEANSWERFILE
+ 	echo "OSSEC_AGENT_LEVEL=$OSSEC_AGENT_LEVEL" >> $WRITEANSWERFILE
+ 	echo "SALT=$SALT" >> $WRITEANSWERFILE
+@@ -2201,11 +2185,6 @@ save()
+ 	echo "BARNYARD2_ENABLED=$BARNYARD2_ENABLED" >> $WRITEANSWERFILE
+ 	echo "PCAP_ENABLED=$PCAP_ENABLED" >> $WRITEANSWERFILE
+ 	echo "PCAP_AGENT_ENABLED=$PCAP_AGENT_ENABLED" >> $WRITEANSWERFILE
+-	echo "PRADS_ENABLED=$PRADS_ENABLED" >> $WRITEANSWERFILE
+-	echo "SANCP_AGENT_ENABLED=$SANCP_AGENT_ENABLED" >> $WRITEANSWERFILE
+-	echo "PADS_AGENT_ENABLED=$PADS_AGENT_ENABLED" >> $WRITEANSWERFILE
+-	echo "HTTP_AGENT_ENABLED=$HTTP_AGENT_ENABLED" >> $WRITEANSWERFILE
+-	echo "ARGUS_ENABLED=$ARGUS_ENABLED" >> $WRITEANSWERFILE
+ 	echo "IDS_RULESET='$IDS_RULESET'" >> $WRITEANSWERFILE
+ 	echo "OINKCODE='$OINKCODE'" >> $WRITEANSWERFILE
+ 	echo "PF_RING_SLOTS=$PF_RING_SLOTS" >> $WRITEANSWERFILE

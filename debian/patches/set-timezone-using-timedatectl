@@ -1,0 +1,55 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion256) xenial; urgency=medium
+ .
+   * set timezone using timedatectl
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1083,8 +1083,10 @@ mkdir -p /var/log/nsm/
+ #########################################
+ echo "2"
+ echo "# Please wait while setting OS timezone to UTC..." | tee -a $LOG
+-echo "Etc/UTC" > /etc/timezone
+-dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
++#echo "Etc/UTC" > /etc/timezone
++#dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
++# Need to use timedatectl for Ubuntu 16.04 Server
++timedatectl set-timezone Etc/UTC >> $LOG 2>&1
+ date >> $LOG 2>&1
+ 
+ echo "4"
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -454,8 +454,10 @@ done
+ 
+ function SET_UTC() {
+ 
+-echo "Etc/UTC" > /etc/timezone
+-dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
++#echo "Etc/UTC" > /etc/timezone
++#dpkg-reconfigure --frontend noninteractive tzdata >> $LOG 2>&1
++# Need to use timedatectl for Ubuntu 16.04 Server
++timedatectl set-timezone Etc/UTC >> $LOG 2>&1
+ cp /etc/localtime /var/ossec/etc/localtime
+ chown root:ossec /var/ossec/etc/localtime
+ 

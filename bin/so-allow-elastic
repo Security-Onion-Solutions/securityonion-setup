@@ -1,0 +1,203 @@
+#!/bin/bash
+#
+# Copyright 2014,2015,2016,2017,2018 Security Onion Solutions, LLC
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#########################################
+# function to validate IP address
+#########################################
+is_ip() {
+            case "$*" in
+                ""|*[!0-9.]*) return 1 ;;
+            esac
+            oldIFS=$IFS
+            IFS='.'
+            set -- $*
+            IFS=$oldIFS
+            [ $# -eq 4 ] || return 1
+            for ipseg in $1 $2 $3 $4
+              do
+              case $ipseg in
+                  *[!0-9]*) return 1 ;;
+              esac
+              [ $ipseg -le 255 ] || return 1
+            done
+}
+
+is_cidr() {
+	[[ "$1" =~ ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$ ]] && return 0
+}
+#########################################
+# check for root privileges
+#########################################
+if [[ $(/usr/bin/id -u) -ne 0 ]]; then
+	echo "This script needs to be run as root.  Please try again using sudo."
+	exit
+fi
+
+#########################################
+# Prompt user for kind of device
+#########################################
+echo "This program allows you to add a firewall rule to allow connections from a new IP address."
+echo
+echo "What kind of device do you want to allow?"
+echo
+echo "[a] - analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
+echo "[b] - Logstash Beat - port 5044/tcp"
+echo "[c] - apt-cacher-ng client - port 3142/tcp"
+echo "[f] - Logstash Forwarder - Standard - port 6050/tcp"
+echo "[j] - Logstash Forwarder - JSON - port 6051/tcp "
+echo "[l] - syslog device - port 514"
+echo "[o] - ossec agent - port 1514/udp"
+echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
+echo
+echo "If you need to add any ports other than those listed above,"
+echo "you can do so using the standard 'ufw' utility."
+echo
+echo "For more information, please see the Firewall page on our Wiki:"
+echo "https://github.com/Security-Onion-Solutions/security-onion/wiki/Firewall"
+
+device="none"
+while [ "$device" = "none" ]; do
+	echo
+	echo "Please enter your selection (a - analyst, c - apt-cacher-ng client, l - syslog, o - ossec, or s - Security Onion sensor, etc.):"
+	read input
+
+	. /etc/nsm/securityonion.conf
+case $input in
+		a)
+			device="analyst"
+			proto="proto tcp"
+			port="22,443,7734"
+			;;
+		b)
+			device="Logstash - Beat"
+			category="elastic"
+			proto="tcp"
+			port="5044"
+			;;
+		c)
+                        device="apt-cacher-ng client"
+                        proto="proto tcp"
+                        port="3142"
+                        ;;
+		f)	
+			device="Logstash Forwarder"
+			category="elastic"
+			proto="tcp"	
+			port="6050"
+			;;
+		j)	
+			device="Logstash Forwarder - JSON"
+			category="elastic"
+			proto="tcp"
+			port="6051"
+			;;
+		l)
+			device="syslog"
+			proto=""
+			port="514"
+			;;
+		o)
+			device="ossec agent"
+			proto="proto udp"
+			port="1514"
+			;;
+		s)
+			device="Security Onion sensor"
+			proto="proto tcp"
+			port="22,4505,4506,7736"
+			;;
+		status)
+                        device=status
+                        	;;
+	esac
+done
+
+#########################################
+# Status
+########################################
+if [ "$device" == "status" ]; then
+	/usr/sbin/so-allow-view
+	echo
+	exit 0
+fi
+
+#########################################
+# Prompt user for IP address
+#########################################
+valid="no"
+while [ "$valid" = "no" ]; do
+	echo "Please enter the IP address of the $device you'd like to allow to connect to port(s) $port:"
+	read address
+        # Check if CIDR
+	is_cidr $address && valid="yes"
+        # Check if IP
+	[ $? -ne 0 ] && is_ip $address && valid="yes"
+	
+done
+
+#########################################
+# Confirm rule before adding
+#########################################
+echo "We're going to allow connections from $address to port(s) $port."
+echo
+echo "Here's the firewall rule we're about to add:"
+if [[ "$category" == "elastic" ]]; then
+        ufw_after_rules="-I DOCKER-USER ! -i docker0 -o docker0 -s $address -p tcp --dport $port -j ACCEPT"
+	rule="sudo iptables $ufw_after_rules"
+else
+	rule="sudo ufw allow $proto from $address to any port $port"
+fi
+echo $rule
+echo
+
+if [ "$device" == "analyst" ]; then
+	echo "We're also whitelisting $address in /var/ossec/etc/ossec.conf to prevent OSSEC Active Response from blocking it.  Keep in mind, the OSSEC server will be restarted once configuration is complete." 
+       	echo
+fi
+echo "To continue and add this rule, press Enter."
+echo "Otherwise, press Ctrl-c to exit."
+read input
+
+#########################################
+# Run the command to add the firewall rule
+#########################################
+$rule
+
+if [[ "$category" == "elastic" ]]; then
+	# Add rule to /etc/ufw/after.rules
+	sed -i "/so-allow/a $ufw_after_rules" /etc/ufw/after.rules
+fi
+
+echo "Rule has been added."
+echo
+echo "Here is the entire firewall ruleset:"
+echo
+/usr/sbin/so-allow-view
+echo
+	
+if [ "$device" == "analyst" ]; then
+        if ! grep -q "<white_list>$address</white_list>" /var/ossec/etc/ossec.conf ; then
+                DATE=`date`
+                sed -i 's/<\/ossec_config>//' /var/ossec/etc/ossec.conf
+                sed -i '/^$/N;/^\n$/D' /var/ossec/etc/ossec.conf
+                echo -e "<!--Address $address added by /usr/sbin/so-allow on "$DATE"-->\n  <global>\n    <white_list>$address</white_list>\n  </global>\n</ossec_config>" >> /var/ossec/etc/ossec.conf
+                echo "Added whitelist entry for $address in /var/ossec/etc/ossec.conf."
+                echo
+                echo "Restarting OSSEC Server..."
+                service ossec-hids-server restart
+        fi
+fi

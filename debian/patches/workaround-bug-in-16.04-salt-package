@@ -1,0 +1,38 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion258) xenial; urgency=medium
+ .
+   * workaround bug in 16.04 salt package
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1719,6 +1719,10 @@ if dpkg -l |grep "securityonion-onionsal
+ 			echo "   '$FQDN':" 	>> $TOPSLS
+ 			echo "      - backend" 	>> $TOPSLS
+ 			echo ""			>> $TOPSLS
++			# Workaround bug in 16.04 salt package
++			if ! grep "^file_ignore_glob:" /etc/salt/master >/dev/null 2>&1; then
++				sed -i '/# file_ignore_glob:/a file_ignore_glob: []' /etc/salt/master
++			fi
+ 			# If salt-master is DISABLED we need to enable it
+ 			[ -f /etc/init/salt-master.DISABLED ] && mv /etc/init/salt-master.DISABLED /etc/init/salt-master.conf
+ 			[ -f /etc/init/salt-master.override ] && rm -f /etc/init/salt-master.override

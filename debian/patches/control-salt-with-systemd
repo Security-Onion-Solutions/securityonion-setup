@@ -1,0 +1,103 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion260) xenial; urgency=medium
+ .
+   * control salt with systemd
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1659,7 +1659,7 @@ if [ -f $SSH_CONF ]; then
+ 	service apache2 stop >> $LOG 2>&1
+ 	update-rc.d -f apache2 disable >> $LOG 2>&1
+ else
+-	# We are the MASTER.
++	# We are the MASTER
+ 
+ 	# Make sure that the Apache web server is enabled
+ 	update-rc.d -f apache2 enable >> $LOG 2>&1
+@@ -1670,16 +1670,6 @@ else
+ 	# Disable old default-ssl site
+ 	a2dissite default-ssl >> $LOG 2>&1
+ 
+-	# Determine IP address to be used below in Squert database
+-        IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+-
+-	# Pivot from Squert to ELSA
+-	#URL="https://$IP/elsa-query/?query_string=\"\${var}\"%20groupby:program"
+-	# We can use a relative hyperlink now that Apache is proxying ELSA at /elsa-query
+-	URL="/elsa-query/?query_string=\"\${var}\"%20groupby:program"
+-	HEXVAL=$(xxd -pu -c 256 <<< "$URL")
+-	[ "$ELSA" = "YES" ] && mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "INSERT IGNORE INTO filters (type,username,global,name,notes,alias,filter) VALUES ('url','','1','454C5341','','ELSA','$HEXVAL');"
+-
+ 	# Restart web server
+ 	apache2ctl restart >> $LOG 2>&1
+ fi
+@@ -1691,12 +1681,11 @@ echo "40"
+ echo "# Please wait while configuring salt..." | tee -a $LOG
+ if dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
+ 	if [ "$SALT" = "no" ]; then
+-		# Stop both running salt services
++		# Stop and disable both salt-master and salt-minion
+ 		service salt-master stop >> $LOG 2>&1
+ 		service salt-minion stop >> $LOG 2>&1
+-		# Disable both salt services
+-		[ -f /etc/init/salt-master.conf ] && echo "manual" > /etc/init/salt-master.override
+-		[ -f /etc/init/salt-minion.conf ] && echo "manual" > /etc/init/salt-minion.override
++		systemctl disable salt-master >> $LOG 2>&1
++		systemctl disable salt-minion >> $LOG 2>&1
+ 		# If the box had previously been configured with salt, we need to remove the cron job
+ 		[ -f /etc/cron.d/salt-update ] && rm -f /etc/cron.d/salt-update
+ 	else
+@@ -1719,17 +1708,13 @@ if dpkg -l |grep "securityonion-onionsal
+ 			echo "   '$FQDN':" 	>> $TOPSLS
+ 			echo "      - backend" 	>> $TOPSLS
+ 			echo ""			>> $TOPSLS
+-			# If salt-master is DISABLED we need to enable it
+-			[ -f /etc/init/salt-master.DISABLED ] && mv /etc/init/salt-master.DISABLED /etc/init/salt-master.conf
+-			[ -f /etc/init/salt-master.override ] && rm -f /etc/init/salt-master.override
+-			# Start salt-master
++			# Enable and restart salt-master
++			systemctl enable salt-master >> $LOG 2>&1
+ 			service salt-master restart >> $LOG 2>&1
+ 		else
+-			# If this box is not a Master we need to disable salt-master
+-			# Stop salt-master
++			# If this box is not a Master we need to stop and disable salt-master
+ 			service salt-master stop >> $LOG 2>&1
+-			# Disable salt-master
+-			[ -f /etc/init/salt-master.conf ] && echo "manual" > /etc/init/salt-master.override
++			systemctl disable salt-master >> $LOG 2>&1
+ 			# Tell the salt-master that we are a sensor
+ 			cat << EOF >> $SOSETUPSCP
+ if ! grep "'$FQDN':" /opt/onionsalt/salt/top.sls >/dev/null 2>&1; then
+@@ -1744,9 +1729,8 @@ EOF
+ 		# Configure minion
+ 		echo "master: $SERVERNAME" > /etc/salt/minion.d/onionsalt.conf
+ 		echo "$FQDN" > /etc/salt/minion_id
+-		# If salt-minion is DISABLED, enable it
+-		[ -f /etc/init/salt-minion.DISABLED ] && mv /etc/init/salt-minion.DISABLED /etc/init/salt-minion.conf
+-		[ -f /etc/init/salt-minion.override ] && rm -f /etc/init/salt-minion.override
++		# Enable and restart salt-minion
++		systemctl enable salt-minion >> $LOG 2>&1
+ 		service salt-minion restart >> $LOG 2>&1
+ 	
+ 		# salt-master needs to accept the key from salt-minion

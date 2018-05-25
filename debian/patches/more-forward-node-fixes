@@ -1,0 +1,203 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion263) xenial; urgency=medium
+ .
+   * more forward node fixes
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1276,15 +1276,6 @@ if [ "$SERVER" -ne 1 ]; then
+ 	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF
+ fi
+ 
+-if [ "$FORWARD" = "yes" ]; then
+-	# If AUTOSSH_OPTIONS is already in SSH_CONF, remove it and replace it with new value.
+-	if grep "AUTOSSH_OPTIONS=" $SSH_CONF >/dev/null 2>&1; then
+-		sed -i 's/AUTOSSH_OPTIONS.*/AUTOSSH_OPTIONS="-L 6050:localhost:6050"/' $SSH_CONF >> $LOG 2>&1
+-	else
+-		echo 'AUTOSSH_OPTIONS="-L 6050:localhost:6050"' >> $SSH_CONF
+-	fi
+-fi
+-
+ #########################################
+ # Network Sensor(s) if necessary
+ #########################################
+@@ -1834,68 +1825,96 @@ EOF
+ 
+ fi
+ 
+-#########################################
+-# Configure Elastic
+-#########################################
+-if [ "$ELASTIC" = "yes" ]; then
+-    echo "49"
+-    echo "# Please wait while configuring Elastic..." | tee -a $LOG
++echo "49"
++echo "# Please wait while configuring syslog-ng..." | tee -a $LOG
+ 
+-	# We need to copy a new syslog-ng.conf into place
+-	SYSLOGNGCONFSRC="/opt/elastic/src/etc/syslog-ng/syslog-ng.conf"
+-	SYSLOGNGCONFDST="/etc/syslog-ng/syslog-ng.conf"
+-
+-	# Initialize HTTP_LOGS
+-	HTTP_LOGS=""
+-
+-	# Get a list of sensors from /etc/nsm/sensortab
+-	SENSORS=$(grep -v "^#" /etc/nsm/sensortab | cut -f 4)
+-
+-	# Determine the number of sensor interfaces
+-	COUNT=0
+-	for token in $SENSORS; do
+-		COUNT=$((COUNT+1))
+-	done
++# We need to copy a new syslog-ng.conf into place
++SYSLOGNGCONFSRC="/opt/elastic/src/etc/syslog-ng/syslog-ng.conf"
++SYSLOGNGCONFDST="/etc/syslog-ng/syslog-ng.conf"
++
++# Initialize HTTP_LOGS
++HTTP_LOGS=""
++
++# Get a list of sensors from /etc/nsm/sensortab
++SENSORS=$(grep -v "^#" /etc/nsm/sensortab | cut -f 4)
++
++# Determine the number of sensor interfaces
++COUNT=0
++for token in $SENSORS; do
++	COUNT=$((COUNT+1))
++done
+ 
+-	# If master server only, copy syslog-ng.conf into place
+-	if [ $COUNT -eq 0 ]; then
++# If master server only, copy syslog-ng.conf into place
++if [ $COUNT -eq 0 ]; then
++	cp $SYSLOGNGCONFSRC $SYSLOGNGCONFDST
++fi
++
++# If single sensor interface, we need to determine if Bro is running in standalone mode or cluster mode
++if [ $COUNT -eq 1 ]; then
++	if grep "type=standalone" /opt/bro/etc/node.cfg > /dev/null; then
++		echo "* Leaving syslog-ng.conf bro_http entry unmolested." >> $LOG 2>&1
+ 		cp $SYSLOGNGCONFSRC $SYSLOGNGCONFDST
++	else
++		echo "* Altering syslog-ng.conf bro_http entry for single interface cluster-mode" >> $LOG 2>&1
++		# Pull the interface bro is listening for from node.cfg
++		BRO_IFACE=$(grep "interface=" /opt/bro/etc/node.cfg | cut -d'=' -f2)
++		# Alter syslog-ng.conf's entry for http
++		sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|\tfile(\"/nsm/bro/logs/current/http_$BRO_IFACE.log\" flags(no-parse) program_override(\"bro_http\"));\n|" $SYSLOGNGCONFSRC > $SYSLOGNGCONFDST
+ 	fi
++fi
+ 
+-	# If single sensor interface, we need to determine if Bro is running in standalone mode or cluster mode
+-	if [ $COUNT -eq 1 ]; then
+-		if grep "type=standalone" /opt/bro/etc/node.cfg > /dev/null; then
+-			echo "* Leaving syslog-ng.conf bro_http entry unmolested." >> $LOG 2>&1
+-			cp $SYSLOGNGCONFSRC $SYSLOGNGCONFDST
+-		else
+-			echo "* Altering syslog-ng.conf bro_http entry for single interface cluster-mode" >> $LOG 2>&1
+-			# Pull the interface bro is listening for from node.cfg
+-			BRO_IFACE=$(grep "interface=" /opt/bro/etc/node.cfg | cut -d'=' -f2)
+-			# Alter syslog-ng.conf's entry for http
+-			sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|\tfile(\"/nsm/bro/logs/current/http_$BRO_IFACE.log\" flags(no-parse) program_override(\"bro_http\"));\n|" $SYSLOGNGCONFSRC > $SYSLOGNGCONFDST
+-		fi
+-	fi
++# If multiple sensor interfaces, Bro must be running in cluster mode and we need to watch multiple http logs
++if [ $COUNT -gt 1 ]; then
++	echo "* Altering syslog-ng.conf bro_http entries for multiple interfaces" >> $LOG 2>&1
++	for i in $SENSORS; do
++		HTTP_LOGS=$HTTP_LOGS"\tfile(\"/nsm/bro/logs/current/http_$i.log\" flags(no-parse) program_override(\"bro_http\"));\n"
++	done
++	sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|$HTTP_LOGS|" $SYSLOGNGCONFSRC > $SYSLOGNGCONFDST
++fi
+ 
+-	# If multiple sensor interfaces, Bro must be running in cluster mode and we need to watch multiple http logs
+-	if [ $COUNT -gt 1 ]; then
+-		echo "* Altering syslog-ng.conf bro_http entries for multiple interfaces" >> $LOG 2>&1
+-		for i in $SENSORS; do
+-			HTTP_LOGS=$HTTP_LOGS"\tfile(\"/nsm/bro/logs/current/http_$i.log\" flags(no-parse) program_override(\"bro_http\"));\n"
+-		done
+-		sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|$HTTP_LOGS|" $SYSLOGNGCONFSRC > $SYSLOGNGCONFDST
++echo "* Restarting syslog-ng" >> $LOG 2>&1
++service syslog-ng restart >> $LOG 2>&1
++
++# Forward Nodes now have ELASTIC="no", so we need to do some of that config here
++if [ "$FORWARD" = "yes" ]; then
++
++	# Configure syslog-ng to forward over autossh
++	/usr/sbin/so-elastic-configure-syslog-ng >> $LOG 2>&1
++
++	# Configure Bro to log in JSON
++	/usr/sbin/so-elastic-configure-bro >> $LOG 2>&1
++
++	# If AUTOSSH_OPTIONS is already in SSH_CONF, remove it and replace it with new value.
++	if grep "AUTOSSH_OPTIONS=" $SSH_CONF >/dev/null 2>&1; then
++		sed -i 's/AUTOSSH_OPTIONS.*/AUTOSSH_OPTIONS="-L 6050:localhost:6050"/' $SSH_CONF >> $LOG 2>&1
++	else
++		echo 'AUTOSSH_OPTIONS="-L 6050:localhost:6050"' >> $SSH_CONF
+ 	fi
++fi
+ 
+-	echo "* Restarting syslog-ng" >> $LOG 2>&1
+-	service syslog-ng restart >> $LOG 2>&1
++if [ $SERVER -ne 1 ]; then
++   	echo "60"
++	echo "# Please wait while stopping Apache web server..." | tee -a $LOG
++	service apache2 stop >> $LOG 2>&1
++
++    	echo "65"
++	echo "# Please wait while stopping and disabling MySQL..." | tee -a $LOG
++	service mysql stop >> $LOG 2>&1
++	echo "manual" > /etc/init/mysql.override
++fi
+ 
++#########################################
++# Configure Elastic
++#########################################
++if [ "$ELASTIC" = "yes" ]; then
++	echo "75"
++	echo "# Please wait while configuring Elastic..." | tee -a $LOG
+ 	if ! dpkg -L docker-ce >/dev/null 2>&1; then
+ 		echo "50"
+ 		echo "# Please wait while downloading Elastic components..." | tee -a $LOG
+ 		/usr/sbin/so-elastic-download >> $LOG 2>&1
+ 	fi
+ 
+-	echo "75"
+-	echo "# Please wait while configuring Elastic..." | tee -a $LOG
+ 	if ! grep -q LOG_SIZE_LIMIT $CONF; then
+         cat << EOF >> $CONF
+ 
+@@ -1931,15 +1950,6 @@ EOF
+ 	/usr/sbin/so-elastic-configure >> $LOG 2>&1
+ 
+ 	if [ $SERVER -ne 1 ]; then
+-    		echo "85"
+-		echo "# Please wait while stopping Apache web server..." | tee -a $LOG
+-		service apache2 stop >> $LOG 2>&1
+-
+-    		echo "93"
+-		echo "# Please wait while stopping and disabling MySQL..." | tee -a $LOG
+-		service mysql stop >> $LOG 2>&1
+-		echo "manual" > /etc/init/mysql.override
+-
+     		echo "95"
+ 		echo "# Please wait while performing final node configuration..." | tee -a $LOG
+ 

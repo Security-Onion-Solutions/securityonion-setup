@@ -33,12 +33,8 @@ OSSECEMAIL_SUMMARY=" - OSSEC email will not be configured"
 SGUILEMAIL="NO"
 # Default Sguil confirmation verbiage
 SGUILEMAIL_SUMMARY=" - Sguil email will not be configured."
-# ELSA email enabled - YES/NO
-ELSAEMAIL="NO"
-# Default ELSA confirmation verbiage
-ELSAEMAIL_SUMMARY=" - ELSA email will not be configured."
 # Current version of script/config
-CURRENT_CONF_VERSION="1.1"
+CURRENT_CONF_VERSION="1.2"
 
 # Get notification address from /etc/aliases if it already exists
 [ -f /etc/aliases ] && ADMINADDR=`grep -o 'root:.*' /etc/aliases | cut -f2- -d' '`
@@ -213,61 +209,6 @@ else
 	OSSECEMAIL_SUMMARY=" - OSSEC email will be configured."
 fi
 #########################################
-#ELSA email
-#########################################
-if [[ $SERVER -eq 1 ]];then
-	TEXT="Would you like to configure email alerts for ELSA?"
-	YES="Yes"
-	NO="No"
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
-	ANSWER="$?"
-	if [ $ANSWER -eq 1 ]; then
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for ELSA."
-	else
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for ELSA."
-		ELSAADDRESS="root@localhost"
-		ELSAEMAIL="YES"
-        	ELSA_USER_CONFIRMED="no"
-		while [ $ELSA_USER_CONFIRMED = "no" ]; do	
-			TEXT="What is the ELSA username to which this email address is associated?"
-        		ELSAUSER=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$SUDO_USER"`
-        		ANSWER="$?"
-			if [ $ANSWER -eq 1 ]; then
-				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
-				exit 1
-			else
-				if [ -z $ELSAUSER ]; then
-                        		zenity --error --title "$TITLE" --text="Please provide a valid response\!"
-                		else
-                        		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring ELSA username."
-					ELSA_USER_CONFIRMED="yes"
-                		fi
-			fi
-		done
-		#########################################
-		# ELSA server IP/Hostname
-        	#########################################
-        	ELSASERVER_CONFIRMED="no"
-		while [ $ELSASERVER_CONFIRMED = "no" ]; do	
-			TEXT="What is the ELSA server IP/hostname for which you wish to alert?"
-        		ELSASERVER=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$IP"`
-        		ANSWER="$?"
-			if [ $ANSWER -eq 1 ]; then 
-				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
-				exit 1
-			else
-				if [ -z $ELSASERVER ]; then 
-                        		zenity --error --title "$TITLE" --text="Please provide a valid response\!"
-                		else
-                        		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring ELSA server."
-					ELSASERVER_CONFIRMED="yes"
-                		fi
-			fi
-		done
-	ELSAEMAIL_SUMMARY=" - ELSA email will be configured.\n\   - ELSA User: $ELSAUSER\n\   - ELSA Server: $ELSASERVER"
-	fi
-fi
-#########################################
 # Summary
 #########################################
 TEXT="The following will be configured for $HOSTNAME:\n\
@@ -277,8 +218,7 @@ $MAILSERVER_SUMMARY\n\
 $SOSTATEMAIL_SUMMARY\n\
 $BROEMAIL_SUMMARY\n\
 $SGUILEMAIL_SUMMARY\n\
-$OSSECEMAIL_SUMMARY\n\
-$ELSAEMAIL_SUMMARY\n\\n\
+$OSSECEMAIL_SUMMARY\n\\n\
 Please note, services will restart upon confirmation."
 
 YES="Yes, Continue!"
@@ -387,21 +327,6 @@ if ! [[ "$OSSECEMAIL" == "NO" ]]; then
                 sed -i '/.*email_from.*/ a \     <email_maxperhour>\100\<\/email_maxperhour>' $OSSECCONF
         fi
 	service ossec-hids-server restart >> $LOG 2>&1
-fi
-#Configure ELSA
-if ! [[ "$ELSAEMAIL" == "NO" ]]; then
-	echo "75"
-	echo "# Configuring ELSA email..." | tee -a $LOG
-	ELSAWEB="/etc/elsa_web.conf"
-	mysql --defaults-file=/etc/mysql/debian.cnf -Dsecurityonion_db -e "update user_info set email='$ELSAADDRESS' where username='$ELSAUSER';"
-        sed -i 's#.*display_address.*#    "display_address": "ELSA@'$HOSTNAME'",#g' $ELSAWEB
-	sed -i 's#.*base_url.*#    "base_url": "https://'$ELSASERVER'/elsa-query",#g' $ELSAWEB
-	if grep -q -i "smtp" $ELSAWEB;then
-                sed -i 's#.*smtp_server.*#    "smtp_server": "localhost",#g' $ELSAWEB
-        else
-                sed -i '/.*base_url.*/ a \    "smtp_server": "localhost",' $ELSAWEB
-        fi
-	service apache2 restart >> $LOG 2>&1
 fi
 }
 #########################################

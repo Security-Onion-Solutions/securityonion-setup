@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion271) xenial; urgency=medium
+
+  * sosetup -w not writing answer file correctly in some cases #1270 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 27 Jun 2018 17:43:40 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion270) xenial; urgency=medium
 
   * Setup: remove ELSA references from so-email #1257 

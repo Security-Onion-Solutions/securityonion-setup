@@ -256,3 +256,4 @@ avoid-duplicating-OSSEC_AGENT_ENABLED-in-securityonion.conf
 if-mysql-root-password-not-set,-set-random-password
 add-remote-nodes-to-ossec-whitelist-on-master
 Setup:-remove-ELSA-references-from-so-email-#1257
+sosetup--w-not-writing-answer-file-correctly-in-some-cases-#1270

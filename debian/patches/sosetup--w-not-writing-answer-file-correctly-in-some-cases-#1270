@@ -1,0 +1,44 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion271) xenial; urgency=medium
+ .
+   * sosetup -w not writing answer file correctly in some cases #1270
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -2198,7 +2198,7 @@ save()
+ 	echo "#NUM_INTERFACES=$NUM_INTERFACES" >> $WRITEANSWERFILE
+ 	echo "#" >> $WRITEANSWERFILE
+ 	echo "# This field is specific to reading an answer file" >> $WRITEANSWERFILE
+-	echo "SNIFFING_INTERFACES=$INTERFACES" >> $WRITEANSWERFILE
++	echo "SNIFFING_INTERFACES='$INTERFACES'" >> $WRITEANSWERFILE
+ 	echo "#" >> $WRITEANSWERFILE
+ 	echo "# These fields were generated from your answers" >> $WRITEANSWERFILE
+ 	echo "SERVER=$SERVER" >> $WRITEANSWERFILE
+@@ -2240,6 +2240,7 @@ save()
+ 	echo "LOGSTASH_OUTPUT_REDIS=$LOGSTASH_OUTPUT_REDIS" >> $WRITEANSWERFILE
+ 	echo "LOGSTASH_INPUT_REDIS=$LOGSTASH_INPUT_REDIS" >> $WRITEANSWERFILE
+ 	echo "ELASTIC=$ELASTIC" >> $WRITEANSWERFILE
++	echo "FORWARD=$FORWARD" >> $WRITEANSWERFILE
+ 	echo "LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT" >> $WRITEANSWERFILE
+ }
+ 

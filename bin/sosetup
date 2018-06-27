@@ -2198,7 +2198,7 @@ save()
 	echo "#NUM_INTERFACES=$NUM_INTERFACES" >> $WRITEANSWERFILE
 	echo "#" >> $WRITEANSWERFILE
 	echo "# This field is specific to reading an answer file" >> $WRITEANSWERFILE
-	echo "SNIFFING_INTERFACES=$INTERFACES" >> $WRITEANSWERFILE
+	echo "SNIFFING_INTERFACES='$INTERFACES'" >> $WRITEANSWERFILE
 	echo "#" >> $WRITEANSWERFILE
 	echo "# These fields were generated from your answers" >> $WRITEANSWERFILE
 	echo "SERVER=$SERVER" >> $WRITEANSWERFILE

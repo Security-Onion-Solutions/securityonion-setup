@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion272) xenial; urgency=medium
+
+  * sosetup: move elasticsearch and logstash jvm.options out of the way and write new ones #1272 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 27 Jun 2018 20:06:50 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion271) xenial; urgency=medium
 
   * sosetup -w not writing answer file correctly in some cases #1270 

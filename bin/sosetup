@@ -1131,6 +1131,10 @@ rm -rf /nsm/elasticsearch/nodes
 rm -rf /nsm/logstash/queue/main/*
 rm -f /etc/elasticsearch/elasticsearch.yml
 
+# Move jvm.options files out of the way so we can write new ones
+mv /etc/elasticsearch/jvm.options /etc/elasticsearch/jvm.options.old
+mv /etc/logstash/jvm.options /etc/logstash/jvm.options.old
+
 # Make sure MySQL is running so that we can fully delete the NSM databases
 [ $SERVER -eq 1 ] && service mysql start >> $LOG 2>&1
 

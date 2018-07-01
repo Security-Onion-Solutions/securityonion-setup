@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion273) xenial; urgency=medium
+
+  * check to see if jvm.options files exist before trying to rename them 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 01 Jul 2018 07:03:13 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion272) xenial; urgency=medium
 
   * sosetup: move elasticsearch and logstash jvm.options out of the way and write new ones #1272 

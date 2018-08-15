@@ -35,6 +35,8 @@ SGUILEMAIL="NO"
 SGUILEMAIL_SUMMARY=" - Sguil email will not be configured."
 # Current version of script/config
 CURRENT_CONF_VERSION="1.2"
+# Default setting for advanced setup
+ADVANCED_SETUP="NO"
 
 # Get notification address from /etc/aliases if it already exists
 [ -f /etc/aliases ] && ADMINADDR=`grep -o 'root:.*' /etc/aliases | cut -f2- -d' '`
@@ -99,6 +101,15 @@ case $COMPONENTS in
 		;;
 esac
 #########################################
+# Advanced Setup
+#########################################
+TEXT="Would you like to enter the advanced setup?"
+zenity --question --title="$TITLE" --text="$TEXT" --no-wrap
+if [ $? == 0 ]; then
+	ADVANCED_SETUP="YES"
+fi
+
+#########################################
 # Notification Address
 #########################################
 NOTIFY_CONFIRMED="no"
@@ -152,7 +163,11 @@ if [ $ANSWER -eq 1 ]; then
         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for sostat output."
 else
         [  $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring sostat email."
-	SOSTATADDRESS="root@localhost"
+	if [ $ADVANCED_SETUP == "YES" ]; then
+		SOSTATADDRESS=$(zenity --entry --text "Please enter a from email address for sostat" --entry-text "root@localhost")
+	else
+		SOSTATADDRESS="root@localhost"
+	fi
 	SOSTATEMAIL="YES"
 	SOSTATEMAIL_SUMMARY=" - Daily sostat email will be configured."
 fi
@@ -169,7 +184,11 @@ if [[ $SENSOR -eq 1 ]];then
         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for Bro."
 	else
         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Bro."
-		BROADDRESS="root@localhost"
+		if [ $ADVANCED_SETUP == "YES" ]; then
+			BROADDRESS=$(zenity --entry --text "Please enter a from email address for Bro" --entry-text "root@localhost")
+		else
+			BROADDRESS="root@localhost"
+		fi
 		BROEMAIL="YES"
 		BROEMAIL_SUMMARY=" - Bro email will be configured."
 	fi
@@ -187,7 +206,11 @@ if [[ $SERVER -eq 1 ]];then
         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for Sguil."
 	else
         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Sguil."
-		SGUILADDRESS="root@localhost"
+		if [ $ADVANCED_SETUP == "YES" ]; then
+			SGUILADDRESS=$(zenity --entry --text "Please enter a from email address for Sguil" --entry-text "root@localhost")
+		else
+			SGUILADDRESS="root@localhost"
+		fi
 		SGUILEMAIL="Configured"
 		SGUILEMAIL_SUMMARY=" - Sguil email will be configured."
 	fi
@@ -204,7 +227,11 @@ if [ $ANSWER -eq 1 ]; then
         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for OSSEC."
 else
         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for OSSEC."
-	OSSECADDRESS="root@localhost"
+	if [ $ADVANCED_SETUP == "YES" ]; then
+		OSSECADDRESS=$(zenity --entry --text "Please enter a from email address for OSSEC" --entry-text "root@localhost")
+	else
+		OSSECADDRESS="root@localhost"
+	fi
 	OSSECEMAIL="YES"
 	OSSECEMAIL_SUMMARY=" - OSSEC email will be configured."
 fi

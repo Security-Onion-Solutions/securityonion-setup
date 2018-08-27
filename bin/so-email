@@ -103,7 +103,7 @@ esac
 #########################################
 # Advanced Setup
 #########################################
-TEXT="Would you like to enter the advanced setup?"
+TEXT="Advanced Setup allows you to specify a different FROM address for each service.  Would you like to use Advanced Setup?"
 zenity --question --title="$TITLE" --text="$TEXT" --no-wrap
 if [ $? == 0 ]; then
 	ADVANCED_SETUP="YES"

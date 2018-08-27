@@ -54,13 +54,15 @@ echo "This program allows you to add a firewall rule to allow connections from a
 echo
 echo "What kind of device do you want to allow?"
 echo
-echo "[a] - analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
+echo "[a] - Analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
 echo "[b] - Logstash Beat - port 5044/tcp"
 echo "[c] - apt-cacher-ng client - port 3142/tcp"
-echo "[f] - Logstash Forwarder - Standard - port 6050/tcp"
-echo "[j] - Logstash Forwarder - JSON - port 6051/tcp "
-echo "[l] - syslog device - port 514"
-echo "[o] - ossec agent - port 1514/udp"
+echo "[e] - Elasticsearch REST endpoint - port 9200"
+echo "[f] - Logstash forwarder - standard - port 6050/tcp"
+echo "[j] - Logstash forwarder - JSON - port 6051/tcp "
+echo "[l] - Syslog device - port 514"
+echo "[n] - Elasticsearch node-to-node communication - port 9300"
+echo "[o] - OSSEC agent - port 1514/udp"
 echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
 echo
 echo "If you need to add any ports other than those listed above,"
@@ -93,6 +95,12 @@ case $input in
                         proto="proto tcp"
                         port="3142"
                         ;;
+		e)
+			device="Elasticsearch REST Endpoint"
+			category="elastic"
+			proto="tcp"
+			port="9200"
+			;;
 		f)	
 			device="Logstash Forwarder"
 			category="elastic"
@@ -109,6 +117,12 @@ case $input in
 			device="syslog"
 			proto=""
 			port="514"
+			;;
+		n)     
+			device="Elasticsearch Node-to-Node Communication"
+			category="elastic"
+			proto="tcp"
+			port="9300"
 			;;
 		o)
 			device="ossec agent"
@@ -200,4 +214,16 @@ if [ "$device" == "analyst" ]; then
                 echo "Restarting OSSEC Server..."
                 service ossec-hids-server restart
         fi
+fi
+if [[ "$device" = *"Elasticsearch"* ]]; then
+	CONF="/etc/nsm/securityonion.conf" 
+	if grep 'ELASTICSEARCH_PUBLISH_IP="127.0.0.1"' $CONF; then 
+		sed -i 's/ELASTICSEARCH_PUBLISH_IP=.*/ELASTICSEARCH_PUBLISH_IP="0.0.0.0"/' $CONF
+		echo "Changed ELASTICSEARCH_PUBLISH_HOST from 127.0.0.1 to 0.0.0.0 (/etc/nsm/securityonion.conf)."
+		echo
+		echo "Restarting Elasticsearch..."
+		so-elasticsearch-restart
+	else
+		:
+	fi
 fi

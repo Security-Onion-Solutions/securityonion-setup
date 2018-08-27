@@ -259,3 +259,4 @@ Setup:-remove-ELSA-references-from-so-email-#1257
 sosetup--w-not-writing-answer-file-correctly-in-some-cases-#1270
 sosetup:-move-elasticsearch-and-logstash-jvm.options-out-of-the-way-and-write-new-ones-#1272
 check-to-see-if-jvm.options-files-exist-before-trying-to-rename-them
+merge-pr-35-and-36

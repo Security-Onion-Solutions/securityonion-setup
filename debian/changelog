@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion274) xenial; urgency=medium
+
+  * merge pr 35 and 36 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 27 Aug 2018 10:33:51 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion273) xenial; urgency=medium
 
   * check to see if jvm.options files exist before trying to rename them 

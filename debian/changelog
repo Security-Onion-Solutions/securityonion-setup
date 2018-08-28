@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion275) xenial; urgency=medium
+
+  * merge pr 37 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 28 Aug 2018 16:38:28 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion274) xenial; urgency=medium
 
   * merge pr 35 and 36 

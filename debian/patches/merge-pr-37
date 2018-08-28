@@ -1,0 +1,121 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion275) xenial; urgency=medium
+ .
+   * merge pr 37
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/so-email
++++ securityonion-setup-20120912/bin/so-email
+@@ -164,9 +164,9 @@ if [ $ANSWER -eq 1 ]; then
+ else
+         [  $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring sostat email."
+ 	if [ $ADVANCED_SETUP == "YES" ]; then
+-		SOSTATADDRESS=$(zenity --entry --text "Please enter a from email address for sostat" --entry-text "root@localhost")
++		SOSTATADDRESS=$(zenity --entry --text "Please enter a FROM email address for sostat" --entry-text "root@localhost")
+ 	else
+-		SOSTATADDRESS="root@localhost"
++		SOSTATADDRESS="sostat@$HOSTNAME"
+ 	fi
+ 	SOSTATEMAIL="YES"
+ 	SOSTATEMAIL_SUMMARY=" - Daily sostat email will be configured."
+@@ -185,9 +185,9 @@ if [[ $SENSOR -eq 1 ]];then
+ 	else
+         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Bro."
+ 		if [ $ADVANCED_SETUP == "YES" ]; then
+-			BROADDRESS=$(zenity --entry --text "Please enter a from email address for Bro" --entry-text "root@localhost")
++			BROADDRESS=$(zenity --entry --text "Please enter a FROM email address for Bro" --entry-text "root@localhost")
+ 		else
+-			BROADDRESS="root@localhost"
++			BROADDRESS="bro@$HOSTNAME"
+ 		fi
+ 		BROEMAIL="YES"
+ 		BROEMAIL_SUMMARY=" - Bro email will be configured."
+@@ -207,9 +207,9 @@ if [[ $SERVER -eq 1 ]];then
+ 	else
+         	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Sguil."
+ 		if [ $ADVANCED_SETUP == "YES" ]; then
+-			SGUILADDRESS=$(zenity --entry --text "Please enter a from email address for Sguil" --entry-text "root@localhost")
++			SGUILADDRESS=$(zenity --entry --text "Please enter a FROM email address for Sguil" --entry-text "root@localhost")
+ 		else
+-			SGUILADDRESS="root@localhost"
++			SGUILADDRESS="sguil@$HOSTNAME"
+ 		fi
+ 		SGUILEMAIL="Configured"
+ 		SGUILEMAIL_SUMMARY=" - Sguil email will be configured."
+@@ -228,9 +228,9 @@ if [ $ANSWER -eq 1 ]; then
+ else
+         [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for OSSEC."
+ 	if [ $ADVANCED_SETUP == "YES" ]; then
+-		OSSECADDRESS=$(zenity --entry --text "Please enter a from email address for OSSEC" --entry-text "root@localhost")
++		OSSECADDRESS=$(zenity --entry --text "Please enter a FROM email address for OSSEC" --entry-text "root@localhost")
+ 	else
+-		OSSECADDRESS="root@localhost"
++		OSSECADDRESS="ossec@$HOSTNAME"
+ 	fi
+ 	OSSECEMAIL="YES"
+ 	OSSECEMAIL_SUMMARY=" - OSSEC email will be configured."
+@@ -304,7 +304,7 @@ if ! [[ "$SOSTATEMAIL" == "NO" ]]; then
+ 	echo "# Configuring sostat mail..." | tee -a $LOG
+ 	SOSTAT="/etc/cron.d/sostat"
+ 	touch $SOSTAT
+-	echo -e '#/etc/cron.d/sostat\n#\n#crontab entry to run sostat and email its output\n\n\nSHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\nEMAIL=root@localhost\nHOSTNAME='$HOSTNAME'\n\n01 12 * * * root /usr/sbin/sostat 2>&1 | mail -aFrom:SecurityOnion@$HOSTNAME -s "Statistics for $HOSTNAME" $EMAIL' > $SOSTAT
++	echo -e '#/etc/cron.d/sostat\n#\n#crontab entry to run sostat and email its output\n\n\nSHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\nEMAIL=root@localhost\nHOSTNAME='$HOSTNAME'\n\n01 12 * * * root /usr/sbin/sostat 2>&1 | mail -aFrom:'$SOSTATADDRESS' -s "Statistics for $HOSTNAME" $EMAIL' > $SOSTAT
+ fi
+ #Configure Bro
+ if ! [[ "$BROEMAIL" == "NO" ]]; then
+@@ -323,6 +323,12 @@ if ! [[ "$BROEMAIL" == "NO" ]]; then
+         else
+         	echo -e "\n# Bro Notice email configuration\nhook Notice::policy(n: Notice::Info)\n             {       \n      add n\$actions[Notice::ACTION_ALARM];\n         }" >> $LOCALBRO
+         fi
++	BROCFG="/opt/bro/etc/broctl.cfg"
++	if ! grep MailFrom $BROCFG; then
++		echo 'MailFrom = '"$BROADDRESS"'' >> $BROCFG
++	else
++		sed -i "s/MailFrom =.*/MailFrom = $BROADDRESS/" $BROCFG
++	fi
+ 	nsm_sensor_ps-restart --only-bro >> $LOG 2>&1
+ fi
+ #Configure Sguil
+@@ -333,7 +339,7 @@ if ! [[ "$SGUILEMAIL" == "NO" ]]; then
+ 	sed -i "s|^set EMAIL_EVENTS.*$|set EMAIL_EVENTS 1|g" $SGUILDEMAIL
+         sed -i "s|^set SMTP.*$|set SMTP_SERVER localhost|g" $SGUILDEMAIL
+         sed -i "s|^set EMAIL_RCPT.*$|set EMAIL_RCPT_TO \"root@localhost\"|g" $SGUILDEMAIL
+-        sed -i "s|^set EMAIL_FROM.*$|set EMAIL_FROM \"Sguil\"|g" $SGUILDEMAIL
++        sed -i "s|^set EMAIL_FROM.*$|set EMAIL_FROM \"$SGUILADDRESS\"|g" $SGUILDEMAIL
+ 	nsm_server_ps-restart >> $LOG 2>&1
+ fi
+ #Configure OSSEC
+@@ -345,12 +351,12 @@ if ! [[ "$OSSECEMAIL" == "NO" ]]; then
+ 	if grep -q -i "smtp" $OSSECCONF;then
+ 		sed -i 's/.*email_to.*/     <email_to>root@localhost<\/email_to>/' $OSSECCONF
+                 sed -i 's/.*smtp_server.*/     <smtp_server>localhost<\/smtp_server>/' $OSSECCONF
+-                sed -i 's/.*email_from.*/     <email_from>no-reply<\/email_from>/' $OSSECCONF
++                sed -i 's/.*email_from.*/     <email_from>'$OSSECADDRESS'<\/email_from>/' $OSSECCONF
+                 sed -i 's/.*email_maxperhour.*/     <email_maxperhour>20<\/email_maxperhour>/' $OSSECCONF
+         else
+                 sed -i '/.*email_notification.*/ a \     <email_to>root@localhost<\/email_to>' $OSSECCONF
+                	sed -i '/.*email_to.*/ a \     <smtp_server>localhost<\/smtp_server>' $OSSECCONF
+-                sed -i '/.*smtp_server.*/ a \     <email_from>no-reply<\/email_from>' $OSSECCONF
++                sed -i '/.*smtp_server.*/ a \     <email_from>'$OSSECADDRESS'<\/email_from>' $OSSECCONF
+                 sed -i '/.*email_from.*/ a \     <email_maxperhour>\100\<\/email_maxperhour>' $OSSECCONF
+         fi
+ 	service ossec-hids-server restart >> $LOG 2>&1

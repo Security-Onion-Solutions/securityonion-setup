@@ -96,7 +96,7 @@ case $input in
                         port="3142"
                         ;;
 		e)
-			device="Elasticsearch REST Endpoint"
+			device="Elasticsearch client"
 			category="elastic"
 			proto="tcp"
 			port="9200"

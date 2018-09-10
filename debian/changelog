@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion276) xenial; urgency=medium
+
+  * issues 1325 and 1322 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 10 Sep 2018 09:37:02 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion275) xenial; urgency=medium
 
   * merge pr 37 

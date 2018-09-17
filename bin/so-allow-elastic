@@ -62,7 +62,7 @@ echo "[f] - Logstash forwarder - standard - port 6050/tcp"
 echo "[j] - Logstash forwarder - JSON - port 6051/tcp "
 echo "[l] - Syslog device - port 514"
 echo "[n] - Elasticsearch node-to-node communication - port 9300"
-echo "[o] - OSSEC agent - port 1514/udp"
+echo "[o] - OSSEC agent - port 1514"
 echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
 echo
 echo "If you need to add any ports other than those listed above,"
@@ -126,7 +126,7 @@ case $input in
 			;;
 		o)
 			device="ossec agent"
-			proto="proto udp"
+			proto=""
 			port="1514"
 			;;
 		s)

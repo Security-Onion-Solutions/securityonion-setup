@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion277) xenial; urgency=medium
+
+  * allowing an OSSEC agent should allow both UDP and TCP traffic #1330 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 17 Sep 2018 06:48:37 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion276) xenial; urgency=medium
 
   * issues 1325 and 1322 

@@ -1,0 +1,45 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion277) xenial; urgency=medium
+ .
+   * allowing an OSSEC agent should allow both UDP and TCP traffic #1330
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/so-allow-elastic
++++ securityonion-setup-20120912/bin/so-allow-elastic
+@@ -62,7 +62,7 @@ echo "[f] - Logstash forwarder - standar
+ echo "[j] - Logstash forwarder - JSON - port 6051/tcp "
+ echo "[l] - Syslog device - port 514"
+ echo "[n] - Elasticsearch node-to-node communication - port 9300"
+-echo "[o] - OSSEC agent - port 1514/udp"
++echo "[o] - OSSEC agent - port 1514"
+ echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
+ echo
+ echo "If you need to add any ports other than those listed above,"
+@@ -126,7 +126,7 @@ case $input in
+ 			;;
+ 		o)
+ 			device="ossec agent"
+-			proto="proto udp"
++			proto=""
+ 			port="1514"
+ 			;;
+ 		s)

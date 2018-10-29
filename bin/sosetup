@@ -1868,6 +1868,13 @@ EOF
 fi
 
 #########################################
+# Apache
+#########################################
+echo "47"
+echo "# Please wait while configuring Apache..." | tee -a $LOG
+/usr/sbin/so-elastic-configure-apache >> $LOG 2>&1
+
+#########################################
 # syslog-ng
 #########################################
 echo "49"

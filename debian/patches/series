@@ -263,3 +263,4 @@ merge-pr-35-and-36
 merge-pr-37
 issues-1325-and-1322
 allowing-an-OSSEC-agent-should-allow-both-UDP-and-TCP-traffic-#1330
+Setup:-ensure-Apache-SSO-config-is-enabled-#1355

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion278) xenial; urgency=medium
+
+  * Setup: ensure Apache SSO config is enabled #1355 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 29 Oct 2018 06:39:58 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion277) xenial; urgency=medium
 
   * allowing an OSSEC agent should allow both UDP and TCP traffic #1330 

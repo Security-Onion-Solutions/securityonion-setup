@@ -1432,7 +1432,7 @@ for INTERFACE in $ALL_INTERFACES; do
 		echo "Leaving $INTERFACE as-is (enabled)." >> $LOG 2>&1
 	else
 		echo "$INTERFACE not found in selected interfaces.  Disabling." >> $LOG 2>&1
-		sed -i "s|^$HOSTNAME-$INTERFACE|#$HOSTNAME-$INTERFACE|g" /etc/nsm/sensortab
+		sed -i "s|\<$HOSTNAME-$INTERFACE\>|#$HOSTNAME-$INTERFACE|g" /etc/nsm/sensortab
 	fi
 done
 

@@ -457,7 +457,8 @@ The master server queries Storage Nodes via cross cluster search.\n"
 		ELASTIC="yes"
 		;;	
 	Storage)
-		SENSOR=0
+		SENSOR=1
+		INTERFACES=""
 		ELASTIC="yes"
 		LOGSTASH_INPUT_REDIS="yes"
 		IDS_LB_PROCS_CONFIRM=""
@@ -619,7 +620,7 @@ fi
 #########################################
 # ADVANCED SETUP - SENSOR
 #########################################
-if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ]; then
+if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; then
 	
 	# Remove "-c" from PCAP_OPTIONS for better performance on production networks
 	PCAP_OPTIONS=""
@@ -1968,11 +1969,6 @@ EOF
 
 		if [ "$LOGSTASH_INPUT_REDIS" = "yes" ]; then
 			echo 'LOGSTASH_INPUT_REDIS="yes"' >> $CONF
-			if grep OSSEC_AGENT_ENABLED $CONF >/dev/null 2>&1; then
-				sed -i 's|OSSEC_AGENT_ENABLED.*$|OSSEC_AGENT_ENABLED=no|g' $CONF
-			else
-				echo 'OSSEC_AGENT_ENABLED=no' >> $CONF
-			fi
 		fi
 	fi
 

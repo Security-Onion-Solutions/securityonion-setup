@@ -531,6 +531,7 @@ if [ "$OUTPUT" = "gui" ]; then
 	        exit
 	else
 	        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes to proceed with all changes."
+		cp /usr/share/securityonion/securityonion_setup_again.jpg /usr/share/securityonion/securityonion.jpg
 		reboot
 		# If we don't sleep, then it will continue onto normal Setup before the actual reboot
 		sleep 100

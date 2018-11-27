@@ -2363,6 +2363,7 @@ SERVER_QUEUE
 MINION
 MOVELOG
 IP2C
+cp /usr/share/securityonion/securityonion_setup_default.jpg /usr/share/securityonion/securityonion.jpg
 
 # Final screens
 for i in FIN1 FIN2 FIN3 FIN4 FIN5 FIN6; do

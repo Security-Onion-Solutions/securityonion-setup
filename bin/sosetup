@@ -1094,16 +1094,6 @@ echo "# Please wait while setting OSSEC timezone to UTC..." | tee -a $LOG
 cp /etc/localtime /var/ossec/etc/localtime
 chown root:ossec /var/ossec/etc/localtime
 
-# If user enabled ELASTIC, configure OSSEC to send alerts to local syslog
-if [ "$ELASTIC" = "yes" ]; then
-grep "syslog_output" /var/ossec/etc/ossec.conf >/dev/null || sed -i 's|  <rules>|  <syslog_output>\
-      <server>127.0.0.1</server>\
-  </syslog_output>\
-\
-  <rules>|g' /var/ossec/etc/ossec.conf
-/var/ossec/bin/ossec-control enable client-syslog
-fi
-
 echo "6"
 echo "# Please wait while restarting OSSEC..." | tee -a $LOG
 service ossec-hids-server restart >> $LOG 2>&1

@@ -1,0 +1,36 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion280) xenial; urgency=medium
+ .
+   * fix securityonion_default.jpg filename
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -2363,7 +2363,7 @@ SERVER_QUEUE
+ MINION
+ MOVELOG
+ IP2C
+-cp /usr/share/securityonion/securityonion_setup_default.jpg /usr/share/securityonion/securityonion.jpg
++cp /usr/share/securityonion/securityonion_default.jpg /usr/share/securityonion/securityonion.jpg
+ 
+ # Final screens
+ for i in FIN1 FIN2 FIN3 FIN4 FIN5 FIN6; do

@@ -1328,6 +1328,11 @@ for INTERFACE in $ALL_INTERFACES; do
 	# Increment the Barnyard2 port number by 100
 	let BY2PORT=BY2PORT+100
 
+	# Skip over 9200-9600 as Elasticsearch uses 9200 & 9300 and Logstash uses 9600.
+	if [ "$BY2PORT" == "9200" ]; then
+		let BY2PORT=9700
+	fi
+
         # Copy our customized snort.conf (and associated files) into place
         cp /etc/nsm/templates/snort/attribute_table.dtd /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1
         cp /etc/nsm/templates/snort/snort.conf /etc/nsm/"$SENSORNAME"/ >> $LOG 2>&1

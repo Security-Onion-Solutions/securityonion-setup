@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion281) xenial; urgency=medium
+
+  * issues 1397 and 1395 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 26 Dec 2018 15:11:03 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion280) xenial; urgency=medium
 
   * fix securityonion_default.jpg filename 

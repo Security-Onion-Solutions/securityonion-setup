@@ -1448,6 +1448,10 @@ EOF
 	else
 		# User selected Advanced Setup, so do cluster config
 		cat << EOF > /opt/bro/etc/node.cfg
+[logger]
+type=logger
+host=localhost
+
 [manager]
 type=manager
 host=localhost

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion282) xenial; urgency=medium
+
+  * Setup: configure Bro cluster mode for AF_PACKET Security-Onion-Solutions/security-onion#1421 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 28 Jan 2019 07:39:16 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion281) xenial; urgency=medium
 
   * issues 1397 and 1395 

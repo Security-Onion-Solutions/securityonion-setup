@@ -1461,13 +1461,11 @@ type=proxy
 host=localhost
 
 EOF
-		# Don't need to change to IP address anymore
-                #IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
-                #sed -i "s|host=localhost|host=$IP|g" /opt/bro/etc/node.cfg
 
-		# Go ahead and populate the file with all available interfaces
+		# Populate the file with all available interfaces
 		# Comment out inactive interfaces
-                # grep -v "^#" $SENSORTAB | awk '{print $1}' |while read SENSOR
+		# Each interface needs a unique FANOUT_ID
+		FANOUT_ID=30
 		for INTERFACE in $ALL_INTERFACES; do
 			if echo $INTERFACES_CSV |grep "$INTERFACE," >/dev/null 2>&1; then
                         echo "* Configuring Bro to monitor $INTERFACE" >> $LOG 2>&1
@@ -1476,8 +1474,11 @@ EOF
 type=worker
 host=localhost
 interface=$INTERFACE
-lb_method=pf_ring
+lb_method=custom
 lb_procs=$BRO_LB_PROCS
+af_packet_fanout_id=$FANOUT_ID
+af_packet_fanout_mode=AF_Packet::FANOUT_HASH
+af_packet_buffer_size=128*1024*1024
 
 EOF
 			else
@@ -1486,11 +1487,15 @@ EOF
 #type=worker
 #host=localhost
 #inter#face=$INTERFACE
-#lb_method=pf_ring
+#lb_method=custom
 #lb_procs=$BRO_LB_PROCS
+#af_packet_fanout_id=$FANOUT_ID
+#af_packet_fanout_mode=AF_Packet::FANOUT_HASH
+#af_packet_buffer_size=128*1024*1024
 
 EOF
 			fi
+			((FANOUT_ID++))
                 done
 
         fi

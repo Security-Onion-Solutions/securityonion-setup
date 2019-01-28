@@ -1,0 +1,485 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion282) xenial; urgency=medium
+ .
+   * Setup: configure Bro cluster mode for AF_PACKET Security-Onion-Solutions/security-onion#1421
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/so-allow
++++ securityonion-setup-20120912/bin/so-allow
+@@ -1,4 +1,19 @@
+ #!/bin/bash
++#
++# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
++#
++# This program is free software: you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation, either version 3 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ #########################################
+ # function to validate IP address
+--- securityonion-setup-20120912.orig/bin/so-allow-elastic
++++ securityonion-setup-20120912/bin/so-allow-elastic
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ #
+-# Copyright 2014,2015,2016,2017,2018 Security Onion Solutions, LLC
++# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+ #
+ # This program is free software: you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+--- securityonion-setup-20120912.orig/bin/so-allow-view
++++ securityonion-setup-20120912/bin/so-allow-view
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ #
+-# Copyright 2014,2015,2016,2017,2018 Security Onion Solutions, LLC
++# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+ #
+ # This program is free software: you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+--- securityonion-setup-20120912.orig/bin/so-allow-view-iptables
++++ securityonion-setup-20120912/bin/so-allow-view-iptables
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ #
+-# Copyright 2014,2015,2016,2017,2018 Security Onion Solutions, LLC
++# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+ #
+ # This program is free software: you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+--- securityonion-setup-20120912.orig/bin/so-disallow
++++ securityonion-setup-20120912/bin/so-disallow
+@@ -1,4 +1,19 @@
+ #!/bin/bash
++#
++# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
++#
++# This program is free software: you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation, either version 3 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ #########################################
+ # function to validate IP address
+--- securityonion-setup-20120912.orig/bin/so-email
++++ securityonion-setup-20120912/bin/so-email
+@@ -1,8 +1,23 @@
+ #!/bin/bash
+ #
++# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
++#
++# This program is free software: you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation, either version 3 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program.  If not, see <http://www.gnu.org/licenses/>.
++#
+ # Description:
+ # Configure email for Security Onion
+-#
++
+ #########################################
+ # Variables
+ #########################################
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1,7 +1,7 @@
+ #!/bin/bash
+ #
+-# Copyright (C) 2010-2014 Doug Burks
+-# Copyright (C) 2015-2018 Security Onion Solutions, LLC
++# Copyright (C) 2010,2011,2012,2013,2014 Doug Burks
++# Copyright (C) 2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License Version 2 as
+@@ -1428,7 +1428,7 @@ for INTERFACE in $ALL_INTERFACES; do
+ 		echo "Leaving $INTERFACE as-is (enabled)." >> $LOG 2>&1
+ 	else
+ 		echo "$INTERFACE not found in selected interfaces.  Disabling." >> $LOG 2>&1
+-		sed -i "s|^$HOSTNAME-$INTERFACE|#$HOSTNAME-$INTERFACE|g" /etc/nsm/sensortab
++		sed -i "s|\<$HOSTNAME-$INTERFACE\>|#$HOSTNAME-$INTERFACE|g" /etc/nsm/sensortab
+ 	fi
+ done
+ 
+@@ -1448,6 +1448,10 @@ EOF
+ 	else
+ 		# User selected Advanced Setup, so do cluster config
+ 		cat << EOF > /opt/bro/etc/node.cfg
++[logger]
++type=logger
++host=localhost
++
+ [manager]
+ type=manager
+ host=localhost
+@@ -1457,13 +1461,11 @@ type=proxy
+ host=localhost
+ 
+ EOF
+-		# Don't need to change to IP address anymore
+-                #IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
+-                #sed -i "s|host=localhost|host=$IP|g" /opt/bro/etc/node.cfg
+ 
+-		# Go ahead and populate the file with all available interfaces
++		# Populate the file with all available interfaces
+ 		# Comment out inactive interfaces
+-                # grep -v "^#" $SENSORTAB | awk '{print $1}' |while read SENSOR
++		# Each interface needs a unique FANOUT_ID
++		FANOUT_ID=30
+ 		for INTERFACE in $ALL_INTERFACES; do
+ 			if echo $INTERFACES_CSV |grep "$INTERFACE," >/dev/null 2>&1; then
+                         echo "* Configuring Bro to monitor $INTERFACE" >> $LOG 2>&1
+@@ -1472,8 +1474,11 @@ EOF
+ type=worker
+ host=localhost
+ interface=$INTERFACE
+-lb_method=pf_ring
++lb_method=custom
+ lb_procs=$BRO_LB_PROCS
++af_packet_fanout_id=$FANOUT_ID
++af_packet_fanout_mode=AF_Packet::FANOUT_HASH
++af_packet_buffer_size=128*1024*1024
+ 
+ EOF
+ 			else
+@@ -1482,11 +1487,15 @@ EOF
+ #type=worker
+ #host=localhost
+ #inter#face=$INTERFACE
+-#lb_method=pf_ring
++#lb_method=custom
+ #lb_procs=$BRO_LB_PROCS
++#af_packet_fanout_id=$FANOUT_ID
++#af_packet_fanout_mode=AF_Packet::FANOUT_HASH
++#af_packet_buffer_size=128*1024*1024
+ 
+ EOF
+ 			fi
++			((FANOUT_ID++))
+                 done
+ 
+         fi
+--- securityonion-setup-20120912.orig/bin/sosetup-fix-ppconf
++++ securityonion-setup-20120912/bin/sosetup-fix-ppconf
+@@ -1,4 +1,19 @@
+ #!/bin/sh
++#
++# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
++#
++# This program is free software: you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation, either version 3 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ FILE="/etc/nsm/pulledpork/pulledpork.conf"
+ DATE=`date +%Y%m%d`
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ #
+-# Copyright (C) 2014-2018 Security Onion Solutions, LLC
++# Copyright (C) 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License Version 2 as
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup-forward.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup-forward.conf
+@@ -76,13 +76,13 @@ SGUIL_SERVER_NAME='securityonion'
+ 
+ # SGUIL_CLIENT_USERNAME
+ # If SERVER=1, then this is the username that we'll create
+-# for Sguil/Squert/ELSA.
++# for Sguil/Squert/Kibana.
+ # Please use alphanumeric characters only!
+ SGUIL_CLIENT_USERNAME='onionuser'
+ 
+ # SGUIL_CLIENT_PASSWORD_1
+ # If SERVER=1, then this is the password that we'll create
+-# for Sguil/Squert/ELSA.
++# for Sguil/Squert/Kibana.
+ # If you set a password here, you may want to change it later and/or
+ # shred this file.
+ SGUIL_CLIENT_PASSWORD_1='asdfasdf'
+@@ -163,7 +163,7 @@ SNORT_AGENT_ENABLED='yes'
+ # BARNYARD2_ENABLED
+ # Do you want to run Barnyard2?  yes/no
+ # Barnyard2 sends IDS alerts from Snort/Suricata to
+-# Sguil's Snort agent and syslog (ELSA).
++# Sguil's Snort agent and syslog (Kibana).
+ BARNYARD2_ENABLED='yes'
+ 
+ # PCAP_ENABLED
+@@ -175,6 +175,7 @@ PCAP_ENABLED='yes'
+ # The pcap_agent allows Sguil to access the pcap store.
+ PCAP_AGENT_ENABLED='yes'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+@@ -182,22 +183,26 @@ PCAP_AGENT_ENABLED='yes'
+ # folks don't run Prads.
+ PRADS_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # SANCP_AGENT_ENABLED
+ # Do you want to run the sancp_agent?  yes/no
+ # sancp_agent sends session data from Prads to Sguil.
+ SANCP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # PADS_AGENT_ENABLED
+ # Do you want to run the pads_agent?  yes/no
+ # pads_agent sends asset data from Prads to Sguil.
+ PADS_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+ # http_agent sends http logs from Bro to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+ HTTP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+ # Argus writes session data, also provided by Bro and Prads.
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup-master.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup-master.conf
+@@ -76,13 +76,13 @@ SGUIL_SERVER_NAME='securityonion'
+ 
+ # SGUIL_CLIENT_USERNAME
+ # If SERVER=1, then this is the username that we'll create
+-# for Sguil/Squert/ELSA.
++# for Sguil/Squert/Kibana.
+ # Please use alphanumeric characters only!
+ SGUIL_CLIENT_USERNAME='onionuser'
+ 
+ # SGUIL_CLIENT_PASSWORD_1
+ # If SERVER=1, then this is the password that we'll create
+-# for Sguil/Squert/ELSA.
++# for Sguil/Squert/Kibana.
+ # If you set a password here, you may want to change it later and/or
+ # shred this file.
+ SGUIL_CLIENT_PASSWORD_1='asdfasdf'
+@@ -163,7 +163,7 @@ SNORT_AGENT_ENABLED='yes'
+ # BARNYARD2_ENABLED
+ # Do you want to run Barnyard2?  yes/no
+ # Barnyard2 sends IDS alerts from Snort/Suricata to
+-# Sguil's Snort agent and syslog (ELSA).
++# Sguil's Snort agent and syslog (Kibana).
+ BARNYARD2_ENABLED='yes'
+ 
+ # PCAP_ENABLED
+@@ -175,6 +175,7 @@ PCAP_ENABLED='yes'
+ # The pcap_agent allows Sguil to access the pcap store.
+ PCAP_AGENT_ENABLED='yes'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+@@ -182,22 +183,26 @@ PCAP_AGENT_ENABLED='yes'
+ # folks don't run Prads.
+ PRADS_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # SANCP_AGENT_ENABLED
+ # Do you want to run the sancp_agent?  yes/no
+ # sancp_agent sends session data from Prads to Sguil.
+ SANCP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # PADS_AGENT_ENABLED
+ # Do you want to run the pads_agent?  yes/no
+ # pads_agent sends asset data from Prads to Sguil.
+ PADS_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+ # http_agent sends http logs from Bro to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+ HTTP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+ # Argus writes session data, also provided by Bro and Prads.
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup-storage.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup-storage.conf
+@@ -76,13 +76,13 @@ SGUIL_SERVER_NAME='securityonion'
+ 
+ # SGUIL_CLIENT_USERNAME
+ # If SERVER=1, then this is the username that we'll create
+-# for Sguil/Squert/ELSA.
++# for Sguil/Squert/Kibana.
+ # Please use alphanumeric characters only!
+ SGUIL_CLIENT_USERNAME='onionuser'
+ 
+ # SGUIL_CLIENT_PASSWORD_1
+ # If SERVER=1, then this is the password that we'll create
+-# for Sguil/Squert/ELSA.
++# for Sguil/Squert/Kibana.
+ # If you set a password here, you may want to change it later and/or
+ # shred this file.
+ SGUIL_CLIENT_PASSWORD_1='asdfasdf'
+@@ -163,7 +163,7 @@ SNORT_AGENT_ENABLED='no'
+ # BARNYARD2_ENABLED
+ # Do you want to run Barnyard2?  yes/no
+ # Barnyard2 sends IDS alerts from Snort/Suricata to
+-# Sguil's Snort agent and syslog (ELSA).
++# Sguil's Snort agent and syslog (Kibana).
+ BARNYARD2_ENABLED='no'
+ 
+ # PCAP_ENABLED
+@@ -175,6 +175,7 @@ PCAP_ENABLED='no'
+ # The pcap_agent allows Sguil to access the pcap store.
+ PCAP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+@@ -182,22 +183,26 @@ PCAP_AGENT_ENABLED='no'
+ # folks don't run Prads.
+ PRADS_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # SANCP_AGENT_ENABLED
+ # Do you want to run the sancp_agent?  yes/no
+ # sancp_agent sends session data from Prads to Sguil.
+ SANCP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # PADS_AGENT_ENABLED
+ # Do you want to run the pads_agent?  yes/no
+ # pads_agent sends asset data from Prads to Sguil.
+ PADS_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+ # http_agent sends http logs from Bro to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+ HTTP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+ # Argus writes session data, also provided by Bro and Prads.
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup.conf
+@@ -76,13 +76,13 @@ SGUIL_SERVER_NAME='securityonion'
+ 
+ # SGUIL_CLIENT_USERNAME
+ # If SERVER=1, then this is the username that we'll create
+-# for Sguil/Squert/ELSA.
++# for Sguil/Squert/Kibana.
+ # Please use alphanumeric characters only!
+ SGUIL_CLIENT_USERNAME='onionuser'
+ 
+ # SGUIL_CLIENT_PASSWORD_1
+ # If SERVER=1, then this is the password that we'll create
+-# for Sguil/Squert/ELSA.
++# for Sguil/Squert/Kibana.
+ # If you set a password here, you may want to change it later and/or
+ # shred this file.
+ SGUIL_CLIENT_PASSWORD_1='asdfasdf'
+@@ -163,7 +163,7 @@ SNORT_AGENT_ENABLED='yes'
+ # BARNYARD2_ENABLED
+ # Do you want to run Barnyard2?  yes/no
+ # Barnyard2 sends IDS alerts from Snort/Suricata to
+-# Sguil's Snort agent and syslog (ELSA).
++# Sguil's Snort agent and syslog (Kibana).
+ BARNYARD2_ENABLED='yes'
+ 
+ # PCAP_ENABLED
+@@ -175,6 +175,7 @@ PCAP_ENABLED='yes'
+ # The pcap_agent allows Sguil to access the pcap store.
+ PCAP_AGENT_ENABLED='yes'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+@@ -182,22 +183,26 @@ PCAP_AGENT_ENABLED='yes'
+ # folks don't run Prads.
+ PRADS_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # SANCP_AGENT_ENABLED
+ # Do you want to run the sancp_agent?  yes/no
+ # sancp_agent sends session data from Prads to Sguil.
+ SANCP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # PADS_AGENT_ENABLED
+ # Do you want to run the pads_agent?  yes/no
+ # pads_agent sends asset data from Prads to Sguil.
+ PADS_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+ # http_agent sends http logs from Bro to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+ HTTP_AGENT_ENABLED='no'
+ 
++##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+ # Argus writes session data, also provided by Bro and Prads.

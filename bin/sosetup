@@ -1396,7 +1396,7 @@ for INTERFACE in $ALL_INTERFACES; do
 	echo "PADS_AGENT_ENABLED=\"$PADS_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
 	echo "ARGUS_ENABLED=\"$ARGUS_ENABLED\""			>> /etc/nsm/"$SENSORNAME"/sensor.conf
 	echo "HTTP_AGENT_ENABLED=\"$HTTP_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
-	echo "# SURICATA_CAPTURE: af-packet or pfring (legacy)"	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+	echo "# SURICATA_CAPTURE: pfring (legacy) or af-packet"	>> /etc/nsm/"$SENSORNAME"/sensor.conf
 	echo "SURICATA_CAPTURE=\"af-packet\""			>> /etc/nsm/"$SENSORNAME"/sensor.conf
 
 	# Create symbolic link for sensor rules directory on server

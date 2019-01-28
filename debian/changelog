@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion285) xenial; urgency=medium
+
+  * adjust comment Security-Onion-Solutions/security-onion#1432 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 28 Jan 2019 15:21:45 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion284) xenial; urgency=medium
 
   * rename setting to SURICATA_CAPTURE Security-Onion-Solutions/security-onion#1432 

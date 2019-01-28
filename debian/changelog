@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion283) xenial; urgency=medium
+
+  * Setup: configure Suricata for AF_PACKET Security-Onion-Solutions/security-onion#1432 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 28 Jan 2019 14:01:04 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion282) xenial; urgency=medium
 
   * Setup: configure Bro cluster mode for AF_PACKET Security-Onion-Solutions/security-onion#1421 

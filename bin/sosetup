@@ -1350,7 +1350,6 @@ for INTERFACE in $ALL_INTERFACES; do
 	sed -i "s|reference-config-file: /etc/suricata/reference.config|reference-config-file: /etc/nsm/$SENSORNAME/reference.config|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|# threshold-file: /etc/suricata/threshold.config|threshold-file: /etc/nsm/$SENSORNAME/threshold.conf|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|filename: unified2.alert|filename: snort.unified2|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
-	#sed -i "s|threads: 1|threads: $IDS_LB_PROCS|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|interface: eth0|interface: $INTERFACE|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|cluster-id: 99|cluster-id: $BY2PORT|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
 	sed -i "s|    HOME_NET:.*|    HOME_NET: \"[$HOME_NET]\"|g" /etc/nsm/"$SENSORNAME"/suricata.yaml
@@ -1397,6 +1396,7 @@ for INTERFACE in $ALL_INTERFACES; do
 	echo "PADS_AGENT_ENABLED=\"$PADS_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
 	echo "ARGUS_ENABLED=\"$ARGUS_ENABLED\""			>> /etc/nsm/"$SENSORNAME"/sensor.conf
 	echo "HTTP_AGENT_ENABLED=\"$HTTP_AGENT_ENABLED\""	>> /etc/nsm/"$SENSORNAME"/sensor.conf
+	echo "AF_OR_PF=\"af-packet\""				>> /etc/nsm/"$SENSORNAME"/sensor.conf
 
 	# Create symbolic link for sensor rules directory on server
 	# Since a user may have as many Snort/Suricata instances as they have CPU cores,

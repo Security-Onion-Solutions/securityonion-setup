@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion284) xenial; urgency=medium
+
+  * rename setting to SURICATA_CAPTURE Security-Onion-Solutions/security-onion#1432 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 28 Jan 2019 15:10:18 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion283) xenial; urgency=medium
 
   * Setup: configure Suricata for AF_PACKET Security-Onion-Solutions/security-onion#1432 

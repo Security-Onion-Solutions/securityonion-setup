@@ -1,0 +1,45 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion287) xenial; urgency=medium
+ .
+   * Setup: postinst script should add MySQL LimitNOFILE setting if necessary Security-Onion-Solutions/security-onion#1443
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1160,17 +1160,6 @@ if [ $SERVER -eq 1 ]; then
+ innodb_file_per_table
+ EOF
+ 
+-	# https://code.google.com/p/security-onion/issues/detail?id=416
+-	# https://groups.google.com/d/topic/security-onion/l-1-C6EPKz0/discussion
+-	# https://github.com/Security-Onion-Solutions/security-onion/issues/1322
+-	# sguild may try to open lots of files
+-	# so increase open_files_limit on master server
+-	mkdir -p /lib/systemd/system/mysql.service.d
+-	cat << EOF >> /lib/systemd/system/mysql.service.d/limit_nofile.conf
+-[Service]
+-LimitNOFILE=90000
+-EOF
+-
+ 	# Enable MySQL, reload config, and restart service
+ 	systemctl enable mysql.service >> $LOG 2>&1
+ 	systemctl daemon-reload

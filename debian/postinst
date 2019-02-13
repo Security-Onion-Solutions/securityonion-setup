@@ -66,7 +66,11 @@ case "$1" in
 	# Update any old cron entries with new path
 	sed -i 's|/usr/bin/sostat|/usr/sbin/sostat|g' /etc/cron.d/* || echo "Error updating cron jobs to use new path."
 
-	# Set MySQL LimitNOFILE if necessary
+	# sguild may try to open lots of files so increase open_files_limit
+	# https://code.google.com/p/security-onion/issues/detail?id=416
+	# https://groups.google.com/d/topic/security-onion/l-1-C6EPKz0/discussion
+	# https://github.com/Security-Onion-Solutions/security-onion/issues/1322
+	# https://github.com/Security-Onion-Solutions/security-onion/issues/1443
 	DIR=/lib/systemd/system/mysql.service.d
 	FILE="$DIR/limit_nofile.conf"
 	if [ -f $FILE ]; then 

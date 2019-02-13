@@ -1160,17 +1160,6 @@ if [ $SERVER -eq 1 ]; then
 innodb_file_per_table
 EOF
 
-	# https://code.google.com/p/security-onion/issues/detail?id=416
-	# https://groups.google.com/d/topic/security-onion/l-1-C6EPKz0/discussion
-	# https://github.com/Security-Onion-Solutions/security-onion/issues/1322
-	# sguild may try to open lots of files
-	# so increase open_files_limit on master server
-	mkdir -p /lib/systemd/system/mysql.service.d
-	cat << EOF >> /lib/systemd/system/mysql.service.d/limit_nofile.conf
-[Service]
-LimitNOFILE=90000
-EOF
-
 	# Enable MySQL, reload config, and restart service
 	systemctl enable mysql.service >> $LOG 2>&1
 	systemctl daemon-reload

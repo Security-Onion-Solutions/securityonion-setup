@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion286) xenial; urgency=medium
+
+  * Setup: postinst script should add MySQL LimitNOFILE setting if necessary Security-Onion-Solutions/security-onion#1443 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 13 Feb 2019 15:35:17 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion285) xenial; urgency=medium
 
   * adjust comment Security-Onion-Solutions/security-onion#1432 

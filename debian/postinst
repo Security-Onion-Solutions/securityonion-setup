@@ -33,12 +33,10 @@ case "$1" in
 		# Make existing launchers executable
 		echo -n "Checking for existing Desktop launchers..."
 		chmod +x /etc/skel/Desktop/chromium-browser.desktop >/dev/null 2>&1 || echo -n "."
-		chmod +x /etc/skel/Desktop/elsa.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /etc/skel/Desktop/exo-terminal-emulator.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /etc/skel/Desktop/securityonion*.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /etc/skel/Desktop/squert.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /home/*/Desktop/chromium-browser.desktop >/dev/null 2>&1 || echo -n "."
-		chmod +x /home/*/Desktop/elsa.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /home/*/Desktop/exo-terminal-emulator.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /home/*/Desktop/securityonion*.desktop >/dev/null 2>&1 || echo -n "."
 		chmod +x /home/*/Desktop/squert.desktop >/dev/null 2>&1 || echo -n "."
@@ -67,6 +65,20 @@ case "$1" in
 
 	# Update any old cron entries with new path
 	sed -i 's|/usr/bin/sostat|/usr/sbin/sostat|g' /etc/cron.d/* || echo "Error updating cron jobs to use new path."
+
+	# Set MySQL LimitNOFILE if necessary
+	DIR=/lib/systemd/system/mysql.service.d
+	FILE="$DIR/limit_nofile.conf"
+	if [ -f $FILE ]; then 
+		echo "$FILE already exists."
+	else
+		echo "Creating $FILE."
+		mkdir -p $DIR
+		cat << EOF >> $FILE
+[Service]
+LimitNOFILE=90000
+EOF
+	fi
 
     ;;
 

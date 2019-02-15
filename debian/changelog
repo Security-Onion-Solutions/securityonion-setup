@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion288) xenial; urgency=medium
+
+  * Setup: create desktop shortcut for CyberChef Security-Onion-Solutions/security-onion#1449 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 15 Feb 2019 11:39:22 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion287) xenial; urgency=medium
 
   * Setup: postinst script should add MySQL LimitNOFILE setting if necessary Security-Onion-Solutions/security-onion#1443 

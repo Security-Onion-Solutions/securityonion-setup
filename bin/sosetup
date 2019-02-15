@@ -1834,6 +1834,12 @@ EOF
 	sed -i 's|https://localhost|https://localhost/squert|g' $SQUERT_LAUNCHER
 	sed -i 's|Name=README|Name=Squert|g' $SQUERT_LAUNCHER
 
+	# Use README launcher as template to create CyberChef launcher
+	CYBERCHEF_LAUNCHER="$DIR/securityonion-cyberchef.desktop"
+	cp $README_LAUNCHER $CYBERCHEF_LAUNCHER
+	sed -i 's|https://localhost|https://localhost/cyberchef/cyberchef.htm|g' $CYBERCHEF_LAUNCHER
+	sed -i 's|Name=README|Name=CyberChef|g' $CYBERCHEF_LAUNCHER
+
 	# Use README launcher as template to create Kibana launcher (if enabled)
 	if [ "$ELASTIC" = "yes" ]; then
 		KIBANA_LAUNCHER="$DIR/securityonion-kibana.desktop"

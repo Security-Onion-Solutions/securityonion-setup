@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion289) xenial; urgency=medium
+
+  * Setup: change wiki links to docs Security-Onion-Solutions/security-onion#1450 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 15 Feb 2019 13:28:32 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion288) xenial; urgency=medium
 
   * Setup: create desktop shortcut for CyberChef Security-Onion-Solutions/security-onion#1449 

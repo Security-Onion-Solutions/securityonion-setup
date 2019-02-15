@@ -55,8 +55,8 @@ For more information, please see:\
 http://securityonion.blogspot.com/2011/10/when-is-full-packet-capture-not-full.html\
 \
 If you choose NO, you should manually configure your management and monitored interfaces\
-per the instructions on the Security Onion Wiki located at:\
-https://github.com/Security-Onion-Solutions/security-onion/wiki/NetworkConfiguration'
+per the instructions at:\
+https://securityonion.net/docs/NetworkConfiguration'
 	YES='Yes, configure /etc/network/interfaces!'
 	NO='No, not right now.'
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap

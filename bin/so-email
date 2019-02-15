@@ -485,7 +485,7 @@ MOVELOG
 TEXT="Security Onion Email Setup is now complete! \n \
 \n\
 If you would like to edit the email configuration manually, please refer to:\n
-https://github.com/Security-Onion-Solutions/security-onion/wiki/Email\n"
+https://securityonion.net/docs/Email\n"
 if [ "$OUTPUT" = "gui" ]; then
 	zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
 else

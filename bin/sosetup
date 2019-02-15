@@ -137,11 +137,11 @@ TOTAL_MEM=`grep MemTotal /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'`
 # Make RAM # human readable (GB)
 HR_MEM=$((TOTAL_MEM / 1000))
 # Text for minimum memory check
-MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 8GB of RAM.\n\n\Please consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
+MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 8GB of RAM.\n\n\Please consult the following link for more information:\n\https://securityonion.net/docs/Hardware\n\n\
 Click 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n\
 Otherwise, click 'Yes' to continue."
 # Text for minimum core check
-CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\For best performance, please ensure the machine is allocated at least 2 processor cores.\n\n\Please consult the following link for more information:\n\https://github.com/Security-Onion-Solutions/security-onion/wiki/Hardware\n\n\
+CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\For best performance, please ensure the machine is allocated at least 2 processor cores.\n\n\Please consult the following link for more information:\n\https://securityonion.net/docs/Hardware\n\n\
 Click 'No' to stop setup and adjust the number of processor cores allocated to this machine.\n\
 Otherwise, click 'Yes' to continue."
 ARGS=("$@")
@@ -2170,7 +2170,7 @@ TEXT='If you have any questions or problems,\
 please visit our website where you can find\
 the following links:\
 FAQ\
-Wiki\
+Documentation\
 Mailing Lists\
 IRC channel\
 and more!\

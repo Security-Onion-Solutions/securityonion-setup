@@ -169,9 +169,9 @@ function ask() {
 #########################################
 # Welcome screen
 #########################################
-TEXT="Welcome to Security Onion Elastic Setup!\n\
+TEXT="Welcome to Security Onion Setup!\n\
 \n\
-Elastic Setup will configure the following services:\n\
+Setup will configure the following services:\n\
 \n\
 Elasticsearch\n\
 Logstash\n\

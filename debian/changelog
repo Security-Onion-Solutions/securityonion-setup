@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion291) xenial; urgency=medium
+
+  * update SOS phrasing 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 16 Feb 2019 07:35:38 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion290) xenial; urgency=medium
 
   * Setup: change Elastic Setup to Setup Security-Onion-Solutions/security-onion#1453 

@@ -2179,10 +2179,9 @@ https://securityonion.net'
 }
 
 function FIN6() {
-TEXT='If you need commercial support or training,\
-please see:\
-\
-https://securityonionsolutions.com'
+TEXT="If you're interested in training, professional services, or hardware appliances, please see:\n \
+\n \
+https://securityonionsolutions.com"
 }
 
 

@@ -1518,6 +1518,28 @@ EOF
 		sed -i 's|^@load file-extraction|#@load file-extraction|g' /opt/bro/share/bro/site/local.bro
 	fi
 
+	# Create /opt/bro/share/bro/disable-syslog/disable-syslog.bro
+ 	mkdir -p /opt/bro/share/bro/disable-syslog/
+ 	cat << EOF > /opt/bro/share/bro/disable-syslog/disable-syslog.bro
+event bro_init()
+	{
+	Log::disable_stream(Syslog::LOG);
+ 	}
+EOF
+ 
+ 	# Create /opt/bro/share/bro/disable-syslog/__load__.bro
+ 	cat << EOF > /opt/bro/share/bro/disable-syslog/__load__.bro
+@load ./disable-syslog.bro
+EOF
+ 
+ 	# Configure Bro to load disable-syslog
+	grep -q "disable-syslog" /opt/bro/share/bro/site/local.bro || cat << EOF >> /opt/bro/share/bro/site/local.bro
+ 
+# Disable Bro syslog.log
+# https://github.com/Security-Onion-Solutions/security-onion/issues/1457
+@load disable-syslog
+EOF
+
 	# Configure Bro to log in JSON
 	/usr/sbin/so-elastic-configure-bro >> $LOG 2>&1
 fi

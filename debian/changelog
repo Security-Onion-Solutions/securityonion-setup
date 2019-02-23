@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion292) xenial; urgency=medium
+
+  * Setup: disable Bro syslog.log by default Security-Onion-Solutions/security-onion#1457 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 23 Feb 2019 14:38:45 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion291) xenial; urgency=medium
 
   * update SOS phrasing 

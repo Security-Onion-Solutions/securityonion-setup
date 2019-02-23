@@ -1533,12 +1533,14 @@ EOF
 EOF
  
  	# Configure Bro to load disable-syslog
-	grep -q "disable-syslog" /opt/bro/share/bro/site/local.bro || cat << EOF >> /opt/bro/share/bro/site/local.bro
+	if [ $ADVANCED_SETUP -eq 1 ]; then
+		grep -q "disable-syslog" /opt/bro/share/bro/site/local.bro || cat << EOF >> /opt/bro/share/bro/site/local.bro
  
-# Disable Bro syslog.log
+# Disable Bro syslog.log in Production Mode
 # https://github.com/Security-Onion-Solutions/security-onion/issues/1457
 @load disable-syslog
 EOF
+	fi
 
 	# Configure Bro to log in JSON
 	/usr/sbin/so-elastic-configure-bro >> $LOG 2>&1

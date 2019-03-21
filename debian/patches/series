@@ -278,3 +278,4 @@ Setup:-change-Elastic-Setup-to-Setup-Security-Onion-Solutionssecurity-onion#1453
 update-SOS-phrasing
 Setup:-disable-Bro-syslog.log-by-default-Security-Onion-Solutionssecurity-onion#1457
 Setup:-disable-Bro-syslog.log-by-default-in-Production-Mode-Security-Onion-Solutionssecurity-onion#1457
+Setup:-sudo-fails-during-sosetup-if-NOPASSWD:ALL-not-enabled-Security-Onion-Solutionssecurity-onion#1490

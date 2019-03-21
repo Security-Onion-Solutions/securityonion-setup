@@ -1241,6 +1241,9 @@ if [ "$SERVER" -ne 1 ]; then
 	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
 	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
 
+	# Need to run so-elastic-network and write output to file so we can read it later
+	echo "/usr/sbin/so-elastic-network > /tmp/so-elastic-network.txt" >> $SOSETUPSCP
+
 	# Need to whitelist sensor IP address to prevent Active Response
 	cat << EOF >> $SOSETUPSCP
 if ! grep -q "<white_list>\$IPADDRESS</white_list>" /var/ossec/etc/ossec.conf ; then
@@ -2012,23 +2015,19 @@ EOF
 		fi
 
 		# We need to determine a few things from the master server:
-
 		# DOCKER_INTERFACE, DOCKER_NETWORK, and REVERSE_PORT
+		# DOCKER_INTERFACE and DOCKER_NETWORK come from /tmp/so-elastic-network.txt that was created from the previous SOSETUPSCP
 
 		# DOCKER_INTERFACE
-		SSH_CMD="sudo /usr/sbin/so-elastic-network | jq '.[0].IPAM.Config[0].Gateway'"
-		SSH_OUTPUT=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME "$SSH_CMD"`
-		DOCKER_INTERFACE=$(echo $SSH_OUTPUT | cut -d\" -f2)
+		DOCKER_INTERFACE=$(ssh -i "$KEY" $SSH_USERNAME@$SERVERNAME cat /tmp/so-elastic-network.txt | jq '.[0].IPAM.Config[0].Gateway' | cut -d\" -f2)
 		echo "DOCKER_INTERFACE is $DOCKER_INTERFACE" >> $LOG 2>&1
 
 		# DOCKER_NETWORK
-		SSH_CMD="sudo /usr/sbin/so-elastic-network | jq '.[0].IPAM.Config[0].Subnet'"
-		SSH_OUTPUT=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME "$SSH_CMD"`
-		DOCKER_NETWORK=$(echo $SSH_OUTPUT | cut -d\" -f2)
+		DOCKER_NETWORK=$(ssh -i "$KEY" $SSH_USERNAME@$SERVERNAME cat /tmp/so-elastic-network.txt | jq '.[0].IPAM.Config[0].Subnet' | cut -d\" -f2)
 		echo "DOCKER_NETWORK is $DOCKER_NETWORK" >> $LOG 2>&1
 
 		# REVERSE_PORT
-		SSH_CMD='sudo /usr/sbin/so-crossclustercheck | jq "." | grep ":5" | cut -d: -f2 | cut -d\" -f1 | sort | tail -1'
+		SSH_CMD='/usr/sbin/so-crossclustercheck | jq "." | grep ":5" | cut -d: -f2 | cut -d\" -f1 | sort | tail -1'
 		HIGHEST_REVERSE_PORT=`ssh -i $KEY $SSH_USERNAME@$SERVERNAME "$SSH_CMD"`
 		if [ "$HIGHEST_REVERSE_PORT" = "" ]; then
 			echo "Found no other nodes." >> $LOG 2>&1

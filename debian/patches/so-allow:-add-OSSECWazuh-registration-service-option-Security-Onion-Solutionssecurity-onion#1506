@@ -1,0 +1,166 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion295) xenial; urgency=medium
+ .
+   * so-allow: add OSSEC/Wazuh registration service option Security-Onion-Solutions/security-onion#1506
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/so-allow
++++ securityonion-setup-20120912/bin/so-allow
+@@ -36,6 +36,9 @@ is_ip() {
+             done
+ }
+ 
++is_cidr() {
++        [[ "$1" =~ ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$ ]] && return 0
++}
+ #########################################
+ # check for root privileges
+ #########################################
+@@ -58,12 +61,13 @@ fi
+ #########################################
+ echo "This program allows you to add a firewall rule to allow connections from a new IP address."
+ echo
+-echo "What kind of device do you want to allow?"
++echo "What kind of communication would you like to allow?"
+ echo
+ echo "[a] - analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
+ echo "[c] - apt-cacher-ng client - port 3142/tcp"
+ echo "[l] - syslog device - port 514"
+-echo "[o] - ossec agent - port 1514/udp"
++echo "[o] - OSSEC/Wazuh agent - port 1514"
++echo "[r] - OSSEC/Wazuh registration service - port 1515/tcp"
+ echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
+ echo
+ echo "If you need to add any ports other than those listed above,"
+@@ -75,7 +79,7 @@ echo "https://securityonion.net/docs/Fir
+ device="none"
+ while [ "$device" = "none" ]; do
+ 	echo
+-	echo "Please enter your selection (a - analyst, c - apt-cacher-ng client, l - syslog, o - ossec, or s - Security Onion sensor):"
++	echo "Please enter your selection:"
+ 	read input
+ 
+ 	case $input in
+@@ -95,10 +99,16 @@ while [ "$device" = "none" ]; do
+ 			port="514"
+ 			;;
+ 		o)
+-			device="ossec agent"
++			device="OSSEC/Wazuh agent"
+ 			proto="proto udp"
+ 			port="1514"
+ 			;;
++                r)
++                        device="OSSEC/Wazuh registration service"
++                        proto="proto tcp"
++                        port="1515"
++                        ;;      
++                
+ 		s)
+ 			device="Security Onion sensor"
+ 			proto="proto tcp"
+@@ -112,9 +122,15 @@ done
+ #########################################
+ valid="no"
+ while [ "$valid" = "no" ]; do
+-	echo "Please enter the IP address of the $device you'd like to allow to connect to port(s) $port:"
+-	read address
+-	is_ip $address && valid="yes"
++        echo
++        echo "Configuring firewall for $device..."
++        echo "Please enter the IP address (or CIDR range) you'd like to allow to connect to port(s): $port"
++        read address
++        # Check if CIDR
++        is_cidr $address && valid="yes"
++        # Check if IP
++        [ $? -ne 0 ] && is_ip $address && valid="yes"
++
+ done
+ 
+ #########################################
+--- securityonion-setup-20120912.orig/bin/so-allow-elastic
++++ securityonion-setup-20120912/bin/so-allow-elastic
+@@ -52,7 +52,7 @@ fi
+ #########################################
+ echo "This program allows you to add a firewall rule to allow connections from a new IP address."
+ echo
+-echo "What kind of device do you want to allow?"
++echo "What kind of communication would you like to allow?"
+ echo
+ echo "[a] - Analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
+ echo "[b] - Logstash Beat - port 5044/tcp"
+@@ -62,7 +62,8 @@ echo "[f] - Logstash forwarder - standar
+ echo "[j] - Logstash forwarder - JSON - port 6051/tcp "
+ echo "[l] - Syslog device - port 514"
+ echo "[n] - Elasticsearch node-to-node communication - port 9300"
+-echo "[o] - OSSEC agent - port 1514"
++echo "[o] - OSSEC/Wazuh agent - port 1514"
++echo "[r] - OSSEC/Wazuh registration service - port 1515/tcp"
+ echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
+ echo
+ echo "If you need to add any ports other than those listed above,"
+@@ -73,11 +74,12 @@ echo "https://securityonion.net/docs/Fir
+ 
+ device="none"
+ while [ "$device" = "none" ]; do
+-	echo
+-	echo "Please enter your selection (a - analyst, c - apt-cacher-ng client, l - syslog, o - ossec, or s - Security Onion sensor, etc.):"
+-	read input
++          echo
++	  echo "Please enter your selection:"
++	  read input
+ 
+ 	. /etc/nsm/securityonion.conf
++
+ case $input in
+ 		a)
+ 			device="analyst"
+@@ -125,10 +127,17 @@ case $input in
+ 			port="9300"
+ 			;;
+ 		o)
+-			device="ossec agent"
++			device="OSSEC/Wazuh agent"
+ 			proto=""
+ 			port="1514"
+ 			;;
++                
++                r)
++                        device="OSSEC/Wazuh registration service"
++                        proto="proto tcp"
++                        port="1515"
++                        ;;
++
+ 		s)
+ 			device="Security Onion sensor"
+ 			proto="proto tcp"
+@@ -154,7 +163,9 @@ fi
+ #########################################
+ valid="no"
+ while [ "$valid" = "no" ]; do
+-	echo "Please enter the IP address of the $device you'd like to allow to connect to port(s) $port:"
++        echo
++        echo "Configuring firewall for $device..."
++        echo "Please enter the IP address (or CIDR range) you'd like to allow to connect to port(s): $port"
+ 	read address
+         # Check if CIDR
+ 	is_cidr $address && valid="yes"

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion295) xenial; urgency=medium
+
+  * so-allow: add OSSEC/Wazuh registration service option Security-Onion-Solutions/security-onion#1506 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 24 Apr 2019 13:17:38 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion294) xenial; urgency=medium
 
   * Setup: sudo fails during sosetup if NOPASSWD:ALL not enabled Security-Onion-Solutions/security-onion#1490 

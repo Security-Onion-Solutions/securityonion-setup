@@ -52,7 +52,7 @@ fi
 #########################################
 echo "This program allows you to add a firewall rule to allow connections from a new IP address."
 echo
-echo "What kind of device do you want to allow?"
+echo "What kind of communication would you like to allow?"
 echo
 echo "[a] - Analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
 echo "[b] - Logstash Beat - port 5044/tcp"
@@ -62,7 +62,8 @@ echo "[f] - Logstash forwarder - standard - port 6050/tcp"
 echo "[j] - Logstash forwarder - JSON - port 6051/tcp "
 echo "[l] - Syslog device - port 514"
 echo "[n] - Elasticsearch node-to-node communication - port 9300"
-echo "[o] - OSSEC agent - port 1514"
+echo "[o] - OSSEC/Wazuh agent - port 1514"
+echo "[r] - OSSEC/Wazuh registration service - port 1515/tcp"
 echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
 echo
 echo "If you need to add any ports other than those listed above,"
@@ -73,11 +74,12 @@ echo "https://securityonion.net/docs/Firewall"
 
 device="none"
 while [ "$device" = "none" ]; do
-	echo
-	echo "Please enter your selection (a - analyst, c - apt-cacher-ng client, l - syslog, o - ossec, or s - Security Onion sensor, etc.):"
-	read input
+          echo
+	  echo "Please enter your selection:"
+	  read input
 
 	. /etc/nsm/securityonion.conf
+
 case $input in
 		a)
 			device="analyst"
@@ -125,10 +127,17 @@ case $input in
 			port="9300"
 			;;
 		o)
-			device="ossec agent"
+			device="OSSEC/Wazuh agent"
 			proto=""
 			port="1514"
 			;;
+                
+                r)
+                        device="OSSEC/Wazuh registration service"
+                        proto="proto tcp"
+                        port="1515"
+                        ;;
+
 		s)
 			device="Security Onion sensor"
 			proto="proto tcp"
@@ -154,7 +163,9 @@ fi
 #########################################
 valid="no"
 while [ "$valid" = "no" ]; do
-	echo "Please enter the IP address of the $device you'd like to allow to connect to port(s) $port:"
+        echo
+        echo "Configuring firewall for $device..."
+        echo "Please enter the IP address (or CIDR range) you'd like to allow to connect to port(s): $port"
 	read address
         # Check if CIDR
 	is_cidr $address && valid="yes"

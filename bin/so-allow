@@ -36,6 +36,9 @@ is_ip() {
             done
 }
 
+is_cidr() {
+        [[ "$1" =~ ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$ ]] && return 0
+}
 #########################################
 # check for root privileges
 #########################################
@@ -58,12 +61,13 @@ fi
 #########################################
 echo "This program allows you to add a firewall rule to allow connections from a new IP address."
 echo
-echo "What kind of device do you want to allow?"
+echo "What kind of communication would you like to allow?"
 echo
 echo "[a] - analyst - ports 22/tcp, 443/tcp, and 7734/tcp"
 echo "[c] - apt-cacher-ng client - port 3142/tcp"
 echo "[l] - syslog device - port 514"
-echo "[o] - ossec agent - port 1514/udp"
+echo "[o] - OSSEC/Wazuh agent - port 1514"
+echo "[r] - OSSEC/Wazuh registration service - port 1515/tcp"
 echo "[s] - Security Onion sensor - 22/tcp, 4505/tcp, 4506/tcp, and 7736/tcp"
 echo
 echo "If you need to add any ports other than those listed above,"
@@ -75,7 +79,7 @@ echo "https://securityonion.net/docs/Firewall"
 device="none"
 while [ "$device" = "none" ]; do
 	echo
-	echo "Please enter your selection (a - analyst, c - apt-cacher-ng client, l - syslog, o - ossec, or s - Security Onion sensor):"
+	echo "Please enter your selection:"
 	read input
 
 	case $input in
@@ -95,10 +99,16 @@ while [ "$device" = "none" ]; do
 			port="514"
 			;;
 		o)
-			device="ossec agent"
+			device="OSSEC/Wazuh agent"
 			proto="proto udp"
 			port="1514"
 			;;
+                r)
+                        device="OSSEC/Wazuh registration service"
+                        proto="proto tcp"
+                        port="1515"
+                        ;;      
+                
 		s)
 			device="Security Onion sensor"
 			proto="proto tcp"
@@ -112,9 +122,15 @@ done
 #########################################
 valid="no"
 while [ "$valid" = "no" ]; do
-	echo "Please enter the IP address of the $device you'd like to allow to connect to port(s) $port:"
-	read address
-	is_ip $address && valid="yes"
+        echo
+        echo "Configuring firewall for $device..."
+        echo "Please enter the IP address (or CIDR range) you'd like to allow to connect to port(s): $port"
+        read address
+        # Check if CIDR
+        is_cidr $address && valid="yes"
+        # Check if IP
+        [ $? -ne 0 ] && is_ip $address && valid="yes"
+
 done
 
 #########################################

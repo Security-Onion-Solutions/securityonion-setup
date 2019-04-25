@@ -443,8 +443,13 @@ auto $INTERFACE
 iface $INTERFACE inet manual
   up ip link set \$IFACE promisc on arp off up
   down ip link set \$IFACE promisc off down
-  post-up ethtool -G \$IFACE rx $MAX_RX; for i in rx tx sg tso ufo gso gro lro; do ethtool -K \$IFACE \$i off; done
+  post-up for i in rx tx sg tso ufo gso gro lro; do ethtool -K \$IFACE \$i off; done
   post-up echo 1 > /proc/sys/net/ipv6/conf/\$IFACE/disable_ipv6
+  # You probably don't need to enable or edit the following setting,
+  # but it is included for completeness.
+  # Note that increasing beyond the default may result in inconsistent traffic:
+  # https://taosecurity.blogspot.com/2019/04/troubleshooting-nsm-virtualization.html
+  # post-up ethtool -G \$IFACE rx $MAX_RX
 
 EOF
 

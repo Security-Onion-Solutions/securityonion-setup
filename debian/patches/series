@@ -280,3 +280,4 @@ Setup:-disable-Bro-syslog.log-by-default-Security-Onion-Solutionssecurity-onion#
 Setup:-disable-Bro-syslog.log-by-default-in-Production-Mode-Security-Onion-Solutionssecurity-onion#1457
 Setup:-sudo-fails-during-sosetup-if-NOPASSWD:ALL-not-enabled-Security-Onion-Solutionssecurity-onion#1490
 so-allow:-add-OSSECWazuh-registration-service-option-Security-Onion-Solutionssecurity-onion#1506
+Setup:-etcnetworkinterfaces-ethtool-rx-setting-should-be-commented-out-by-default-Security-Onion-Solutionssecurity-onion#1508

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion296) xenial; urgency=medium
+
+  * Setup: /etc/network/interfaces ethtool rx setting should be commented out by default Security-Onion-Solutions/security-onion#1508 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 25 Apr 2019 10:14:40 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion295) xenial; urgency=medium
 
   * so-allow: add OSSEC/Wazuh registration service option Security-Onion-Solutions/security-onion#1506 

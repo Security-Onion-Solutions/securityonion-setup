@@ -1070,6 +1070,8 @@ rm -f /tmp/GeoIP.dat
 rm -f /tmp/GeoLiteCity.dat
 rm -f /tmp/GeoLiteCity.dat.gz
 rm -f /opt/bro/etc/node.cfg
+rm -f /etc/elasticsearch/elasticsearch_accounts
+rm -f /etc/elasticsearch/elasticsearch_pcap
 
 #########################################
 # Create files/dirs as necessary

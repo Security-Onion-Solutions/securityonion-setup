@@ -2073,7 +2073,7 @@ fi
 ufw allow proto tcp from $DOCKER_NETWORK to $DOCKER_INTERFACE port $REVERSE_PORT
 source /etc/nsm/securityonion.conf
 source /usr/sbin/so-elastic-common
-curl -\$ELASTICSEARCH_AUTH -XPUT http://\$ELASTICSEARCH_HOST:\$ELASTICSEARCH_PORT/_cluster/settings -H'Content-Type: application/json' -d '{"persistent": {"search": {"remote": {"$HOSTNAME": {"skip_unavailable": "true", "seeds": ["$DOCKER_INTERFACE:$REVERSE_PORT"]}}}}}'
+curl \$ELASTICSEARCH_AUTH -XPUT http://\$ELASTICSEARCH_HOST:\$ELASTICSEARCH_PORT/_cluster/settings -H'Content-Type: application/json' -d '{"persistent": {"search": {"remote": {"$HOSTNAME": {"skip_unavailable": "true", "seeds": ["$DOCKER_INTERFACE:$REVERSE_PORT"]}}}}}'
 EOF
 
 	fi

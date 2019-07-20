@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion297) xenial; urgency=medium
+
+  * Setup: interactive setup via command line Security-Onion-Solutions/security-onion#977 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 20 Jul 2019 18:55:41 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion296) xenial; urgency=medium
 
   * Setup: /etc/network/interfaces ethtool rx setting should be commented out by default Security-Onion-Solutions/security-onion#1508 

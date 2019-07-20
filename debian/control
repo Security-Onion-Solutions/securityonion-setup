@@ -10,6 +10,6 @@ Homepage: https://securityonion.net
 
 Package: securityonion-setup
 Architecture: all
-Depends: ${misc:Depends}, zenity, curl, gksu, securityonion-elastic
+Depends: ${misc:Depends}, zenity, curl, gksu, securityonion-elastic, whiptail
 Description: Security Onion setup wizard
  Next-Next-Finish for NSM!

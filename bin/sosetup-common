@@ -1,0 +1,77 @@
+#!/bin/bash
+#
+# Copyright (C) 2010,2011,2012,2013,2014 Doug Burks
+# Copyright (C) 2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License Version 2 as
+# published by the Free Software Foundation.  You may not use, modify or
+# distribute this program under any other version of the GNU General
+# Public License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+# Whiptail notes
+# If you open a terminal window in our default ISO image, stty size is 24 80.
+# So we set maximum whiptail size to 22 75.
+# This means that maximum list size should be 13.
+
+HOST_ORIG=`hostname`
+HOSTNAME=${HOST_ORIG,,}
+TITLE="Security Onion Setup ($HOSTNAME)"
+
+#########################################
+# Debug
+#########################################
+DEBUG=0
+[ $DEBUG -eq 1 ] && echo "DEBUG: Debug is enabled.  To disable it, edit the script and change DEBUG to 0."
+
+function prompterror() {
+	if [ "$OUTPUT" = "gui" ]; then
+		zenity --error --title "$TITLE" --text "$1"
+	else
+		whiptail --title="$TITLE" --msgbox "$1" 10 75
+	fi
+}
+
+function promptinput() {
+	if [ "$OUTPUT" = "gui" ]; then
+		zenity --entry --title "$TITLE" --text="$1"
+	else
+		whiptail --title="$TITLE" --inputbox "$1" 20 75 3>&1 1>&2 2>&3
+	fi
+}
+
+function promptyesno() {
+	if [ "$OUTPUT" = "gui" ]; then
+		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	else
+		whiptail --title="$TITLE" --yesno "$TEXT" 20 75
+	fi
+}
+
+function checkprivs() {
+if [[ $(/usr/bin/id -u) -ne 0 && "$1" != "-w" ]]; then
+	prompterror "Setup needs to be run as root!\n\nPlease try again using sudo."
+	exit
+fi
+}
+
+# GUI (Zenity) or CLI?
+# Default to zenity
+OUTPUT="gui"
+# If no X11, then fall back to cli
+[ -z "$DISPLAY" ] && OUTPUT="cli"
+# If user provided an answer file, set to cli
+[ -f "$ANSWERFILE" ] && OUTPUT="cli"
+
+checkprivs
+
+update-alternatives --set newt-palette /etc/newt/palette.original >/dev/null

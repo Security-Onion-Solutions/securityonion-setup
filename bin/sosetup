@@ -25,12 +25,8 @@
 #########################################
 # Variables
 #########################################
-DEBUG="0"
 # Window title
-HOST_ORIG=`hostname`
-HOSTNAME=${HOST_ORIG,,}
 IP=`ifconfig |grep "inet addr" | awk '{print $2}' |cut -d\: -f2 |grep -v "127.0.0.1" |head -1`
-TITLE="Security Onion Setup ($HOSTNAME)"
 # File locations
 CONF="/etc/nsm/securityonion.conf"
 LOG=`mktemp /tmp/sosetup-elastic.log.XXXXXXXXXX`
@@ -137,13 +133,13 @@ TOTAL_MEM=`grep MemTotal /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'`
 # Make RAM # human readable (GB)
 HR_MEM=$((TOTAL_MEM / 1000))
 # Text for minimum memory check
-MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\For best performance, please ensure the machine is allocated at least 8GB of RAM.\n\n\Please consult the following link for more information:\n\https://securityonion.net/docs/Hardware\n\n\
-Click 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n\
-Otherwise, click 'Yes' to continue."
+MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\nFor best performance, please ensure the machine is allocated at least 8GB of RAM.\n\nPlease consult the following link for more information:\nhttps://securityonion.net/docs/Hardware\n
+Select 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n
+Otherwise, select 'Yes' to continue."
 # Text for minimum core check
-CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\For best performance, please ensure the machine is allocated at least 2 processor cores.\n\n\Please consult the following link for more information:\n\https://securityonion.net/docs/Hardware\n\n\
-Click 'No' to stop setup and adjust the number of processor cores allocated to this machine.\n\
-Otherwise, click 'Yes' to continue."
+CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\nFor best performance, please ensure the machine is allocated at least 2 processor cores.\n\nPlease consult the following link for more information:\nhttps://securityonion.net/docs/Hardware\n
+Select 'No' to stop setup and adjust the number of processor cores allocated to this machine.\n
+Otherwise, select 'Yes' to continue."
 ARGS=("$@")
 REVERSE_PORT=50000
 DOCKER_INTERFACE="172.18.0.1"
@@ -151,19 +147,12 @@ DOCKER_NETWORK="172.18.0.0/24"
 LOGSTASH_OUTPUT_REDIS="no"
 LOGSTASH_INPUT_REDIS="no"
 
+source /usr/sbin/sosetup-common
+
 #########################################
 # Debug
 #########################################
 [ $DEBUG -eq 1 ] && echo "DEBUG: Debug is enabled.  To disable it, edit the script and change DEBUG to 0."
-
-#########################################
-# Got r00t?
-#########################################
-if [[ $(/usr/bin/id -u) -ne 0 && "$1" != "-w" ]]; then
-    echo "Setup needs to be run as root.  Please try again using sudo."
-    zenity --error --title "$TITLE" --text="Setup needs to be run as root.  Please try again using sudo."
-    exit
-fi
 
 function ask() {
 #########################################
@@ -195,13 +184,13 @@ Would you like to continue?"
 fi
 YES="Yes, Continue!"
 NO="No, Quit."
-zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+promptyesno "$TEXT"
 ANSWER="$?"
 if [ $ANSWER -eq 1 ]; then
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Exiting Setup"
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected No.  Exiting Setup"
         exit
 else
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Continuing Setup."
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes.  Continuing Setup."
 fi
 
 #########################################
@@ -218,12 +207,14 @@ fi
 # CHeck hardware requirements
 #########################################
 
-if [ $TOTAL_MEM -lt 8000 ]; then zenity --question --title="$TITLE" --text="$MEM_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+if [ $TOTAL_MEM -lt 8000 ]; then
+	promptyesno "$MEM_TEXT"
 	[ $? = 1 ] && exit 1
         [ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low RAM."
 fi
 
-if [ $CORES -lt 2 ]; then zenity --question --title="$TITLE" --text="$CORE_TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+if [ $CORES -lt 2 ]; then
+	promptyesno "$CORE_TEXT"
 	[ $? = 1 ] && exit 1
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Continuing, despite low core count."
 fi
@@ -246,9 +237,11 @@ and allows you to build a distributed deployment.  You choose:\n\
 - enable or disable network sensor services\n\
 - store logs locally or forward to master server\n"
 SETUP=""
-SETUP=`zenity --list --radiolist \
-        --column "1" --column "2" --hide-header --title="$TITLE" \
-        TRUE "Evaluation Mode" FALSE "Production Mode" --text="$TEXT"`
+if [ "$OUTPUT" = "gui" ]; then
+	SETUP=`zenity --list --radiolist --column "1" --column "2" --hide-header --title="$TITLE" TRUE "Evaluation Mode" FALSE "Production Mode" --text="$TEXT"`
+else
+	SETUP=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 22 75 2 "Evaluation Mode" ON "Production Mode" OFF 3>&1 1>&2 2>&3)
+fi
 [ $? = 1 ] && exit 1
 
 [ "$SETUP" == "" ] && exit
@@ -258,22 +251,37 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
         if [ $NUM_INTERFACES -gt 1 ]; then
                 TEXT="Which network interface should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your first monitor interface is already selected."
                 INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' | grep -v "^lo$" | grep -v "^docker" | grep -v "^br-" | grep -v "^veth" | sort`
-                if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
-
-			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
-                        INPUT=`for i in $INTERFACES; do 
-                                        if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
-                                                echo -n "TRUE $i "
-                                        else
-                                                echo -n "FALSE $i "
-                                        fi
-                                done`
-                else
-                        INPUT=`for i in $INTERFACES; do echo -n "FALSE $i "; done`
-                fi
-                INTERFACES=`zenity --list --radiolist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
+		if [ "$OUTPUT" = "gui" ]; then
+                	if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+				CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
+        	                INPUT=`for i in $INTERFACES; do 
+					if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
+						echo -n "TRUE $i "
+					else
+						echo -n "FALSE $i "
+					fi
+				done`
+                	else
+                        	INPUT=`for i in $INTERFACES; do echo -n "FALSE $i "; done`
+	                fi
+        	       	INTERFACES=`zenity --list --radiolist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
+		else
+                	if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+				CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces | head -1`
+        	                INPUT=`for i in $INTERFACES; do 
+					if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
+						echo -n "$i ON "
+					else
+						echo -n "$i OFF "
+					fi
+				done`
+                	else
+                        	INPUT=`for i in $INTERFACES; do echo -n "$i OFF "; done`
+	                fi
+			INTERFACES=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 20 75 10 $INPUT 3>&1 1>&2 2>&3)
+		fi
 		if [ "$INTERFACES" = "" ]; then
-                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+                        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Cancel.  Exiting."
                         exit
                 fi
                 [ $DEBUG -eq 1 ] &&  echo "DEBUG: Selected interfaces $INTERFACES."
@@ -292,7 +300,11 @@ If you choose New, this machine will be the master server and will run the Kiban
 \n\
 If you already have a master server, choose Existing.\n\
 You will need to be able to SSH to the existing master server with an account that has sudo privileges.\n"
-	DEPLOYMENT=`zenity --height=250 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE New FALSE Existing`
+	if [ "$OUTPUT" = "gui" ]; then
+		DEPLOYMENT=`zenity --height=250 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE New FALSE Existing`
+	else
+		DEPLOYMENT=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 21 75 2 "New" ON "Existing" OFF 3>&1 1>&2 2>&3)
+	fi
 	case $DEPLOYMENT in
 	New)
                 [ $DEBUG -eq 1 ] && echo "DEBUG: Selected New."
@@ -307,22 +319,15 @@ You will need to be able to SSH to the existing master server with an account th
 		TEXT="What is the hostname or IP address of the master server that this node should connect to?"
 		SERVERNAME_CONFIRMED="no"
 		while [ $SERVERNAME_CONFIRMED = "no" ]; do
-			SERVERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
+			SERVERNAME=$(promptinput "$TEXT")
 			[ $? = 1 ] && exit 1
 			# Did the user enter the hostname or IP address of the local box?
 			if [ "$SERVERNAME" = "$HOSTNAME" ]; then
-				zenity --error --title "$TITLE" --text="That is the hostname of this box\!\r \
-\r \
-Since you chose a node installation, the master server should be a separate box."
+				prompterror "That is the hostname of this box!\n\nSince you chose a node installation, the master server should be a separate box."
 			elif [ "$SERVERNAME" = "$IP" ]; then
-				zenity --error --title "$TITLE" --text="That is the IP address of this box\!\r \
-\r \
-Since you chose a node installation, the master server should be a separate box."
+				prompterror "That is the IP address of this box!\n\nSince you chose a node installation, the master server should be a separate box."
 			elif [ "x$SERVERNAME" = "x" ]; then
-				zenity --error --title "$TITLE" --text="No server defined\!\r \
-\r \
-Please provide the hostname or IP address of a valid master server."
-
+				prompterror "No server defined!\n\nPlease provide the hostname or IP address of a valid master server."
 			else
 				# nc will result in OSSEC Active Response blocking the IP address
 				# nc -vz $SERVERNAME 22 -w 5 2>&1 | grep "succeeded\!" >/dev/null 2>&1 && SERVERNAME_CONFIRMED="yes"
@@ -330,22 +335,17 @@ Please provide the hostname or IP address of a valid master server."
 				ssh $SERVERNAME -o ConnectTimeout=5 -o BatchMode=yes 2>&1 | egrep 'Connection timed out|No route to host|Could not resolve hostname' >/dev/null 2>&1 || SERVERNAME_CONFIRMED="yes"
 				[ $DEBUG -eq 1 ] && echo "DEBUG: Hostname/IP set to $SERVERNAME."
 				if [ $SERVERNAME_CONFIRMED = "no" ]; then
-					zenity --error --title "$TITLE" --text="Couldn't connect to $SERVERNAME on port 22\!\r \
-\r \
-Please double-check hostname or IP address and\r\
-firewall rules."
+					prompterror "Couldn't connect to $SERVERNAME on port 22!\n\nPlease double-check hostname/IP and firewall rules."
 				fi
 			fi
 		done
 		TEXT="Please enter a username that can SSH to the master server and execute sudo."
 		SENSOR_CONFIRM_3="no"
 		while [[ $SENSOR_CONFIRM_3 = "no" ]]; do
-		SSH_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
+			SSH_USERNAME=$(promptinput "$TEXT")
 			[ $? = 1 ] && exit 1
 			if [ x$SSH_USERNAME = "x" ]; then
-				zenity --error --title "$TITLE" --text="No username defined\!\r \
-\r\ \
-Please provide a username that can SSH to the master server and execute sudo."
+				prompterror "No username defined!\n\nPlease provide a username that can SSH to the master server and execute sudo."
 			else
 				[ $DEBUG -eq 1 ] && echo "DEBUG: SSH username set."
 				SENSOR_CONFIRM_3="- Configure the sensors to report to $SERVERNAME.\n"
@@ -356,9 +356,6 @@ Please provide a username that can SSH to the master server and execute sudo."
                 exit
                 ;;
         esac
-
-
-
 fi
 
 #########################################
@@ -367,22 +364,12 @@ fi
 if [ $SERVER -eq 1 ]; then
 	USERNAME_CONFIRMED="no"
 	while [ $USERNAME_CONFIRMED = "no" ]; do
-		TEXT="Let's create our first user account.\n\
-\n\
-This account will be used when logging into Kibana, Squert, and Sguil.\n\
-\n\
-What would you like the username to be?\n\
-\n\
-Please use alphanumeric characters only.\n\
-\n\
-You can create other usernames later using so-user-add."
-		SGUIL_CLIENT_USERNAME=`zenity --title="$TITLE" --text="$TEXT" --entry`
+		TEXT="Let's create our first user account.\n\nThis account will be used when logging into Kibana, Squert, and Sguil.\n\nWhat would you like the username to be?\n\nPlease use alphanumeric characters only.\n\nYou can create other usernames later using so-user-add."
+		SGUIL_CLIENT_USERNAME=$(promptinput "$TEXT")
 		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $SGUIL_CLIENT_USERNAME | sed -e 's/[^[:alnum:]]//g')"
 		if [ "$COMPRESSED" != "$SGUIL_CLIENT_USERNAME" ] || [ x$SGUIL_CLIENT_USERNAME = "x" ] ; then
-	    		zenity --error --title "$TITLE" --text="Invalid username\! \r \
-\r \
-Please use alphanumeric characters only."
+			prompterror "Invalid username!\n\nPlease use alphanumeric characters only."
 		else
 	    		USERNAME_CONFIRMED="yes"
 			[ $DEBUG -eq 1 ] && echo "DEBUG: Sguil username set."
@@ -396,26 +383,28 @@ fi
 if [ $SERVER -eq 1 ]; then
 	SGUIL_CLIENT_PASSWORD_CONFIRMED="no"
 	while [ $SGUIL_CLIENT_PASSWORD_CONFIRMED = "no" ]; do
-		TEXT="Now let's set the password for this first user account.\n\
-\n\
-This password will be used for Kibana, Squert, and Sguil.\n\
-\n\
-This password must be at least 6 characters.\n\
-\n\
-You can change this password later in the Sguil client or with so-user-passwd."
-		SGUIL_CLIENT_PASSWORD_1=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
+		TEXT="Now let's set the password for this first user account.\n\nThis password will be used for Kibana, Squert, and Sguil.\n\nThis password must be at least 6 characters.\n\nYou can change this password later in the Sguil client or with so-user-passwd."
+		if [ "$OUTPUT" = "gui" ]; then
+			SGUIL_CLIENT_PASSWORD_1=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
+		else
+			SGUIL_CLIENT_PASSWORD_1=$(whiptail --title="$TITLE" --passwordbox "$TEXT" 20 75 3>&1 1>&2 2>&3)
+		fi
 		[ $? = 1 ] && exit 1
 	        if [ "${#SGUIL_CLIENT_PASSWORD_1}" -lt "6" ]; then
-			zenity --error --title "$TITLE" --text="Password must be at least 6 characters\!"
+			prompterror "Invalid password!\n\nPassword must be at least 6 characters!"
 		else
 			TEXT="Please confirm what you would like to set your password to."
-			SGUIL_CLIENT_PASSWORD_2=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
+			if [ "$OUTPUT" = "gui" ]; then
+				SGUIL_CLIENT_PASSWORD_2=`zenity --title="$TITLE" --text="$TEXT" --entry --hide-text`
+			else
+				SGUIL_CLIENT_PASSWORD_2=$(whiptail --title="$TITLE" --passwordbox "$TEXT" 20 75 3>&1 1>&2 2>&3)
+			fi
 			[ $? = 1 ] && exit 1
 			if [ "$SGUIL_CLIENT_PASSWORD_1" = "$SGUIL_CLIENT_PASSWORD_2" ]; then
 				SGUIL_CLIENT_PASSWORD_CONFIRMED="yes"
 				[ $DEBUG -eq 1 ] && echo "DEBUG: Password set."
 			else
-			        zenity --error --title "$TITLE" --text="Passwords didn't match\!"
+				prompterror "Passwords didn't match!"
 			fi
 		fi
 	done
@@ -428,7 +417,8 @@ fi
 #########################################
 NODE="Master"
 if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -ne 1 ]; then
-	TEXT="To add to your existing deployment, please select a node type for this node.\n\
+	if [ "$OUTPUT" = "gui" ]; then
+		TEXT="To add to your existing deployment, please select a node type for this node.\n\
 \n\
 Forward Nodes generate and collect logs and forward them to the master server.\n\
 Full packet capture remains on Forward Nodes.\n\
@@ -444,7 +434,11 @@ Storage Nodes do not generate logs themselves but simply extend the storage of t
 They require that the master server has already been configured to load balance to additional Storage Nodes.\n\
 Storage Nodes run Elasticsearch and Logstash.\n\
 The master server queries Storage Nodes via cross cluster search.\n"
-	NODE=`zenity --height=450 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Forward FALSE Heavy FALSE Storage`
+		NODE=`zenity --height=450 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Forward FALSE Heavy FALSE Storage`
+	else
+		TEXT="To add to your existing deployment, please select a node type for this node.\n\nForward Nodes generate and collect logs and forward them to the master server.  Full packet capture remains local on forward nodes.\n\nHeavy Nodes generate and collect logs and store them locally.\n\nStorage Nodes do not generate logs themselves but simply extend the storage of the master server.\n\nFor more information, please see:\nhttps://securityonion.net/docs/architecture.html?#node-types"
+		NODE=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 21 75 3 "Forward" ON "Heavy" OFF "Storage" OFF 3>&1 1>&2 2>&3)
+	fi
 	case $NODE in
 	Forward)
 		SENSOR=1
@@ -476,15 +470,13 @@ fi
 # Best Practices or Custom
 #########################################
 if [ $ADVANCED_SETUP -eq 1 ] && [ $NODE != "Storage" ]; then
-TEXT="Best Practices or Custom?\n\
-\n\
-If you'd like to use the Best Practices defaults, please select Best Practices.\n\
-\n\
-If you'd like to see all options, choose Custom."
+TEXT="Best Practices or Custom?\n\nIf you'd like to use the Best Practices defaults, please select Best Practices.\n\nIf you'd like to see all options, choose Custom."
 	CUSTOM=""
-	CUSTOM=`zenity --list --radiolist \
-	--column "1" --column "2" --hide-header --title="$TITLE" \
-	TRUE "Best Practices" FALSE "Custom" --text="$TEXT"`
+	if [ "$OUTPUT" = "gui" ]; then
+		CUSTOM=`zenity --list --radiolist --column "1" --column "2" --hide-header --title="$TITLE" TRUE "Best Practices" FALSE "Custom" --text="$TEXT"`
+	else
+		CUSTOM=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 21 75 2 "Best Practices" ON "Custom" OFF 3>&1 1>&2 2>&3)
+	fi
 	[ $? = 1 ] && exit 1
 	[ "$CUSTOM" == "" ] && exit
 	[ "$CUSTOM" == "Custom" ] && CUSTOM="1" || CUSTOM="0"
@@ -504,11 +496,16 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	# Ask for DAYSTOKEEP        
 	DAYSTOKEEP_CONFIRMED="no"
 	while [ $DAYSTOKEEP_CONFIRMED = "no" ]; do
-		DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="How many days of alerts do you want to keep in your Sguil database?\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days." --entry-text=30`
+		TEXT="How many days of alerts do you want to keep in your Sguil database?\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days."
+		if [ "$OUTPUT" = "gui" ]; then
+			DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=30`
+		else
+			DAYSTOKEEP=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 30 3>&1 1>&2 2>&3)
+		fi
 		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $DAYSTOKEEP | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$DAYSTOKEEP" ] || [ x$DAYSTOKEEP = "x" ]; then
-			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
+			prompterror "Invalid value!\n\nPlease use integers only."
 		else
 			DAYSTOKEEP_CONFIRMED="yes"
 		fi
@@ -517,11 +514,16 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	# Ask for DAYSTOREPAIR        
 	DAYSTOREPAIR_CONFIRMED="no"
 	while [ $DAYSTOREPAIR_CONFIRMED = "no" ]; do
-		DAYSTOREPAIR=`zenity --entry --title "$TITLE" --text="How many days of data do you want to repair in your Sguil database?\n\nA daily cronjob stops Sguil, repairs the MySQL tables for the last X days, and then starts Sguil back up.\n\nIf you choose a higher value, Sguil will be down for longer.\n\nIf you need to change this later, you can change DAYSTOREPAIR in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 7 days." --entry-text=7`
+		TEXT="How many days of data do you want to repair in your Sguil database?\n\nA daily cronjob stops Sguil, repairs the MySQL tables for the last X days, and then starts Sguil back up.\n\nIf you choose a higher value, Sguil will be down for longer.\n\nIf you need to change this later, you can change DAYSTOREPAIR in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 7 days."
+		if [ "$OUTPUT" = "gui" ]; then
+			DAYSTOREPAIR=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=7`
+		else
+			DAYSTOREPAIR=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 7 3>&1 1>&2 2>&3)
+		fi
 		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $DAYSTOREPAIR | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$DAYSTOREPAIR" ] || [ x$DAYSTOREPAIR = "x" ]; then
-			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
+			prompterror "Invalid value!\n\nPlease use integers only."
 		else
 			DAYSTOREPAIR_CONFIRMED="yes"
 		fi
@@ -529,19 +531,21 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	fi
 
 	# Ask which IDS ruleset to use.
-	TEXT="Which IDS ruleset would you like to use?\n\
-\n\
-This master server is responsible for downloading the IDS ruleset from the Internet.\n\
-\n\
-Sensors then pull a copy of this ruleset from the master server.\n\
-\n\
-If you select a commercial ruleset, it is your responsibility to purchase enough licenses\n\
-for all of your sensors in compliance with your vendor's policies.\n"
-	IDS_RULESET=`zenity --width=750 --height=350 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
-	TRUE "ETOPEN" "Emerging Threats Open"  "no oinkcode required" \
-	FALSE "ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
-	FALSE "TALOSET" "Snort Subscriber (Talos) ruleset and Emerging Threats NoGPL ruleset" "requires Snort Subscriber oinkcode" \
-	FALSE "TALOS" "Snort Subscriber (Talos) ruleset only and set a Snort Subscriber policy" "requires Snort Subscriber oinkcode" `
+	TEXT="Which IDS ruleset would you like to use?\n\nThis master server is responsible for downloading the IDS ruleset from the Internet.\n\nSensors then pull a copy of this ruleset from the master server.\n\nIf you select a commercial ruleset, it is your responsibility to purchase enough licenses for all of your sensors in compliance with your vendor's policies."
+	if [ "$OUTPUT" = "gui" ]; then
+		IDS_RULESET=`zenity --width=750 --height=350 --list --radiolist --column="1" --column="Ruleset" --column="Ruleset" --column="Oinkcode required?" --hide-header --hide-column="2" --text="$TEXT" --title="$TITLE" \
+		TRUE "ETOPEN" "Emerging Threats Open"  "no oinkcode required" \
+		FALSE "ETPRO" "Emerging Threats PRO" "requires ETPRO oinkcode" \
+		FALSE "TALOSET" "Snort Subscriber (Talos) ruleset and Emerging Threats NoGPL ruleset" "requires Snort Subscriber oinkcode" \
+		FALSE "TALOS" "Snort Subscriber (Talos) ruleset only and set a Snort Subscriber policy" "requires Snort Subscriber oinkcode" `
+	else
+		IDS_RULESET=$(whiptail --title="$TITLE" --radiolist "$TEXT" 21 75 4 \
+		"ETOPEN" "Emerging Threats Open" ON \
+		"ETPRO" "Emerging Threats PRO" OFF \
+		"TALOSET" "Snort Subscriber (Talos) and ET NoGPL rulesets" OFF \
+		"TALOS" "Snort Subscriber (Talos) ruleset and set a policy" OFF \
+		3>&1 1>&2 2>&3)
+	fi
 
 	case $IDS_RULESET in
 	ETOPEN)
@@ -551,26 +555,37 @@ for all of your sensors in compliance with your vendor's policies.\n"
 	ETPRO)
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting ETPRO ruleset." 
 		TEXT="Please enter your Emerging Threats Pro oinkcode.\n\nIf you don't already have one, you can purchase one from http://www.emergingthreatspro.com/."
-		OINKCODE=`zenity --title "$TITLE" --entry --text="$TEXT"`
+		OINKCODE=$(promptinput "$TEXT")
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered ETPRO oinkcode $OINKCODE"
 		IDS_RULESET_ACTION="- Download ETPRO ruleset using oinkcode $OINKCODE.\n"
+		echo $IDS_RULESET_ACTION
 		;;
 	TALOS)
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting Snort Subscriber (Talos) ruleset only and setting a Snort Subscriber policy."
 		TEXT="Please enter your Snort Subscriber (Talos) oinkcode.\n\nIf you don't already have one, you can obtain one from http://www.snort.org/."
-		OINKCODE=`zenity --title "$TITLE" --entry --text="$TEXT"`
+		OINKCODE=$(promptinput "$TEXT")
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered Snort Subscriber (Talos) oinkcode $OINKCODE"
-		TALOS_POLICY=`zenity --list --radiolist --hide-header --column="1" --column="2" --text="Please choose a Snort Subscriber (Talos) policy." --title "$TITLE" \
-		FALSE "connectivity" \
-		FALSE "balanced" \
-		FALSE "security" `
+		TEXT="Please choose a Snort Subscriber (Talos) policy."
+		if [ "$OUTPUT" = "gui" ]; then
+			TALOS_POLICY=`zenity --list --radiolist --hide-header --column="1" --column="2" --text="$TEXT" --title "$TITLE" \
+			FALSE "connectivity" \
+			FALSE "balanced" \
+			FALSE "security" `
+		else
+			TALOS_POLICY=$(whiptail --title="$TITLE" --radiolist "$TEXT" --noitem 21 75 3 \
+			"connectivity" OFF \
+			"balanced" OFF \
+			"security" OFF \
+			3>&1 1>&2 2>&3)
+		fi
+
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Snort Subscriber (Talos) policy $TALOS_POLICY"
 		IDS_RULESET_ACTION="- Download the Snort Subscriber (Talos) ruleset using oinkcode $OINKCODE.\n- Set Snort Subscriber (Talos) policy to $TALOS_POLICY.\n"
 		;;
 	TALOSET)
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Selecting Snort Subscriber (Talos) and Emerging Threats NoGPL ruleset."
 		TEXT="Please enter your Snort Subscriber (Talos) oinkcode.\n\nIf you don't already have one, you can obtain one from http://www.snort.org/."
-		OINKCODE=`zenity --entry --title "$TITLE" --text="$TEXT"`
+		OINKCODE=$(promptinput "$TEXT")
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Entered Snort Subscriber (Talos) oinkcode $OINKCODE"
 		IDS_RULESET_ACTION="- Download the Snort Subscriber (Talos) ruleset using oinkcode $OINKCODE.\n- Download the Emerging Threats NoGPL ruleset.\n"
 		;;
@@ -580,14 +595,12 @@ for all of your sensors in compliance with your vendor's policies.\n"
 	esac
 
 	# Ask which IDS engine to use.
-	TEXT="Which IDS Engine would you like to use?\n\
-\n\
-For best results, use the corresponding engine for the ruleset you chose in the previous screen.\n\
-\n\
-For example, if you chose the Snort Talos ruleset, you should probably choose the Snort engine.\n\
-\n\
-Likewise, if you chose an Emerging Threats ruleset, you should probably choose the Suricata engine.\n"
-	IDS_ENGINE=`zenity --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Snort FALSE Suricata`
+	TEXT="Which IDS Engine would you like to use?\n\nFor best results, use the corresponding engine for the ruleset you chose in the previous screen.\n\nFor example, if you chose the Snort Talos ruleset, you should probably choose the Snort engine.\n\nLikewise, if you chose an Emerging Threats ruleset, you should probably choose the Suricata engine.\n"
+	if [ "$OUTPUT" = "gui" ]; then
+		IDS_ENGINE=`zenity --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Snort FALSE Suricata`
+	else
+		IDS_ENGINE=$(whiptail --title="$TITLE" --radiolist "$TEXT" --noitem 21 75 2 "Snort" ON "Suricata" OFF 3>&1 1>&2 2>&3)
+	fi
 	#[ -z $IDS_ENGINE ]
 	[ $? = 1 ] && exit 1
         [ $DEBUG -eq 1 ] && echo "DEBUG: Selected $IDS_ENGINE."
@@ -599,19 +612,13 @@ fi
 # Network Sensor Services
 #########################################
 if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
-TEXT="Network sensor services include:\n\
-\n\
-- Snort or Suricata for NIDS alerts\n\
-- Bro for protocol logging\n\
-- netsniff-ng for full packet capture\n\
-\n\
-For best performance, we recommend disabling network sensor services on master servers.\n\
-\n\
-Would you like to enable or disable network sensor services?"
+TEXT="Network sensor services include:\n\n- Snort or Suricata for NIDS alerts\n- Bro for protocol logging\n- netsniff-ng for full packet capture\n\nFor best performance, we recommend disabling network sensor services on master servers.\n\nWould you like to enable or disable network sensor services?"
 	SENSOR=""
-	SENSOR=`zenity --list --radiolist \
-	--column "1" --column "2" --hide-header --title="$TITLE" \
-	TRUE "Enable network sensor services" FALSE "Disable network sensor services" --text="$TEXT"`
+	if [ "$OUTPUT" = "gui" ]; then
+		SENSOR=`zenity --list --radiolist --column "1" --column "2" --hide-header --title="$TITLE" TRUE "Enable network sensor services" FALSE "Disable network sensor services" --text="$TEXT"`
+	else
+		SENSOR=$(whiptail --title="$TITLE" --radiolist "$TEXT" --noitem 21 75 2 "Enable network sensor services" ON "Disable network sensor services" OFF 3>&1 1>&2 2>&3)
+	fi
 	[ $? = 1 ] && exit 1
 	[ "$SENSOR" == "" ] && exit
 	[ "$SENSOR" == "Enable network sensor services" ] && SENSOR="1" || SENSOR="0"
@@ -628,11 +635,17 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 	# Ask for PF_RING_SLOTS        
 	PF_RING_SLOTS_CONFIRMED="no"
 	while [ $PF_RING_SLOTS_CONFIRMED = "no" ]; do
-		PF_RING_SLOTS=`zenity --entry --title "$TITLE" --text="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module." --entry-text=4096`
+		if [ "$OUTPUT" = "gui" ]; then
+			TEXT="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module."
+			PF_RING_SLOTS=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=4096`
+		else
+			TEXT="What would you like to set PF_RING min_num_slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf_ring.conf and reload the pf_ring module."
+			PF_RING_SLOTS=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 4096 3>&1 1>&2 2>&3)
+		fi
 		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $PF_RING_SLOTS | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$PF_RING_SLOTS" ] || [ x$PF_RING_SLOTS = "x" ]; then
-			zenity --error --title "$TITLE" --text "Invalid value! Please use integers only." 
+			prompterror "Invalid value!\n\nPlease use integers only." 
 		else
 			[ $DEBUG -eq 1 ] && echo "DEBUG: PF_RING min_num_slots set to $PF_RING_SLOTS."
 			PF_RING_SLOTS_CONFIRMED="yes"
@@ -643,22 +656,39 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 	if [ $NUM_INTERFACES -gt 1 ]; then
 	TEXT="Which network interface(s) should be monitored?\n\nIf you allowed Setup to configure /etc/network/interfaces, your monitor interfaces are already selected."
 		INTERFACES=`awk '/:/ {print $1}' /proc/net/dev | tr -d ':' | grep -v "^lo$" | grep -v "^docker" | grep -v "^br-" | grep -v "^veth" | sort`
-		if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
-		[ $? = 1 ] && exit 1
-			CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`
-			INPUT=`for i in $INTERFACES; do 
-					if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
-						echo -n "TRUE $i "
-					else
-						echo -n "FALSE $i "
-					fi
-				done`
+		if [ "$OUTPUT" = "gui" ]; then
+			if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+				[ $? = 1 ] && exit 1
+				CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`
+				INPUT=`for i in $INTERFACES; do 
+						if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
+							echo -n "TRUE $i "
+						else
+							echo -n "FALSE $i "
+						fi
+					done`
+			else
+				INPUT=`for i in $INTERFACES; do echo -n "FALSE $i "; done`
+			fi
+			INTERFACES=`zenity --list --checklist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
 		else
-			INPUT=`for i in $INTERFACES; do echo -n "FALSE $i "; done`
+			if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1 && grep manual /etc/network/interfaces >/dev/null 2>&1; then
+				[ $? = 1 ] && exit 1
+				CONFIGURED_INTERFACES=`awk '/manual/ {print $2}' /etc/network/interfaces`
+				INPUT=`for i in $INTERFACES; do 
+						if echo $CONFIGURED_INTERFACES |grep $i >/dev/null 2>&1; then
+							echo -n "$i ON "
+						else
+							echo -n "$i OFF "
+						fi
+					done`
+			else
+				INPUT=`for i in $INTERFACES; do echo -n "$i OFF "; done`
+			fi
+			INTERFACES=$(whiptail --title="$TITLE" --checklist --noitem "$TEXT" 20 75 10 $INPUT 3>&1 1>&2 2>&3)
 		fi
-		INTERFACES=`zenity --list --checklist --column "Enabled" --column "Interface" --hide-header --title="$TITLE" --text="$TEXT" $INPUT |sed 's/|/ /g'`
 		if [ "$INTERFACES" = "" ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Cancel.  Exiting."
 		        exit
 		fi
 		[ $DEBUG -eq 1 ] &&  echo "DEBUG: Selected interfaces $INTERFACES."
@@ -667,7 +697,11 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 	SENSOR_CONFIRM_2="$INTERFACES\n"
 	
 	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
-	LIST=`seq 1 $CALCD_CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
+	if [ "$OUTPUT" = "gui" ]; then
+		LIST=`seq 1 $CALCD_CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
+	else
+		LIST=`seq 1 $CALCD_CORES`; SELECTIONS=`for i in $LIST; do echo "$i OFF "; done`
+	fi
 
 	if [ $CUSTOM -eq 1 ]; then
 	# IDS Engine
@@ -677,28 +711,28 @@ specified on the previous screen and logs IDS alerts.\n\
 Would you like to enable the IDS Engine?"
 	YES="Yes, enable the IDS Engine!"
 	NO="No, disable the IDS Engine."
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	promptyesno "$TEXT"
 	ANSWER="$?"
 		if [ $ANSWER -eq 1 ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling IDS Engine."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected No.  Disabling IDS Engine."
 			IDS_ENGINE_ENABLED="no"
 			BARNYARD2_ENABLED="no"
 			SNORT_AGENT_ENABLED="no"
 		else
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling IDS Engine."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes.  Enabling IDS Engine."
 		fi
 	fi
 
 	# IDS Engine Procs
-        if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
-                TEXT="How many IDS engine processes would you like to run?\n\
-\n\
-Based on your system's number of CPU cores, it is recommended that you run $CALCD_CORES IDS engine processes per interface.\n\
-\n\
-If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNAME-INTERFACE/sensor.conf"
-                IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+	if [ "$IDS_ENGINE_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
+                TEXT="How many IDS engine processes would you like to run?\n\nBased on your system's number of CPU cores, it is recommended that you run $CALCD_CORES IDS engine processes per interface.\n\nIf you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNAME-INTERFACE/sensor.conf"
+		if [ "$OUTPUT" = "gui" ]; then
+                	IDS_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+		else
+			IDS_LB_PROCS=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 22 75 10 $SELECTIONS 3>&1 1>&2 2>&3)
+		fi
                 if [ "$IDS_LB_PROCS" = "" ]; then
-                        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+                        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Cancel.  Exiting."
                         exit
                 fi
 		if [ "$CALCD_CORES" -gt 1 ]; then
@@ -720,18 +754,22 @@ If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNA
 	if [ "$IDS_ENGINE_ENABLED" == "yes" ]; then
 		HOME_NET_CONFIRMED="no"
 		while [ "$HOME_NET_CONFIRMED" == "no" ];do
-			TEXT="What would you like to configure HOME__NET as?\n\n\Add a comma (no space) after each address range.\n\n\Ex. 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
-			HOME_NET=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$HOME_NET"`
+			TEXT="What would you like to configure HOME__NET as?\n\nAdd a comma (no space) after each address range.\n\nEx. 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
+			if [ "$OUTPUT" = "gui" ]; then
+				HOME_NET=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$HOME_NET"`
+			else
+				HOME_NET=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 "$HOME_NET" 3>&1 1>&2 2>&3)
+			fi
 			ANSWER="$?"
 			if [ $ANSWER -eq 1 ]; then
-				[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting Setup."
+				[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Cancel.  Exiting Setup."
 				exit 1
 			else
 				if [ "$HOME_NET" == "" ]; then
-					zenity --error --title "$TITLE" --text="Please provide a value for HOME_NET!"
+					prompterror "Please provide a value for HOME_NET!"
 				else
 					HOME_NET_CONFIRMED="yes"
-					[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked OK.  Configuring HOME_NET as $HOME_NET."
+					[ $DEBUG -eq 1 ] && echo "DEBUG: Selected OK.  Configuring HOME_NET as $HOME_NET."
 				fi
 			fi
 		done
@@ -744,13 +782,13 @@ If you need to change this setting later, change IDS_LB_PROCS in /etc/nsm/HOSTNA
 Would you like to enable Bro?"
 	YES="Yes, enable Bro!"
 	NO="No, disable Bro."
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	promptyesno "$TEXT"
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling Bro."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected No.  Disabling Bro."
 		BRO_ENABLED="no"
 	else
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling Bro."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes.  Enabling Bro."
 	fi
 
 	# Bro file extraction
@@ -758,13 +796,13 @@ Would you like to enable Bro?"
 		TEXT="Bro can extract files (EXEs by default) from your network traffic.\n\nIf enabled, EXEs will be stored in /nsm/bro/extracted/.\n\nWould you like to enable file extraction?"
 		YES="Yes, enable file extraction!"
 		NO="No, disable file extraction."
-		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+		promptyesno "$TEXT"
 		ANSWER="$?"
 		if [ $ANSWER -eq 1 ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling file extraction"
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected No.  Disabling file extraction"
 			EXTRACT_FILES="no"
 		else
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling file extraction."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes.  Enabling file extraction."
 			EXTRACT_FILES="yes"
 		fi
 	fi
@@ -772,14 +810,14 @@ Would you like to enable Bro?"
 
 	# BRO_LB_PROCS
 	if [ "$BRO_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
-		TEXT="How many Bro processes would you like to run?\n\
-\n\
-Based on your system's number of CPU cores, it is recommended that you run $CALCD_CORES Bro processes per interface.
-\n\
-If you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
-		BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+		TEXT="How many Bro processes would you like to run?\n\nBased on your system's number of CPU cores, it is recommended that you run $CALCD_CORES Bro processes per interface.\n\nIf you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
+		if [ "$OUTPUT" = "gui" ]; then
+			BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
+		else
+			BRO_LB_PROCS=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 22 75 10 $SELECTIONS 3>&1 1>&2 2>&3)
+		fi
 		if [ "$BRO_LB_PROCS" = "" ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Cancel.  Exiting."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Cancel.  Exiting."
 			exit
 		fi
 		if [ "$CALCD_CORES" -gt 1 ]; then
@@ -801,23 +839,17 @@ If you need to change this setting later, you can change the lb_procs variable i
 	if [ $CUSTOM -eq 1 ]; then
 
 	# PCAP
-	TEXT="Full packet capture writes all monitored traffic to disk.\n\
-\n\
-Full packet capture requires lots of disk space,\n\
-but gives you lots of forensic capabilities\n\
-and is therefore highly recommended!\n\
-\n\
-Would you like to enable full packet capture?"
+	TEXT="Full packet capture writes all monitored traffic to disk.\n\nFull packet capture requires lots of disk space, but gives you lots of forensic capabilities and is therefore highly recommended!\n\nWould you like to enable full packet capture?"
 	YES="Yes, enable full packet capture!"
 	NO="No, disable full packet capture."
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	promptyesno "$TEXT"
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Disabling full packet capture."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected No.  Disabling full packet capture."
 		PCAP_ENABLED="no"
 		PCAP_AGENT_ENABLED="no"
 	else
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Enabling full packet capture."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes.  Enabling full packet capture."
 	fi
 
 	# Ask for PCAP_SIZE
@@ -826,11 +858,16 @@ Would you like to enable full packet capture?"
 		# Ask for PCAP_SIZE        
 		PCAP_SIZE_CONFIRMED="no"
 		while [ $PCAP_SIZE_CONFIRMED = "no" ]; do
-			PCAP_SIZE=`zenity --entry --title "$TITLE" --text="How big do you want your pcap files to be?\n\nPlease enter an integer in Megabytes (MB).  The default is 150 MB." --entry-text=150`
+			TEXT="How big do you want your pcap files to be?\n\nPlease enter an integer in Megabytes (MB).  The default is 150 MB."
+			if [ "$OUTPUT" = "gui" ]; then
+				PCAP_SIZE=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=150`
+			else
+				PCAP_SIZE=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 150 3>&1 1>&2 2>&3)
+			fi
 			[ $? = 1 ] && exit
 			COMPRESSED="$(echo $PCAP_SIZE | sed -e 's/[^[:digit:]]//g')"
 			if [ "$COMPRESSED" != "$PCAP_SIZE" ] || [ x$PCAP_SIZE = "x" ]; then
-				zenity --error --title "$TITLE" --text "Invalid MB Value! Please use integers only." 
+				prompterror "Invalid MB Value!\n\nPlease use integers only." 
 			else
 				[ $DEBUG -eq 1 ] && echo "DEBUG: PCAP size set to $PCAP_SIZE."
 				PCAP_SIZE_CONFIRMED="yes"
@@ -838,30 +875,31 @@ Would you like to enable full packet capture?"
 		done
 
 		# Ask about MMAP
-		TEXT="netsniff-ng defaults to using scatter/gather pcap file I/O.\n\
-\n\
-For higher performance, you can enable mmap I/O, but this requires more RAM.\n\
-\n\
-Would you like to enable mmap I/O?"
+		TEXT="netsniff-ng defaults to using scatter/gather pcap file I/O.\n\nFor higher performance, you can enable mmap I/O, but this requires more RAM.\n\nWould you like to enable mmap I/O?"
 		YES="Yes, enable mmap I/O!"
 		NO="No, use default scatter/gather I/O."
-		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+		promptyesno "$TEXT"
 		ANSWER="$?"
 		if [ $ANSWER -eq 1 ]; then
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Using scatter/gather."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected No.  Using scatter/gather."
 		else
-			[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes. Using mmap I/O."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes. Using mmap I/O."
 			PCAP_OPTIONS="--mmap"
 		fi
 
 		# Ask for PCAP_RING_SIZE        
 		PCAP_RING_SIZE_CONFIRMED="no"
 		while  [ $PCAP_RING_SIZE_CONFIRMED = "no" ]; do
-			PCAP_RING_SIZE=`zenity --entry --title "$TITLE" --text="How large do you want your PCAP ring buffer?\n\nEach monitoring interface will have the specified amount allocated from RAM\nso be sure your system has enough memory. In the case of 4 sensor interfaces\nand a specified ring buffer of 1GB, 4GB of total RAM will be allocated for packet\nbuffering. For busy networks a ring buffer of at least 256MB is recommended.\n\nPlease enter an integer in Megabytes (MB). The default is 64 MB." --entry-text=64`
+			TEXT="How large do you want your PCAP ring buffer?\n\nEach monitoring interface will have the specified amount allocated from RAM so be sure your system has enough memory.\n\nIn the case of 4 sensor interfaces and a specified ring buffer of 1GB, 4GB of total RAM will be allocated for packet buffering.\n\nFor busy networks a ring buffer of at least 256MB is recommended.\n\nPlease enter an integer in Megabytes (MB). The default is 64 MB."
+			if [ "$OUTPUT" = "gui" ]; then
+				PCAP_RING_SIZE=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=64`
+			else
+				PCAP_RING_SIZE=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 64 3>&1 1>&2 2>&3)
+			fi
 			[ $? = 1 ] && exit
 			COMPRESSED="$(echo $PCAP_RING_SIZE | sed -e 's/[^[:digit:]]//g')"
 			if [ "$COMPRESSED" != "$PCAP_RING_SIZE" ] || [ x$PCAP_RING_SIZE = "x" ]; then
-				zenity --error --title "$TITLE" --text "Invalid MB Value! Please use integers only."
+				prompterror "Invalid MB Value!\n\nPlease use integers only."
 			else
 				[ $DEBUG -eq 1 ] && echo "DEBUG: PCAP ring size set to $PCAP_RING_SIZE."
 				PCAP_RING_SIZE_CONFIRMED="yes"
@@ -872,14 +910,19 @@ Would you like to enable mmap I/O?"
 	# Ask for CRIT_DISK_USAGE
 	CRIT_DISK_USAGE_CONFIRMED="no"
 	while [ $CRIT_DISK_USAGE_CONFIRMED = "no" ]; do
-		CRIT_DISK_USAGE=`zenity --entry --title "$TITLE" --text="At what percent of disk usage would you like to begin purging old logs?\n\nPlease enter an integer between 10 and 100.  The default is 90." --entry-text=90`
+		TEXT="At what percent of disk usage would you like to begin purging old logs?\n\nPlease enter an integer between 10 and 100.  The default is 90."
+		if [ "$OUTPUT" = "gui" ]; then
+			CRIT_DISK_USAGE=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=90`
+		else
+			CRIT_DISK_USAGE=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 90 3>&1 1>&2 2>&3)
+		fi
 		[ $? = 1 ] && exit
 		COMPRESSED="$(echo $CRIT_DISK_USAGE | sed -e 's/[^[:digit:]]//g')"
 		[ "$COMPRESSED" == "$CRIT_DISK_USAGE" ] && 
 		[ $CRIT_DISK_USAGE -gt 10 ] && 
 		[ $CRIT_DISK_USAGE -lt 100 ] && 
 		CRIT_DISK_USAGE_CONFIRMED="yes" || 
-		zenity --error --title "$TITLE" --text "Invalid percentage! Please use integers between 0 and 100." 
+		prompterror "Invalid percentage!\n\nPlease use integers between 0 and 100." 
 	done
 	let WARN_DISK_USAGE=${CRIT_DISK_USAGE}-10
 	[ $DEBUG -eq 1 ] && echo "DEBUG: CRIT_DISK_USAGE set to $CRIT_DISK_USAGE."
@@ -907,7 +950,7 @@ and have it execute on all boxes across your deployment.\n\
 Would you like to enable Salt?"
 		YES="Yes, enable Salt!"
 		NO="No, disable Salt"
-		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+		promptyesno "$TEXT"
 		ANSWER="$?"
 		if [ $ANSWER -eq 0 ]; then
 	        	[ $DEBUG -eq 1 ] && echo "DEBUG: Enable Salt."
@@ -923,21 +966,10 @@ fi
 # Ask whether or not to use Elastic
 #########################################
 if [ $CUSTOM -eq 1 ] && [ $SERVER -eq 1 ]; then
-TEXT="The Elastic Stack is a platform for data ingestion, formatting, and visualization\n\
-built on ElasticSearch, Logstash, and Kibana.  Our customized stack also includes \n\
-Curator and Elastalert.\n\
-\n\
-The Elastic Stack provides a search engine and and web interface\n\
-for hunting through your logs, including:\n\
-* Bro logs\n\
-* OSSEC alerts/logs\n\
-* Snort/Suricata logs\n\
-* standard syslog\n\
-\n\
-Would you like to enable the Elastic Stack?"
+TEXT="The Elastic Stack is a platform for data ingestion, formatting, and visualization built on ElasticSearch, Logstash, and Kibana.\n\nOur customized stack also includes Curator and Elastalert.\n\nThe Elastic Stack provides a search engine and and web interface for hunting through your logs, including:\n* Bro logs\n* OSSEC alerts/logs\n* Snort/Suricata logs\n* standard syslog\n\nWould you like to enable the Elastic Stack?"
 	YES="Yes, enable the Elastic Stack."
 	NO="No, disable the Elastic Stack."
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	promptyesno "$TEXT"
 	ANSWER="$?"
 	if [ $ANSWER -eq 0 ]; then
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Enable Elastic Stack."
@@ -952,15 +984,10 @@ fi
 # Configure master to output to redis?
 #########################################
 if [ "$ELASTIC" = "yes" ] && [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
-	TEXT="By default, the master server stores logs in its own local Elasticsearch database via a local Logstash instance.\n\
-\n\
-If you want to forward logs from multiple nodes to this master server, then you may overwhelm those single instances of Logstash and Elasticsearch.\n\
-You may want to consider load balancing these forwarded logs to additional storage nodes.\n\
-\n\
-Would you like to store logs locally on $HOSTNAME?"
+	TEXT="By default, the master server stores logs in its own local Elasticsearch database via a local Logstash instance.\n\nIf you want to forward logs from multiple nodes to this master server, then you may overwhelm those single instances of Logstash and Elasticsearch.\n\nYou may want to consider load balancing these forwarded logs to additional storage nodes.\n\nWould you like to store logs locally on $HOSTNAME?"
 	YES="Yes, store logs locally."
 	NO="No, I will add storage nodes for load balancing."
-	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+	promptyesno "$TEXT"
 	ANSWER="$?"
 	if [ $ANSWER -eq 0 ]; then
 		LOGSTASH_OUTPUT_REDIS="no"
@@ -976,23 +1003,23 @@ fi
 if [ "$ELASTIC" = "yes" ] && [ $ADVANCED_SETUP -eq 1 ] && [ "$FORWARD" != "yes" ] && [ "$LOGSTASH_OUTPUT_REDIS" != "yes" ]; then
 	LOG_SIZE_LIMIT_CONFIRMED="no"
 	while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
-		LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\
-\n\
-Please enter an integer greater than 0.\n\
-\n\
-Please make sure that the value you set here is less than the size of your disk!\n\
-\n\
-If you need to adjust this later, you can modify LOG__SIZE__LIMIT in /etc/nsm/securityonion.conf." --entry-text=$LOG_SIZE_LIMIT_GB`
+		if [ "$OUTPUT" = "gui" ]; then
+			TEXT="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\nPlease enter an integer greater than 0.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify LOG__SIZE__LIMIT in /etc/nsm/securityonion.conf."
+			LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=$LOG_SIZE_LIMIT_GB`
+		else
+			TEXT="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\nPlease enter an integer greater than 0.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify LOG_SIZE_LIMIT in /etc/nsm/securityonion.conf."
+			LOG_SIZE_LIMIT_GB=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 $LOG_SIZE_LIMIT_GB 3>&1 1>&2 2>&3)
+		fi
 		[ $? = 1 ] && exit
 		if [ x$LOG_SIZE_LIMIT_GB = "x" ]; then
-			zenity --error --title "$TITLE" --text "Invalid log size limit! Please use integers greater than 0 and less than your disk size."
+			prompterror "Invalid log size limit!\n\nPlease use integers greater than 0 and less than your disk size."
 		else
 			COMPRESSED="$(echo $LOG_SIZE_LIMIT_GB | sed -e 's/[^[:digit:]]//g')"
 			[ "$COMPRESSED" == "$LOG_SIZE_LIMIT_GB" ] && 
 			[ $LOG_SIZE_LIMIT_GB -gt 0 ] && 
 			[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB ] && 
 			LOG_SIZE_LIMIT_CONFIRMED="yes" || 
-			zenity --error --title "$TITLE" --text "Invalid log size limit!\n\nPlease use integers greater than 0 and less than your disk size." 
+			prompterror "Invalid log size limit!\n\nPlease use integers greater than 0 and less than your disk size." 
 		fi
 	done
 
@@ -1029,9 +1056,7 @@ fi
 #########################################
 # Last chance!
 TEXT="We're about to do the following:\n\
-- Set the OS timezone to UTC. \n\
 - Delete any existing NSM data/configuration. \n\
-$SERVER_CONFIRM\
 $SERVER_USER_CONFIRM\
 $SENSOR_CONFIRM_1\
 $SENSOR_CONFIRM_2\
@@ -1043,18 +1068,16 @@ $IDS_HOME_NET_CONFIRM\
 $ELASTIC_ACTION_CONFIRM\
 $FORWARD_CONFIRM\
 \n\
-We're about to make changes to your system!\n\
-\n\
 Would you like to continue?"
 YES="Yes, proceed with the changes!"
 NO="No, do not make changes!"
-zenity --question --no-wrap --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO"
+promptyesno "$TEXT"
 ANSWER="$?"
 if [ $ANSWER -eq 1 ]; then
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No. Do not proceed."
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected No. Do not proceed."
         exit
 else
-        [ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes to proceed with all changes."
+        [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes to proceed with all changes."
 fi
 }
 
@@ -2329,33 +2352,9 @@ do
      esac
 done
 
-# GUI (Zenity) or CLI?
-# Default to zenity
-OUTPUT="gui"
-# If no X11, then fall back to cli
-[ -z "$DISPLAY" ] && OUTPUT="cli"
-# If user provided an answer file, set to cli
-[ -f "$ANSWERFILE" ] && OUTPUT="cli"
-
 # If the user didn't provide an answer file, then ask them the questions
 if [ ! -f "$ANSWERFILE" ]; then
-	if [ "$OUTPUT" = "gui" ] ; then
-		ask
-	else
-		echo
-		echo "No X display found."
-		echo
-		echo "You'll need to either:"
-		echo
-		echo "- use SSH X-forwarding (ssh -X)"
-		echo
-		echo "OR"
-		echo
-		echo "- use an answer file (sudo sosetup -f sosetup.conf)"
-		echo
-		usage
-		exit 0
-	fi
+	ask
 else
 	source "$ANSWERFILE"
 	# copy SNIFFING_INTERFACES into INTERFACES

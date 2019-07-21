@@ -20,7 +20,7 @@
 
 # Whiptail notes
 # If you open a terminal window in our default ISO image, stty size is 24 80.
-# So we set maximum whiptail size to 22 75.
+# So our maximum whiptail size should be 22 75.
 # This means that maximum list size should be 13.
 
 HOST_ORIG=`hostname`
@@ -43,9 +43,12 @@ function prompterror() {
 
 function promptinput() {
 	if [ "$OUTPUT" = "gui" ]; then
-		zenity --entry --title "$TITLE" --text="$1"
+		zenity --entry --title "$TITLE" --text="$1" --entry-text="$2"
 	else
-		whiptail --title="$TITLE" --inputbox "$1" 20 75 3>&1 1>&2 2>&3
+		# zenity requires double underscores but whiptail does not
+		# so replace any double underscores with single underscores
+		NEWTEXT=$(echo $1 | sed 's|__|_|g')
+		whiptail --title="$TITLE" --inputbox "$NEWTEXT" 20 75 "$2" 3>&1 1>&2 2>&3
 	fi
 }
 

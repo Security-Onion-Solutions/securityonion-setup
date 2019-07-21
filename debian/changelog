@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion299) xenial; urgency=medium
+
+  * Setup: sosetup-network should check for hostname of securityonion and recommend changing Security-Onion-Solutions/security-onion#1576 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 21 Jul 2019 13:16:45 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion298) xenial; urgency=medium
 
   * remove quotes around interface when running Production Mode 

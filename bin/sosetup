@@ -294,12 +294,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
 	SENSOR_CONFIRM_2="$INTERFACES\n"
 else
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Production Mode."
-	TEXT="Do you want to build a new Security Onion deployment or add to an existing deployment?\n\
-\n\
-If you choose New, this machine will be the master server and will run the Kibana and Squert web interfaces.\n\
-\n\
-If you already have a master server, choose Existing.\n\
-You will need to be able to SSH to the existing master server with an account that has sudo privileges.\n"
+	TEXT="Do you want to build a new Security Onion deployment or add to an existing deployment?\n\nIf you choose New, this machine will be the master server and will run the Kibana and Squert web interfaces.\n\nIf you already have a master server, choose Existing.\nYou will need to be able to SSH to the existing master server with an account that has sudo privileges.\n"
 	if [ "$OUTPUT" = "gui" ]; then
 		DEPLOYMENT=`zenity --height=250 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE New FALSE Existing`
 	else
@@ -497,11 +492,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	DAYSTOKEEP_CONFIRMED="no"
 	while [ $DAYSTOKEEP_CONFIRMED = "no" ]; do
 		TEXT="How many days of alerts do you want to keep in your Sguil database?\n\nIf you need to change this later, you can change DAYSTOKEEP in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 30 days."
-		if [ "$OUTPUT" = "gui" ]; then
-			DAYSTOKEEP=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=30`
-		else
-			DAYSTOKEEP=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 30 3>&1 1>&2 2>&3)
-		fi
+		DAYSTOKEEP=$(promptinput "$TEXT" "30")
 		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $DAYSTOKEEP | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$DAYSTOKEEP" ] || [ x$DAYSTOKEEP = "x" ]; then
@@ -515,11 +506,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 	DAYSTOREPAIR_CONFIRMED="no"
 	while [ $DAYSTOREPAIR_CONFIRMED = "no" ]; do
 		TEXT="How many days of data do you want to repair in your Sguil database?\n\nA daily cronjob stops Sguil, repairs the MySQL tables for the last X days, and then starts Sguil back up.\n\nIf you choose a higher value, Sguil will be down for longer.\n\nIf you need to change this later, you can change DAYSTOREPAIR in /etc/nsm/securityonion.conf.\n\nPlease enter an integer.  The default is 7 days."
-		if [ "$OUTPUT" = "gui" ]; then
-			DAYSTOREPAIR=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=7`
-		else
-			DAYSTOREPAIR=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 7 3>&1 1>&2 2>&3)
-		fi
+		DAYSTOREPAIR=$(promptinput "$TEXT" "7")
 		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $DAYSTOREPAIR | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$DAYSTOREPAIR" ] || [ x$DAYSTOREPAIR = "x" ]; then
@@ -635,13 +622,8 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 	# Ask for PF_RING_SLOTS        
 	PF_RING_SLOTS_CONFIRMED="no"
 	while [ $PF_RING_SLOTS_CONFIRMED = "no" ]; do
-		if [ "$OUTPUT" = "gui" ]; then
-			TEXT="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module."
-			PF_RING_SLOTS=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=4096`
-		else
-			TEXT="What would you like to set PF_RING min_num_slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf_ring.conf and reload the pf_ring module."
-			PF_RING_SLOTS=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 4096 3>&1 1>&2 2>&3)
-		fi
+		TEXT="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module.\n\nPlease note that Bro and Suricata now default to AF__PACKET instead of PF__RING, so this setting only applies if you're running Snort."
+		PF_RING_SLOTS=$(promptinput "$TEXT" "4096")
 		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $PF_RING_SLOTS | sed -e 's/[^[:digit:]]//g')"
 		if [ "$COMPRESSED" != "$PF_RING_SLOTS" ] || [ x$PF_RING_SLOTS = "x" ]; then
@@ -705,10 +687,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 
 	if [ $CUSTOM -eq 1 ]; then
 	# IDS Engine
-	TEXT="The IDS Engine (Snort/Suricata) listens on the interfaces\n\
-specified on the previous screen and logs IDS alerts.\n\
-\n\
-Would you like to enable the IDS Engine?"
+	TEXT="The IDS Engine (Snort/Suricata) sniffs the interfaces specified on the previous screen.\n\nIt analyzes the traffic using IDS rules and logs IDS alerts.\n\nWould you like to enable the IDS Engine?"
 	YES="Yes, enable the IDS Engine!"
 	NO="No, disable the IDS Engine."
 	promptyesno "$TEXT"
@@ -755,11 +734,7 @@ Would you like to enable the IDS Engine?"
 		HOME_NET_CONFIRMED="no"
 		while [ "$HOME_NET_CONFIRMED" == "no" ];do
 			TEXT="What would you like to configure HOME__NET as?\n\nAdd a comma (no space) after each address range.\n\nEx. 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
-			if [ "$OUTPUT" = "gui" ]; then
-				HOME_NET=`zenity --title="$TITLE" --text="$TEXT" --entry --entry-text="$HOME_NET"`
-			else
-				HOME_NET=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 "$HOME_NET" 3>&1 1>&2 2>&3)
-			fi
+			HOME_NET=$(promptinput "$TEXT" "$HOME_NET")
 			ANSWER="$?"
 			if [ $ANSWER -eq 1 ]; then
 				[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Cancel.  Exiting Setup."
@@ -777,9 +752,7 @@ Would you like to enable the IDS Engine?"
 	IDS_HOME_NET_CONFIRM="- Configure IDS HOME_NET as: $HOME_NET.\n"
 	if [ $CUSTOM -eq 1 ]; then
 	# Bro
-	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\
-\n\
-Would you like to enable Bro?"
+	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\nWould you like to enable Bro?"
 	YES="Yes, enable Bro!"
 	NO="No, disable Bro."
 	promptyesno "$TEXT"
@@ -859,11 +832,7 @@ Would you like to enable Bro?"
 		PCAP_SIZE_CONFIRMED="no"
 		while [ $PCAP_SIZE_CONFIRMED = "no" ]; do
 			TEXT="How big do you want your pcap files to be?\n\nPlease enter an integer in Megabytes (MB).  The default is 150 MB."
-			if [ "$OUTPUT" = "gui" ]; then
-				PCAP_SIZE=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=150`
-			else
-				PCAP_SIZE=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 150 3>&1 1>&2 2>&3)
-			fi
+			PCAP_SIZE=$(promptinput "$TEXT" "150")
 			[ $? = 1 ] && exit
 			COMPRESSED="$(echo $PCAP_SIZE | sed -e 's/[^[:digit:]]//g')"
 			if [ "$COMPRESSED" != "$PCAP_SIZE" ] || [ x$PCAP_SIZE = "x" ]; then
@@ -891,11 +860,7 @@ Would you like to enable Bro?"
 		PCAP_RING_SIZE_CONFIRMED="no"
 		while  [ $PCAP_RING_SIZE_CONFIRMED = "no" ]; do
 			TEXT="How large do you want your PCAP ring buffer?\n\nEach monitoring interface will have the specified amount allocated from RAM so be sure your system has enough memory.\n\nIn the case of 4 sensor interfaces and a specified ring buffer of 1GB, 4GB of total RAM will be allocated for packet buffering.\n\nFor busy networks a ring buffer of at least 256MB is recommended.\n\nPlease enter an integer in Megabytes (MB). The default is 64 MB."
-			if [ "$OUTPUT" = "gui" ]; then
-				PCAP_RING_SIZE=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=64`
-			else
-				PCAP_RING_SIZE=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 64 3>&1 1>&2 2>&3)
-			fi
+			PCAP_RING_SIZE=$(promptinput "$TEXT" "64")
 			[ $? = 1 ] && exit
 			COMPRESSED="$(echo $PCAP_RING_SIZE | sed -e 's/[^[:digit:]]//g')"
 			if [ "$COMPRESSED" != "$PCAP_RING_SIZE" ] || [ x$PCAP_RING_SIZE = "x" ]; then
@@ -911,11 +876,7 @@ Would you like to enable Bro?"
 	CRIT_DISK_USAGE_CONFIRMED="no"
 	while [ $CRIT_DISK_USAGE_CONFIRMED = "no" ]; do
 		TEXT="At what percent of disk usage would you like to begin purging old logs?\n\nPlease enter an integer between 10 and 100.  The default is 90."
-		if [ "$OUTPUT" = "gui" ]; then
-			CRIT_DISK_USAGE=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=90`
-		else
-			CRIT_DISK_USAGE=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 90 3>&1 1>&2 2>&3)
-		fi
+		CRIT_DISK_USAGE=$(promptinput "$TEXT" "90")
 		[ $? = 1 ] && exit
 		COMPRESSED="$(echo $CRIT_DISK_USAGE | sed -e 's/[^[:digit:]]//g')"
 		[ "$COMPRESSED" == "$CRIT_DISK_USAGE" ] && 
@@ -937,17 +898,7 @@ fi # End of ADVANCED SETUP - SENSOR
 if [ $ADVANCED_SETUP -eq 1 ] && dpkg -l |grep "securityonion-onionsalt" |grep "ii" >/dev/null; then
 	SALT="yes"
 	if [ $CUSTOM -eq 1 ]; then
-TEXT="Salt can be enabled to help manage your entire Security Onion deployment.\n\
-\n\
-By default, Salt will automatically keep the following updated:\n\
-* OS user accounts\n\
-* SSH keys for those user accounts\n\
-* IDS rulesets\n\
-\n\
-Salt can also be used for remote execution, so you can run a command\n\
-and have it execute on all boxes across your deployment.\n\
-\n\
-Would you like to enable Salt?"
+TEXT="Salt can be enabled to help manage your entire Security Onion deployment.\n\nBy default, Salt will automatically keep the following updated:\n* OS user accounts\n* SSH keys for those user accounts\n* IDS rulesets\n\nSalt can also be used for remote execution, so you can run a command\nand have it execute on all boxes across your deployment.\n\nWould you like to enable Salt?"
 		YES="Yes, enable Salt!"
 		NO="No, disable Salt"
 		promptyesno "$TEXT"
@@ -1003,13 +954,8 @@ fi
 if [ "$ELASTIC" = "yes" ] && [ $ADVANCED_SETUP -eq 1 ] && [ "$FORWARD" != "yes" ] && [ "$LOGSTASH_OUTPUT_REDIS" != "yes" ]; then
 	LOG_SIZE_LIMIT_CONFIRMED="no"
 	while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
-		if [ "$OUTPUT" = "gui" ]; then
-			TEXT="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\nPlease enter an integer greater than 0.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify LOG__SIZE__LIMIT in /etc/nsm/securityonion.conf."
-			LOG_SIZE_LIMIT_GB=`zenity --entry --title "$TITLE" --text="$TEXT" --entry-text=$LOG_SIZE_LIMIT_GB`
-		else
-			TEXT="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\nPlease enter an integer greater than 0.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify LOG_SIZE_LIMIT in /etc/nsm/securityonion.conf."
-			LOG_SIZE_LIMIT_GB=$(whiptail --title="$TITLE" --inputbox "$TEXT" 20 75 $LOG_SIZE_LIMIT_GB 3>&1 1>&2 2>&3)
-		fi
+		TEXT="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\nPlease enter an integer greater than 0.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify LOG__SIZE__LIMIT in /etc/nsm/securityonion.conf."
+		LOG_SIZE_LIMIT_GB=$(promptinput "$TEXT" "$LOG_SIZE_LIMIT_GB")
 		[ $? = 1 ] && exit
 		if [ x$LOG_SIZE_LIMIT_GB = "x" ]; then
 			prompterror "Invalid log size limit!\n\nPlease use integers greater than 0 and less than your disk size."

@@ -60,6 +60,35 @@ else
 fi
 
 #########################################
+# Check hostname
+#########################################
+if [ "$HOSTNAME" = "whiptail" ]; then
+	VALID="no"
+        while [ $VALID = "no" ]; do
+		NEWHOSTNAME=$(promptinput "Your hostname is currently $HOSTNAME.  If this machine will be part of a distributed deployment, we recommend a more unique name to avoid name collisions." "$HOSTNAME")
+		if [ $? = 1 ]; then
+			if [ $DEBUG -eq 1 ]; then
+				echo "DEBUG: Selected Cancel.  Exiting."   && exit 1
+			else
+				exit 1
+			fi
+		fi
+		if [ "$NEWHOSTNAME" = "" ]; then
+			prompterror "Please enter hostname!"
+		else
+			VALID="yes"
+			if [ "$HOSTNAME" != "$NEWHOSTNAME" ]; then
+				HOSTNAME_TEXT="- Set hostname to $NEWHOSTNAME.\n"
+			else
+				HOSTNAME_TEXT=""
+			fi
+			[ $DEBUG -eq 1 ] && echo "DEBUG: NEWHOSTNAME set to $NEWHOSTNAME."
+		fi
+	done
+
+fi
+
+#########################################
 # Choose management interface
 #########################################
 # Get a list of all possible interfaces
@@ -191,8 +220,8 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
 		if [ "$NETMASK" = "" ]; then
 			prompterror "Please enter a valid subnet mask!"
 		else
-		is_ip $NETMASK && VALID="yes"
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Subnet mask set to $NETMASK."
+			is_ip $NETMASK && VALID="yes"
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Subnet mask set to $NETMASK."
 		fi
 	done
 
@@ -230,11 +259,11 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
 		if [ "$NAMESERVER" = "" ]; then
 			prompterror "Please enter a valid IP address!"
 		else
-		VALID="yes"
+			VALID="yes"
 		fi
 		for i in `echo $NAMESERVER`; do
 			is_ip $i || VALID="no"
-		[ $DEBUG -eq 1 ] && echo "DEBUG: DNS server(s) set to $NAMESERVER."
+			[ $DEBUG -eq 1 ] && echo "DEBUG: DNS server(s) set to $NAMESERVER."
 		done
 	done
           
@@ -252,12 +281,12 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
 		if [ "$DOMAIN" = "" ]; then
 			prompterror "Please enter local domain name!"
 		else
-		VALID="yes"
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Domain set to $DOMAIN."
+			VALID="yes"
+			[ $DEBUG -eq 1 ] && echo "DEBUG: Domain set to $DOMAIN."
 		fi
 	done
           
-	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows: \n\
+	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows: \n
    Set static IP address of $ADDRESS \n\
    Set the gateway IP address to $GATEWAY \n\
    Set the network mask to $NETMASK \n\
@@ -320,13 +349,7 @@ fi
 #########################################
 # Confirmation dialog box
 #########################################
-TEXT="We're about to do the following:\n\
-- Backup existing network configuration to /etc/network/interfaces.bak \n\
-- $MANAGEMENT_TEXT \n\
-$SNIFF_TEXT \n\
-\n\
-We're about to make changes to your system! \n\
-\n\
+TEXT="We're about to do the following:\n$HOSTNAME_TEXT- Backup existing network configuration to /etc/network/interfaces.bak\n- $MANAGEMENT_TEXT \n$SNIFF_TEXT \n\nWe're about to make changes to your system! \n\n
 Would you like to continue?"
 
 YES="Yes, make changes!"
@@ -348,6 +371,12 @@ function CONFIGURE_NETWORK() {
 
 # Create the log directory
 mkdir -p $LOGDIR
+
+# Change hostname if necessary
+if [ "$HOSTNAME" != "$NEWHOSTNAME" ]; then
+	sed -i "s|$HOSTNAME|$NEWHOSTNAME|" /etc/hosts
+	sed -i "s|$HOSTNAME|$NEWHOSTNAME|" /etc/hostname
+fi
 
 # Disable network-manager
 if [ -f /etc/init/network-manager.conf ]; then
@@ -478,15 +507,7 @@ cp /usr/share/securityonion/securityonion_setup_again.jpg /usr/share/securityoni
 #########################################
 # Reboot dialog box
 #########################################
-TEXT="Network configuration complete!\n\
-\n\
-You'll need to reboot and then launch Setup again to continue \n\
-the second phase of Setup.\n\
-\n\
-If you need to manually modify any other network settings,
-you can edit /etc/network/interfaces now before rebooting.
-\n\
-Would you like to reboot now?"
+TEXT="Network configuration complete!\n\nYou'll need to reboot and then launch Setup again to continue the second phase of Setup.\n\nIf you need to manually modify any other network settings, you can edit /etc/network/interfaces now before rebooting.\n\nWould you like to reboot now?"
 
 if [ -f "$ANSWERFILE" ]; then
 	echo "$TEXT" | sed 's|\\n|\n|g' | sed 's|\\||g'

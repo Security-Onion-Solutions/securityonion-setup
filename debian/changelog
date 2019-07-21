@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion302) xenial; urgency=medium
+
+  * sosetup whiptail progress bar 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 21 Jul 2019 16:26:25 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion301) xenial; urgency=medium
 
   * fix hostname check 

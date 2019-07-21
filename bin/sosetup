@@ -2102,81 +2102,34 @@ fi
 # FINAL (FIN) OUTPUT FUNCTIONS
 #########################################
 function FIN1() {
-TEXT="Security Onion Setup is now complete! \n \
-\n \
-Setup log can be found here:\n \
-$LOG\n \
-\n \
-You may view IDS alerts using Sguil, Squert, or Kibana (if enabled). \n \
-\n \
-Bro logs can be found in Kibana (if enabled) and the following location: \n \
-/nsm/bro/"
+TEXT="Security Onion Setup is now complete!\n\nSetup log can be found here:\n$LOG\n\nYou may view IDS alerts using Sguil, Squert, or Kibana (if enabled).\n\nBro logs can be found in Kibana (if enabled) and the following location:\n/nsm/bro/"
 }
 
 function FIN2() {
-TEXT="You can check the status of your running services with the sostat utilites:\n \
-\n \
-'sudo sostat' will give you DETAILED information about your service status.\n \
-\n \
-'sudo sostat-quick' will give you a guided tour of the sostat output.\n \
-\n \
-'sudo sostat-redacted' will give you REDACTED information to share with our mailing list if you have questions."
+TEXT="You can check the status of your running services with the sostat utilites:\n\n'sudo sostat' will give you DETAILED information about your service status.\n\n'sudo sostat-quick' will give you a guided tour of the sostat output.\n\n'sudo sostat-redacted' will give you REDACTED information to share with our mailing list if you have questions."
 }
 
 function FIN3() {
 if [ $SERVER -eq 1 ]; then
-source /etc/nsm/securityonion.conf
-if [ "$LOCAL_NIDS_RULE_TUNING" = "no" ] ; then
-TEXT="Rules downloaded by Pulledpork are stored in: \n \
-/etc/nsm/rules/downloaded.rules \n \
-\n \
-Local rules can be added to: \n \
-/etc/nsm/rules/local.rules \n \
-\n \
-You can have PulledPork modify the downloaded rules \n \
-by modifying the files in: \n \
-/etc/nsm/pulledpork/ \n \
-\n \
-Rules will be updated every morning. \n \
-You can manually update them by running: \n \
-sudo rule-update \n \
-\n \
-Sensors can be tuned by modifying the files in: \n \
-/etc/nsm/NAME-OF-SENSOR/"
-else
-TEXT="Setup was not able to download rules from the Internet.\n \
-LOCAL_NIDS_RULE_TUNING has been set to 'yes' in /etc/nsm/securityonion.conf.\n \
-\n \
-If you do have Internet access and want to download rules from the Internet,\n \
-you'll need to change this option to 'no'."
-fi
+	source /etc/nsm/securityonion.conf
+	if [ "$LOCAL_NIDS_RULE_TUNING" = "no" ] ; then
+		TEXT="Rules downloaded by Pulledpork are stored in:\n/etc/nsm/rules/downloaded.rules\n\nLocal rules can be added to:\n/etc/nsm/rules/local.rules\n\nYou can have PulledPork modify the downloaded rules by modifying the files in:\n/etc/nsm/pulledpork/\n\nRules will be updated every morning.\n\nYou can manually update them by running:\nsudo rule-update\n\nSensors can be tuned by modifying the files in:\n/etc/nsm/NAME-OF-SENSOR/"
+	else
+		TEXT="Setup was not able to download rules from the Internet.\n\nLOCAL_NIDS_RULE_TUNING has been set to 'yes' in /etc/nsm/securityonion.conf.\n\nIf you do have Internet access and want to download rules from the Internet, you'll need to change this option to 'no'."
+	fi
 fi
 }
 
 function FIN4() {
-TEXT='Please note that the local ufw firewall\
-has been locked down to only allow connections\
-to port 22.  If you need to connect over any\
-other port, then run "sudo so-allow".'
+TEXT="Please note that the local ufw firewall has been locked down.\n\nIt only allows connections to port 22.\n\nIf you need to connect over any other port, then run:\nsudo so-allow"
 }
 
 function FIN5() {
-TEXT='If you have any questions or problems,\
-please visit our website where you can find\
-the following links:\
-FAQ\
-Documentation\
-Mailing Lists\
-IRC channel\
-and more!\
-\
-https://securityonion.net'
+TEXT="If you have any questions or problems, please visit:\nhttps://securityonion.net\n\nThere you'll find the following links:\nFAQ\nDocumentation\nMailing Lists\nIRC channel\nand more!"
 }
 
 function FIN6() {
-TEXT="If you're interested in training, professional services, or hardware appliances, please see:\n \
-\n \
-https://securityonionsolutions.com"
+TEXT="If you're interested in training, professional services, or hardware appliances, please see:\n\nhttps://securityonionsolutions.com"
 }
 
 
@@ -2327,9 +2280,20 @@ else
 fi
 
 # Perform the requested actions, handling output differently for gui vs cli
-if [ "$OUTPUT" = "gui" ]; then
-	CONFIGURE_SERVICES |
-	zenity --progress --title="$TITLE" --text="Please wait while making changes to the system..." --percentage=0 --auto-close
+if [ ! -f "$ANSWERFILE" ]; then
+	TEXT="Please wait while making changes to the system..."
+	if [ "$OUTPUT" = "gui" ]; then
+		CONFIGURE_SERVICES |
+		zenity --progress --title="$TITLE" --text="$TEXT" --percentage=0 --auto-close
+	else
+		CONFIGURE_SERVICES | while read LINE1; do
+			read LINE2
+			echo "XXX"
+			echo $LINE1
+			echo $LINE2 | sed 's|# ||g'
+			echo "XXX"
+			done | whiptail --title="$TITLE" --gauge "$TEXT" 6 75 0
+	fi
 else
 	echo "Please wait while..."
 	CONFIGURE_SERVICES | grep --line-buffered "^#" | sed 's|# Please wait while||g'
@@ -2348,8 +2312,12 @@ cp /usr/share/securityonion/securityonion_default.jpg /usr/share/securityonion/s
 # Final screens
 for i in FIN1 FIN2 FIN3 FIN4 FIN5 FIN6; do
 	$i
-	if [ "$OUTPUT" = "gui" ]; then
-		zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+	if [ ! -f "$ANSWERFILE" ]; then
+		if [ "$OUTPUT" = "gui" ]; then
+			zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+		else
+			whiptail --title="$TITLE" --msgbox "$TEXT" 21 75
+		fi
 	else
 		echo
 		echo "$TEXT" | sed 's|\\n|\n|g' | sed 's|\\||g'

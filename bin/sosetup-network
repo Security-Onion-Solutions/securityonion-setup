@@ -62,7 +62,7 @@ fi
 #########################################
 # Check hostname
 #########################################
-if [ "$HOSTNAME" = "whiptail" ]; then
+if [ "$HOSTNAME" = "securityonion" ]; then
 	VALID="no"
         while [ $VALID = "no" ]; do
 		NEWHOSTNAME=$(promptinput "Your hostname is currently $HOSTNAME.  If this machine will be part of a distributed deployment, we recommend a more unique name to avoid name collisions." "$HOSTNAME")

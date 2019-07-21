@@ -284,3 +284,4 @@ Setup:-etcnetworkinterfaces-ethtool-rx-setting-should-be-commented-out-by-defaul
 Setup:-interactive-setup-via-command-line-Security-Onion-Solutionssecurity-onion#977
 remove-quotes-around-interface-when-running-Production-Mode
 Setup:-sosetup-network-should-check-for-hostname-of-securityonion-and-recommend-changing-Security-Onion-Solutionssecurity-onion#1576
+replace-temp-hostname

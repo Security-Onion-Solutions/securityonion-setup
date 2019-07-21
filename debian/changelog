@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion301) xenial; urgency=medium
+
+  * fix hostname check 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sun, 21 Jul 2019 14:34:09 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion300) xenial; urgency=medium
 
   * replace temp hostname 

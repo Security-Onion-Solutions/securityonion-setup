@@ -685,7 +685,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 			else
 				INPUT=`for i in $INTERFACES; do echo -n "$i OFF "; done`
 			fi
-			INTERFACES=$(whiptail --title="$TITLE" --checklist --noitem "$TEXT" 20 75 10 $INPUT 3>&1 1>&2 2>&3)
+			INTERFACES=$(whiptail --title="$TITLE" --checklist --noitem "$TEXT" 20 75 10 $INPUT 3>&1 1>&2 2>&3 | sed 's|"||g')
 		fi
 		if [ "$INTERFACES" = "" ]; then
 			[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Cancel.  Exiting."

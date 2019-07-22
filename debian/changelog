@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion304) xenial; urgency=medium
+
+  * adjust crossclustercheck 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 22 Jul 2019 17:45:20 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion303) xenial; urgency=medium
 
   * move ssh commands out of progress box 

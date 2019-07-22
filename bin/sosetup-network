@@ -287,12 +287,7 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ]; then
 		fi
 	done
           
-	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows: \n
-   Set static IP address of $ADDRESS \n\
-   Set the gateway IP address to $GATEWAY \n\
-   Set the network mask to $NETMASK \n\
-   Set the DNS server(s) to $NAMESERVER \n\
-   Set the DNS domain to $DOMAIN"
+	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows:\n   Set static IP address of $ADDRESS\n   Set the gateway IP address to $GATEWAY\n   Set the network mask to $NETMASK\n   Set the DNS server(s) to $NAMESERVER\n   Set the DNS domain to $DOMAIN"
 fi
 #########################################
 # Sniffing interfaces
@@ -350,9 +345,7 @@ fi
 #########################################
 # Confirmation dialog box
 #########################################
-TEXT="We're about to do the following:\n$HOSTNAME_TEXT- Backup existing network configuration to /etc/network/interfaces.bak\n- $MANAGEMENT_TEXT \n$SNIFF_TEXT \n\nWe're about to make changes to your system! \n\n
-Would you like to continue?"
-
+TEXT="We're about to do the following:\n$HOSTNAME_TEXT- $MANAGEMENT_TEXT \n$SNIFF_TEXT \n\nWe're about to make changes to your system!\n\nWould you like to continue?"
 YES="Yes, make changes!"
 NO="No, do not make changes."
 promptyesno

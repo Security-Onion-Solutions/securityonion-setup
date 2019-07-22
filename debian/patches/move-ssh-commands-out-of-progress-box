@@ -1,0 +1,282 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion303) xenial; urgency=medium
+ .
+   * move ssh commands out of progress box
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -944,7 +944,7 @@ if [ "$ELASTIC" = "yes" ] && [ $ADVANCED
+ 		LOGSTASH_OUTPUT_REDIS="no"
+ 	else
+ 		LOGSTASH_OUTPUT_REDIS="yes"
+-		FORWARD_CONFIRM="- Load balance to additional storage nodes."
++		FORWARD_CONFIRM="- Load balance to additional storage nodes.\n"
+ 	fi
+ fi
+ 
+@@ -975,7 +975,7 @@ fi
+ 
+ # Set ELASTIC_ACTION_CONFIRM
+ if [ "$ELASTIC" = "no" ]; then
+-	ELASTIC_ACTION_CONFIRM="- Disable Elastic stack."
++	ELASTIC_ACTION_CONFIRM="- Disable Elastic stack.\n"
+ else
+ 	if [ $SERVER -eq 1 ]; then
+ 	    	ELASTIC_ACTION_CONFIRM="- Configure Elastic Stack.\n"
+@@ -1028,6 +1028,87 @@ fi
+ }
+ 
+ #########################################
++# Begin function CONFIGURE_KEY
++#########################################
++function CONFIGURE_KEY() {
++
++# If not master server, configure SSH Key authentication to master server
++if [ "$SERVER" -ne 1 ]; then
++
++	# Create an ssh keypair
++	mkdir -p $SSH_DIR		
++	[ -f "$KEY" ] && mv $KEY $KEY.old
++        ssh-keygen -f "$KEY" -N '' >> $LOG 2>&1
++        chmod 600 "$KEY"*
++	if [ "$OUTPUT" = "gui" ]; then
++		# ssh-copy-id needs to get new HOME directory using sudo -i
++		xfce4-terminal -x sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME 
++	else
++		# ssh-copy-id needs to get new HOME directory using sudo -i
++		sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
++	fi
++
++	# Need to open ports in server firewall to allow connections from sensor
++	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
++	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
++
++	# Need to run so-elastic-network and write output to file so we can read it later
++	echo "/usr/sbin/so-elastic-network > /tmp/so-elastic-network.txt" >> $SOSETUPSCP
++
++	# Need to whitelist sensor IP address to prevent Active Response
++	cat << EOF >> $SOSETUPSCP
++if ! grep -q "<white_list>\$IPADDRESS</white_list>" /var/ossec/etc/ossec.conf ; then
++	sed -i 's/<\/ossec_config>//' /var/ossec/etc/ossec.conf
++	sed -i '/^$/N;/^\n$/D' /var/ossec/etc/ossec.conf
++	echo -e "<!--Address \$IPADDRESS added by sosetup -->\n  <global>\n    <white_list>\$IPADDRESS</white_list>\n  </global>\n</ossec_config>" >> /var/ossec/etc/ossec.conf
++	service ossec-hids-server restart
++fi
++EOF
++
++	# Copy the script over
++	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
++
++	# Run the script on the master server using sudo
++	if [ "$OUTPUT" = "gui" ]; then
++		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP
++	else
++		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP >> $LOG 2>&1
++	fi
++
++	# Cleanup
++	rm -f $SOSETUPSCP
++	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f $SOSETUPSCP >> $LOG 2>&1
++
++	# Backup existing files
++	mkdir -p /etc/nsm/rules/backup/
++	cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
++	cp /etc/nsm/rules/local.rules /etc/nsm/rules/backup/local.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
++	cp /etc/nsm/rules/so_rules.rules /etc/nsm/rules/backup/so_rules.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
++	cp /etc/nsm/rules/sid-msg.map /etc/nsm/rules/backup/sid-msg.map.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
++	cp /etc/nsm/rules/threshold.conf /etc/nsm/rules/backup/threshold.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
++	cp /etc/nsm/rules/bpf.conf /etc/nsm/rules/backup/bpf.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
++
++	# Copy files from server
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/downloaded.rules /etc/nsm/rules/downloaded.rules >> $LOG 2>&1
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/local.rules /etc/nsm/rules/local.rules >> $LOG 2>&1
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/so_rules.rules /etc/nsm/rules/so_rules.rules >> $LOG 2>&1
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/sid-msg.map /etc/nsm/rules/sid-msg.map >> $LOG 2>&1
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/threshold.conf /etc/nsm/rules/threshold.conf >> $LOG 2>&1
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/bpf.conf /etc/nsm/rules/bpf.conf >> $LOG 2>&1
++
++	# Set IDS_ENGINE variable
++	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/securityonion.conf $SECURITYONION_CONF_MASTER >> $LOG 2>&1
++	IDS_ENGINE=`grep ENGINE $SECURITYONION_CONF_MASTER 2>/dev/null | cut -d\= -f2`
++	rm -f $SECURITYONION_CONF_MASTER
++
++	# Save configuration
++	echo "SSH_USERNAME=$SSH_USERNAME" > $SSH_CONF
++	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF
++
++fi
++}
++
++#########################################
+ # Begin function CONFIGURE_SERVICES
+ #########################################
+ function CONFIGURE_SERVICES() {
+@@ -1190,81 +1271,6 @@ if [ $SERVER -eq 1 ]; then
+ 	/usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
+ fi
+ 
+-#########################################
+-# If not master server, configure SSH Key authentication to master server
+-#########################################
+-if [ "$SERVER" -ne 1 ]; then
+-
+-	# Create an ssh keypair
+-	mkdir -p $SSH_DIR		
+-	[ -f "$KEY" ] && mv $KEY $KEY.old
+-        ssh-keygen -f "$KEY" -N '' >> $LOG 2>&1
+-        chmod 600 "$KEY"*
+-	if [ "$OUTPUT" = "gui" ]; then
+-		# ssh-copy-id needs to get new HOME directory using sudo -i
+-		xfce4-terminal -x sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME 
+-	else
+-		# ssh-copy-id needs to get new HOME directory using sudo -i
+-		sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
+-	fi
+-
+-	# Need to open ports in server firewall to allow connections from sensor
+-	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
+-	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
+-
+-	# Need to run so-elastic-network and write output to file so we can read it later
+-	echo "/usr/sbin/so-elastic-network > /tmp/so-elastic-network.txt" >> $SOSETUPSCP
+-
+-	# Need to whitelist sensor IP address to prevent Active Response
+-	cat << EOF >> $SOSETUPSCP
+-if ! grep -q "<white_list>\$IPADDRESS</white_list>" /var/ossec/etc/ossec.conf ; then
+-	sed -i 's/<\/ossec_config>//' /var/ossec/etc/ossec.conf
+-	sed -i '/^$/N;/^\n$/D' /var/ossec/etc/ossec.conf
+-	echo -e "<!--Address \$IPADDRESS added by sosetup -->\n  <global>\n    <white_list>\$IPADDRESS</white_list>\n  </global>\n</ossec_config>" >> /var/ossec/etc/ossec.conf
+-	service ossec-hids-server restart
+-fi
+-EOF
+-
+-	# Copy the script over
+-	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
+-
+-	# Run the script on the master server using sudo
+-	if [ "$OUTPUT" = "gui" ]; then
+-		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP
+-	else
+-		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP >> $LOG 2>&1
+-	fi
+-
+-	# Cleanup
+-	rm -f $SOSETUPSCP
+-	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f $SOSETUPSCP >> $LOG 2>&1
+-
+-	# Backup existing files
+-	mkdir -p /etc/nsm/rules/backup/
+-	cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+-	cp /etc/nsm/rules/local.rules /etc/nsm/rules/backup/local.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+-	cp /etc/nsm/rules/so_rules.rules /etc/nsm/rules/backup/so_rules.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+-	cp /etc/nsm/rules/sid-msg.map /etc/nsm/rules/backup/sid-msg.map.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+-	cp /etc/nsm/rules/threshold.conf /etc/nsm/rules/backup/threshold.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+-	cp /etc/nsm/rules/bpf.conf /etc/nsm/rules/backup/bpf.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+-
+-	# Copy files from server
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/downloaded.rules /etc/nsm/rules/downloaded.rules >> $LOG 2>&1
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/local.rules /etc/nsm/rules/local.rules >> $LOG 2>&1
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/so_rules.rules /etc/nsm/rules/so_rules.rules >> $LOG 2>&1
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/sid-msg.map /etc/nsm/rules/sid-msg.map >> $LOG 2>&1
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/threshold.conf /etc/nsm/rules/threshold.conf >> $LOG 2>&1
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/bpf.conf /etc/nsm/rules/bpf.conf >> $LOG 2>&1
+-
+-	# Set IDS_ENGINE variable
+-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/securityonion.conf $SECURITYONION_CONF_MASTER >> $LOG 2>&1
+-	IDS_ENGINE=`grep ENGINE $SECURITYONION_CONF_MASTER 2>/dev/null | cut -d\= -f2`
+-	rm -f $SECURITYONION_CONF_MASTER
+-
+-	# Save configuration
+-	echo "SSH_USERNAME=$SSH_USERNAME" > $SSH_CONF
+-	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF
+-fi
+ 
+ #########################################
+ # Network Sensor(s) if necessary
+@@ -2279,6 +2285,9 @@ else
+ 	fi
+ fi
+ 
++# CONFIGURE_KEY will interactively prompt so it needs to be done before the CONFIGURE_SERVICES progress bar
++CONFIGURE_KEY
++
+ # Perform the requested actions, handling output differently for gui vs cli
+ if [ ! -f "$ANSWERFILE" ]; then
+ 	TEXT="Please wait while making changes to the system..."
+@@ -2299,8 +2308,7 @@ else
+ 	CONFIGURE_SERVICES | grep --line-buffered "^#" | sed 's|# Please wait while||g'
+ fi
+ 
+-# SERVER_QUEUE will interactively prompt for password
+-# so we can't consume stdout
++# SERVER_QUEUE may interactively prompt so it needs to be done after the CONFIGURE_SERVICES progress bar
+ SERVER_QUEUE
+ 
+ # The next few functions should have no output
+--- securityonion-setup-20120912.orig/bin/sosetup-common
++++ securityonion-setup-20120912/bin/sosetup-common
+@@ -48,7 +48,7 @@ function promptinput() {
+ 		# zenity requires double underscores but whiptail does not
+ 		# so replace any double underscores with single underscores
+ 		NEWTEXT=$(echo $1 | sed 's|__|_|g')
+-		whiptail --title="$TITLE" --inputbox "$NEWTEXT" 20 75 "$2" 3>&1 1>&2 2>&3
++		whiptail --title="$TITLE" --inputbox "$NEWTEXT" 21 75 "$2" 3>&1 1>&2 2>&3
+ 	fi
+ }
+ 
+@@ -56,7 +56,7 @@ function promptyesno() {
+ 	if [ "$OUTPUT" = "gui" ]; then
+ 		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
+ 	else
+-		whiptail --title="$TITLE" --yesno "$TEXT" 20 75
++		whiptail --title="$TITLE" --yesno "$TEXT" 21 75
+ 	fi
+ }
+ 
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -287,12 +287,7 @@ elif [ "$MGMT_CONFIG_TYPE" = "static" ];
+ 		fi
+ 	done
+           
+-	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows: \n
+-   Set static IP address of $ADDRESS \n\
+-   Set the gateway IP address to $GATEWAY \n\
+-   Set the network mask to $NETMASK \n\
+-   Set the DNS server(s) to $NAMESERVER \n\
+-   Set the DNS domain to $DOMAIN"
++	MANAGEMENT_TEXT="Configure the management interface $MGMT_INTERFACE as follows:\n   Set static IP address of $ADDRESS\n   Set the gateway IP address to $GATEWAY\n   Set the network mask to $NETMASK\n   Set the DNS server(s) to $NAMESERVER\n   Set the DNS domain to $DOMAIN"
+ fi
+ #########################################
+ # Sniffing interfaces
+@@ -350,9 +345,7 @@ fi
+ #########################################
+ # Confirmation dialog box
+ #########################################
+-TEXT="We're about to do the following:\n$HOSTNAME_TEXT- Backup existing network configuration to /etc/network/interfaces.bak\n- $MANAGEMENT_TEXT \n$SNIFF_TEXT \n\nWe're about to make changes to your system! \n\n
+-Would you like to continue?"
+-
++TEXT="We're about to do the following:\n$HOSTNAME_TEXT- $MANAGEMENT_TEXT \n$SNIFF_TEXT \n\nWe're about to make changes to your system!\n\nWould you like to continue?"
+ YES="Yes, make changes!"
+ NO="No, do not make changes."
+ promptyesno

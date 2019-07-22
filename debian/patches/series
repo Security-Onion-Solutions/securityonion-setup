@@ -287,3 +287,4 @@ Setup:-sosetup-network-should-check-for-hostname-of-securityonion-and-recommend-
 replace-temp-hostname
 fix-hostname-check
 sosetup-whiptail-progress-bar
+move-ssh-commands-out-of-progress-box

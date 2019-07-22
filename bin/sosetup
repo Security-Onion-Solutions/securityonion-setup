@@ -944,7 +944,7 @@ if [ "$ELASTIC" = "yes" ] && [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; the
 		LOGSTASH_OUTPUT_REDIS="no"
 	else
 		LOGSTASH_OUTPUT_REDIS="yes"
-		FORWARD_CONFIRM="- Load balance to additional storage nodes."
+		FORWARD_CONFIRM="- Load balance to additional storage nodes.\n"
 	fi
 fi
 
@@ -975,7 +975,7 @@ fi
 
 # Set ELASTIC_ACTION_CONFIRM
 if [ "$ELASTIC" = "no" ]; then
-	ELASTIC_ACTION_CONFIRM="- Disable Elastic stack."
+	ELASTIC_ACTION_CONFIRM="- Disable Elastic stack.\n"
 else
 	if [ $SERVER -eq 1 ]; then
 	    	ELASTIC_ACTION_CONFIRM="- Configure Elastic Stack.\n"
@@ -1024,6 +1024,87 @@ if [ $ANSWER -eq 1 ]; then
         exit
 else
         [ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes to proceed with all changes."
+fi
+}
+
+#########################################
+# Begin function CONFIGURE_KEY
+#########################################
+function CONFIGURE_KEY() {
+
+# If not master server, configure SSH Key authentication to master server
+if [ "$SERVER" -ne 1 ]; then
+
+	# Create an ssh keypair
+	mkdir -p $SSH_DIR		
+	[ -f "$KEY" ] && mv $KEY $KEY.old
+        ssh-keygen -f "$KEY" -N '' >> $LOG 2>&1
+        chmod 600 "$KEY"*
+	if [ "$OUTPUT" = "gui" ]; then
+		# ssh-copy-id needs to get new HOME directory using sudo -i
+		xfce4-terminal -x sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME 
+	else
+		# ssh-copy-id needs to get new HOME directory using sudo -i
+		sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
+	fi
+
+	# Need to open ports in server firewall to allow connections from sensor
+	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
+	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
+
+	# Need to run so-elastic-network and write output to file so we can read it later
+	echo "/usr/sbin/so-elastic-network > /tmp/so-elastic-network.txt" >> $SOSETUPSCP
+
+	# Need to whitelist sensor IP address to prevent Active Response
+	cat << EOF >> $SOSETUPSCP
+if ! grep -q "<white_list>\$IPADDRESS</white_list>" /var/ossec/etc/ossec.conf ; then
+	sed -i 's/<\/ossec_config>//' /var/ossec/etc/ossec.conf
+	sed -i '/^$/N;/^\n$/D' /var/ossec/etc/ossec.conf
+	echo -e "<!--Address \$IPADDRESS added by sosetup -->\n  <global>\n    <white_list>\$IPADDRESS</white_list>\n  </global>\n</ossec_config>" >> /var/ossec/etc/ossec.conf
+	service ossec-hids-server restart
+fi
+EOF
+
+	# Copy the script over
+	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
+
+	# Run the script on the master server using sudo
+	if [ "$OUTPUT" = "gui" ]; then
+		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP
+	else
+		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP >> $LOG 2>&1
+	fi
+
+	# Cleanup
+	rm -f $SOSETUPSCP
+	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f $SOSETUPSCP >> $LOG 2>&1
+
+	# Backup existing files
+	mkdir -p /etc/nsm/rules/backup/
+	cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+	cp /etc/nsm/rules/local.rules /etc/nsm/rules/backup/local.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+	cp /etc/nsm/rules/so_rules.rules /etc/nsm/rules/backup/so_rules.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+	cp /etc/nsm/rules/sid-msg.map /etc/nsm/rules/backup/sid-msg.map.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+	cp /etc/nsm/rules/threshold.conf /etc/nsm/rules/backup/threshold.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+	cp /etc/nsm/rules/bpf.conf /etc/nsm/rules/backup/bpf.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
+
+	# Copy files from server
+	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/downloaded.rules /etc/nsm/rules/downloaded.rules >> $LOG 2>&1
+	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/local.rules /etc/nsm/rules/local.rules >> $LOG 2>&1
+	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/so_rules.rules /etc/nsm/rules/so_rules.rules >> $LOG 2>&1
+	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/sid-msg.map /etc/nsm/rules/sid-msg.map >> $LOG 2>&1
+	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/threshold.conf /etc/nsm/rules/threshold.conf >> $LOG 2>&1
+	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/bpf.conf /etc/nsm/rules/bpf.conf >> $LOG 2>&1
+
+	# Set IDS_ENGINE variable
+	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/securityonion.conf $SECURITYONION_CONF_MASTER >> $LOG 2>&1
+	IDS_ENGINE=`grep ENGINE $SECURITYONION_CONF_MASTER 2>/dev/null | cut -d\= -f2`
+	rm -f $SECURITYONION_CONF_MASTER
+
+	# Save configuration
+	echo "SSH_USERNAME=$SSH_USERNAME" > $SSH_CONF
+	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF
+
 fi
 }
 
@@ -1190,81 +1271,6 @@ if [ $SERVER -eq 1 ]; then
 	/usr/sbin/nsm_server_add --server-name="$SGUIL_SERVER_NAME" --server-sensor-name=NULL --server-sensor-port=7736 --server-client-port=7734 --server-client-user="$SGUIL_CLIENT_USERNAME" --server-client-pass="$SGUIL_CLIENT_PASSWORD_1" --server-auto=yes --force-yes >> $LOG 2>&1
 fi
 
-#########################################
-# If not master server, configure SSH Key authentication to master server
-#########################################
-if [ "$SERVER" -ne 1 ]; then
-
-	# Create an ssh keypair
-	mkdir -p $SSH_DIR		
-	[ -f "$KEY" ] && mv $KEY $KEY.old
-        ssh-keygen -f "$KEY" -N '' >> $LOG 2>&1
-        chmod 600 "$KEY"*
-	if [ "$OUTPUT" = "gui" ]; then
-		# ssh-copy-id needs to get new HOME directory using sudo -i
-		xfce4-terminal -x sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME 
-	else
-		# ssh-copy-id needs to get new HOME directory using sudo -i
-		sudo -i ssh-copy-id -i "$KEY".pub $SSH_USERNAME@$SERVERNAME
-	fi
-
-	# Need to open ports in server firewall to allow connections from sensor
-	echo "IPADDRESS=\`who -m --ips | awk '{print \$5}' |cut -d\( -f2 | cut -d\) -f1\`" >> $SOSETUPSCP
-	echo "ufw allow proto tcp from \$IPADDRESS to any port 22,4505,4506,7736" >> $SOSETUPSCP
-
-	# Need to run so-elastic-network and write output to file so we can read it later
-	echo "/usr/sbin/so-elastic-network > /tmp/so-elastic-network.txt" >> $SOSETUPSCP
-
-	# Need to whitelist sensor IP address to prevent Active Response
-	cat << EOF >> $SOSETUPSCP
-if ! grep -q "<white_list>\$IPADDRESS</white_list>" /var/ossec/etc/ossec.conf ; then
-	sed -i 's/<\/ossec_config>//' /var/ossec/etc/ossec.conf
-	sed -i '/^$/N;/^\n$/D' /var/ossec/etc/ossec.conf
-	echo -e "<!--Address \$IPADDRESS added by sosetup -->\n  <global>\n    <white_list>\$IPADDRESS</white_list>\n  </global>\n</ossec_config>" >> /var/ossec/etc/ossec.conf
-	service ossec-hids-server restart
-fi
-EOF
-
-	# Copy the script over
-	scp -i "$KEY" $SOSETUPSCP $SSH_USERNAME@$SERVERNAME:$SOSETUPSCP >> $LOG 2>&1
-
-	# Run the script on the master server using sudo
-	if [ "$OUTPUT" = "gui" ]; then
-		xfce4-terminal -x ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP
-	else
-		ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME sudo /bin/bash $SOSETUPSCP >> $LOG 2>&1
-	fi
-
-	# Cleanup
-	rm -f $SOSETUPSCP
-	ssh -i "$KEY" -t $SSH_USERNAME@$SERVERNAME rm -f $SOSETUPSCP >> $LOG 2>&1
-
-	# Backup existing files
-	mkdir -p /etc/nsm/rules/backup/
-	cp /etc/nsm/rules/downloaded.rules /etc/nsm/rules/backup/downloaded.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
-	cp /etc/nsm/rules/local.rules /etc/nsm/rules/backup/local.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
-	cp /etc/nsm/rules/so_rules.rules /etc/nsm/rules/backup/so_rules.rules.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
-	cp /etc/nsm/rules/sid-msg.map /etc/nsm/rules/backup/sid-msg.map.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
-	cp /etc/nsm/rules/threshold.conf /etc/nsm/rules/backup/threshold.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
-	cp /etc/nsm/rules/bpf.conf /etc/nsm/rules/backup/bpf.conf.`date +%Y%m%d%H%M%S` >> $LOG 2>&1
-
-	# Copy files from server
-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/downloaded.rules /etc/nsm/rules/downloaded.rules >> $LOG 2>&1
-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/local.rules /etc/nsm/rules/local.rules >> $LOG 2>&1
-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/so_rules.rules /etc/nsm/rules/so_rules.rules >> $LOG 2>&1
-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/sid-msg.map /etc/nsm/rules/sid-msg.map >> $LOG 2>&1
-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/threshold.conf /etc/nsm/rules/threshold.conf >> $LOG 2>&1
-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/rules/bpf.conf /etc/nsm/rules/bpf.conf >> $LOG 2>&1
-
-	# Set IDS_ENGINE variable
-	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/securityonion.conf $SECURITYONION_CONF_MASTER >> $LOG 2>&1
-	IDS_ENGINE=`grep ENGINE $SECURITYONION_CONF_MASTER 2>/dev/null | cut -d\= -f2`
-	rm -f $SECURITYONION_CONF_MASTER
-
-	# Save configuration
-	echo "SSH_USERNAME=$SSH_USERNAME" > $SSH_CONF
-	echo "SERVERNAME=$SERVERNAME" >> $SSH_CONF
-fi
 
 #########################################
 # Network Sensor(s) if necessary
@@ -2279,6 +2285,9 @@ else
 	fi
 fi
 
+# CONFIGURE_KEY will interactively prompt so it needs to be done before the CONFIGURE_SERVICES progress bar
+CONFIGURE_KEY
+
 # Perform the requested actions, handling output differently for gui vs cli
 if [ ! -f "$ANSWERFILE" ]; then
 	TEXT="Please wait while making changes to the system..."
@@ -2299,8 +2308,7 @@ else
 	CONFIGURE_SERVICES | grep --line-buffered "^#" | sed 's|# Please wait while||g'
 fi
 
-# SERVER_QUEUE will interactively prompt for password
-# so we can't consume stdout
+# SERVER_QUEUE may interactively prompt so it needs to be done after the CONFIGURE_SERVICES progress bar
 SERVER_QUEUE
 
 # The next few functions should have no output

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion303) xenial; urgency=medium
+
+  * move ssh commands out of progress box 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 22 Jul 2019 16:08:58 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion302) xenial; urgency=medium
 
   * sosetup whiptail progress bar 

@@ -48,7 +48,7 @@ function promptinput() {
 		# zenity requires double underscores but whiptail does not
 		# so replace any double underscores with single underscores
 		NEWTEXT=$(echo $1 | sed 's|__|_|g')
-		whiptail --title="$TITLE" --inputbox "$NEWTEXT" 20 75 "$2" 3>&1 1>&2 2>&3
+		whiptail --title="$TITLE" --inputbox "$NEWTEXT" 21 75 "$2" 3>&1 1>&2 2>&3
 	fi
 }
 
@@ -56,7 +56,7 @@ function promptyesno() {
 	if [ "$OUTPUT" = "gui" ]; then
 		zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	else
-		whiptail --title="$TITLE" --yesno "$TEXT" 20 75
+		whiptail --title="$TITLE" --yesno "$TEXT" 21 75
 	fi
 }
 

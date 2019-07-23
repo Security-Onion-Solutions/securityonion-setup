@@ -289,3 +289,4 @@ fix-hostname-check
 sosetup-whiptail-progress-bar
 move-ssh-commands-out-of-progress-box
 adjust-crossclustercheck
+only-run-FIN3-on-master-servers

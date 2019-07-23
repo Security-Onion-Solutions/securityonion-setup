@@ -2118,13 +2118,11 @@ TEXT="You can check the status of your running services with the sostat utilites
 }
 
 function FIN3() {
-if [ $SERVER -eq 1 ]; then
-	source /etc/nsm/securityonion.conf
-	if [ "$LOCAL_NIDS_RULE_TUNING" = "no" ] ; then
-		TEXT="Rules downloaded by Pulledpork are stored in:\n/etc/nsm/rules/downloaded.rules\n\nLocal rules can be added to:\n/etc/nsm/rules/local.rules\n\nYou can have PulledPork modify the downloaded rules by modifying the files in:\n/etc/nsm/pulledpork/\n\nRules will be updated every morning.\n\nYou can manually update them by running:\nsudo rule-update\n\nSensors can be tuned by modifying the files in:\n/etc/nsm/NAME-OF-SENSOR/"
-	else
-		TEXT="Setup was not able to download rules from the Internet.\n\nLOCAL_NIDS_RULE_TUNING has been set to 'yes' in /etc/nsm/securityonion.conf.\n\nIf you do have Internet access and want to download rules from the Internet, you'll need to change this option to 'no'."
-	fi
+source /etc/nsm/securityonion.conf
+if [ "$LOCAL_NIDS_RULE_TUNING" = "no" ] ; then
+	TEXT="Rules downloaded by Pulledpork are stored in:\n/etc/nsm/rules/downloaded.rules\n\nLocal rules can be added to:\n/etc/nsm/rules/local.rules\n\nYou can have PulledPork modify the downloaded rules by modifying the files in:\n/etc/nsm/pulledpork/\n\nRules will be updated every morning.\n\nYou can manually update them by running:\nsudo rule-update\n\nSensors can be tuned by modifying the files in:\n/etc/nsm/NAME-OF-SENSOR/"
+else
+	TEXT="Setup was not able to download rules from the Internet.\n\nLOCAL_NIDS_RULE_TUNING has been set to 'yes' in /etc/nsm/securityonion.conf.\n\nIf you do have Internet access and want to download rules from the Internet, you'll need to change this option to 'no'."
 fi
 }
 
@@ -2320,7 +2318,15 @@ IP2C
 cp /usr/share/securityonion/securityonion_default.jpg /usr/share/securityonion/securityonion.jpg
 
 # Final screens
-for i in FIN1 FIN2 FIN3 FIN4 FIN5 FIN6; do
+if [ $SERVER -eq 1 ]; then
+	# If master server, then show all FIN text
+	FINAL="FIN1 FIN2 FIN3 FIN4 FIN5 FIN6"
+else
+	# If not master server, then show all FIN text except FIN3 as it only applies to master servers
+	FINAL="FIN1 FIN2 FIN4 FIN5 FIN6"
+fi
+
+for i in $FINAL; do
 	$i
 	if [ ! -f "$ANSWERFILE" ]; then
 		if [ "$OUTPUT" = "gui" ]; then

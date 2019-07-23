@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion305) xenial; urgency=medium
+
+  * only run FIN3 on master servers 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 23 Jul 2019 13:55:55 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion304) xenial; urgency=medium
 
   * adjust crossclustercheck 

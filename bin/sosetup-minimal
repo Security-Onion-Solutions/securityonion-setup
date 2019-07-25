@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+COMMON="/usr/sbin/so-common"
+if ! [ -f $COMMON ]; then
+	echo "$COMMON not found."
+	echo "This script requires Security Onion 16.04 or later."
+	exit
+fi
+source $COMMON
+
+# check to see if this is a sensor before continuing
+if [ -f /root/.ssh/securityonion_ssh.conf ]; then
+	echo "This machine appears to be a sensor connected to a distributed deployment."
+	echo "This script was designed for standalone systems designated for so-import-pcap."
+	exit
+fi
+
+unset DISPLAY
+source /usr/sbin/sosetup-common
+TEXT="sosetup-minimal will run the normal sosetup and then reconfigure the Elastic Stack to run in minimal mode.\n\nThis minimal mode is designed to minimize RAM and CPU usage.\n\nThe minimal Logstash config is intended to only do a basic parsing of NIDS and Bro logs and it won't do any additional decoration or augmentation.\n\nWould you like to proceed?"
+promptyesno
+ANSWER="$?"
+if [ $ANSWER -eq 1 ]; then
+	exit
+fi
+
+source /usr/sbin/sosetup
+
+function tune() {
+
+	CONF="/etc/nsm/securityonion.conf"
+	source $CONF
+
+	# stop elastalert if running
+	if docker ps |grep elastalert >/dev/null 2>&1; then
+		echo -e "XXX\n10\nPlease wait while stopping elastalert...\nXXX"
+		docker stop so-elastalert >/dev/null 2>&1
+	fi
+
+	# disable elastalert
+	if [ "$ELASTALERT_ENABLED" = "yes" ]; then
+		echo -e "XXX\n15\nPlease wait while disabling elastalert...\nXXX"
+		sed -i 's|ELASTALERT_ENABLED="yes"|ELASTALERT_ENABLED="no"|g' $CONF
+	fi
+
+	# stop freqserver if running
+	if docker ps |grep freqserver >/dev/null 2>&1; then
+		echo -e "XXX\n20\nPlease wait while stopping freqserver...\nXXX"
+		docker stop so-freqserver >/dev/null 2>&1
+	fi
+
+	# disable freqserver
+	if [ "$FREQ_SERVER_ENABLED" = "yes" ]; then
+		echo -e "XXX\n25\nPlease wait while disabling freqserver...\nXXX"
+		sed -i 's|FREQ_SERVER_ENABLED="yes"|FREQ_SERVER_ENABLED="no"|g' $CONF
+	fi
+
+	# stop domainstats if running
+	if docker ps |grep domainstats >/dev/null 2>&1; then
+		echo -e "XXX\n30\nPlease wait while stopping domainstats...\nXXX"
+		docker stop so-domainstats >/dev/null 2>&1
+	fi
+
+	# disable domainstats
+	if [ "$DOMAIN_STATS_ENABLED" = "yes" ]; then
+		echo -e "XXX\n30\nPlease wait while disabling domainstats...\nXXX"
+		sed -i 's|DOMAIN_STATS_ENABLED="yes"|DOMAIN_STATS_ENABLED="no"|g' $CONF
+	fi
+
+	# reconfigure Elasticsearch and Logstash
+	if ! grep -q "LOGSTASH_MINIMAL" /etc/nsm/securityonion.conf; then
+		echo -e "XXX\n40\nPlease wait while stopping Elasticsearch...\nXXX"
+		/usr/sbin/so-elasticsearch-stop >/dev/null 2>&1
+		echo -e "XXX\n50\nPlease wait while stopping Logstash...\nXXX"
+		/usr/sbin/so-logstash-stop >/dev/null 2>&1
+		echo -e "XXX\n60\nPlease wait while optimizing and restarting Elasticsearch...\nXXX"
+		echo >> /etc/nsm/securityonion.conf
+		echo 'LOGSTASH_MINIMAL="yes"' >> /etc/nsm/securityonion.conf
+		# Elasticsearch heap may be set to 600 or 1000 depending on Evaluation or Production Mode
+		sed -i 's|-Xms1000m|-Xms200m|g' /etc/elasticsearch/jvm.options
+		sed -i 's|-Xmx1000m|-Xmx200m|g' /etc/elasticsearch/jvm.options
+		sed -i 's|-Xms600m|-Xms200m|g' /etc/elasticsearch/jvm.options
+		sed -i 's|-Xmx600m|-Xmx200m|g' /etc/elasticsearch/jvm.options
+		CLUSTER_NAME=$(grep "cluster.name" /etc/elasticsearch/elasticsearch.yml | tail -1 | cut -d\" -f2)
+		rm -f /var/log/elasticsearch/${CLUSTER_NAME}.log
+		/usr/sbin/so-elasticsearch-start >/dev/null 2>&1
+		echo -e "XXX\n70\nPlease wait while optimizing and restarting Logstash...\nXXX"
+		sed -i 's|30s|1s|g' /etc/logstash/*-template.json
+		sed -i 's|-Xms2000m|-Xms200m|g' /etc/logstash/jvm.options
+		sed -i 's|-Xmx2000m|-Xmx200m|g' /etc/logstash/jvm.options
+		/usr/sbin/so-logstash-start >/dev/null 2>&1
+		echo -e "XXX\n80\nPlease wait while services initialize (may be a few minutes)...\nXXX"
+		until fgrep -qs "adding template [logstash" /var/log/elasticsearch/${CLUSTER_NAME}.log; do
+			sleep 1s
+		done
+	fi
+}
+
+TEXT="Please wait while making changes to the system..."
+tune | whiptail --title="$TITLE" --gauge "$TEXT" 6 75 0

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion306) xenial; urgency=medium
+
+  * securityonion-setup: create new sosetup-minimal script Security-Onion-Solutions/security-onion#1579 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 25 Jul 2019 11:49:49 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion305) xenial; urgency=medium
 
   * only run FIN3 on master servers 

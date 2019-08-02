@@ -84,8 +84,11 @@ function tune() {
 
 	# tune elasticsearch if running
 	if docker ps |grep elasticsearch >/dev/null 2>&1; then
+
 		echo -e "XXX\n40\nPlease wait while stopping Elasticsearch...\nXXX"
 		/usr/sbin/so-elasticsearch-stop >/dev/null 2>&1
+
+		echo -e "XXX\n50\nPlease wait while configuring and restarting Elasticsearch...\nXXX"
 		# Elasticsearch heap may be set to 600 or 1000 depending on Evaluation or Production Mode
 		sed -i 's|-Xms1000m|-Xms200m|g' /etc/elasticsearch/jvm.options
 		sed -i 's|-Xmx1000m|-Xmx200m|g' /etc/elasticsearch/jvm.options
@@ -93,16 +96,16 @@ function tune() {
 		sed -i 's|-Xmx600m|-Xmx200m|g' 	/etc/elasticsearch/jvm.options
 		CLUSTER_NAME=$(grep "cluster.name" /etc/elasticsearch/elasticsearch.yml | tail -1 | cut -d\" -f2)
 		rm -f /var/log/elasticsearch/${CLUSTER_NAME}.log
-		echo -e "XXX\n50\nPlease wait while optimizing and restarting Elasticsearch...\nXXX"
 		/usr/sbin/so-elasticsearch-start >/dev/null 2>&1
 	fi
 
 	# tune logstash if running
 	if docker ps |grep logstash >/dev/null 2>&1; then
+
 		echo -e "XXX\n60\nPlease wait while stopping Logstash...\nXXX"
 		/usr/sbin/so-logstash-stop >/dev/null 2>&1
 
-		# Reconfigure
+		echo -e "XXX\n70\nPlease wait while configuring and restarting Logstash...\nXXX"
 		if ! grep -q "LOGSTASH_MINIMAL" /etc/nsm/securityonion.conf; then
 			echo >> /etc/nsm/securityonion.conf
 			echo 'LOGSTASH_MINIMAL="yes"' >> /etc/nsm/securityonion.conf
@@ -110,27 +113,8 @@ function tune() {
 		sed -i 's|30s|1s|g' /etc/logstash/*-template.json
 		sed -i 's|-Xms2000m|-Xms200m|g' /etc/logstash/jvm.options
 		sed -i 's|-Xmx2000m|-Xmx200m|g' /etc/logstash/jvm.options
-
-		if [ "$LOGSTASH_INPUT_REDIS" = "yes" ]; then
-			# this is a storage node consuming from redis
-			# need to add an input if it doesn't already exist
-			INPUT_REDIS_CONF="/etc/logstash/conf.d.minimal/0900_input_redis.conf"
-			if ! [ -f $INPUT_REDIS_CONF ]; then
-cat << EOF >> $INPUT_REDIS_CONF
-input {
-	redis {
-		host => '172.18.0.1'
-		data_type => 'list'
-		key => 'logstash:redis'
-		type => 'redis-input'
-		# threads => 1
-	}
-}
-EOF
-			fi
-		fi
-		echo -e "XXX\n70\nPlease wait while optimizing and restarting Logstash...\nXXX"
 		/usr/sbin/so-logstash-start >/dev/null 2>&1
+
 		echo -e "XXX\n80\nPlease wait while services initialize (may be a few minutes)...\nXXX"
 		# If logstash outputs to Elasticsearch, we can check Elasticsearch log for initialization
 		# Otherwise, logstash is outputting to Redis and we can skip this

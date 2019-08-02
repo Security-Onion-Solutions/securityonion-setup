@@ -291,3 +291,4 @@ move-ssh-commands-out-of-progress-box
 adjust-crossclustercheck
 only-run-FIN3-on-master-servers
 securityonion-setup:-create-new-sosetup-minimal-script-Security-Onion-Solutionssecurity-onion#1579
+improve-sosetup-minimal

@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion307) xenial; urgency=medium
+
+  * improve sosetup-minimal 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 02 Aug 2019 08:01:37 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion306) xenial; urgency=medium
 
   * securityonion-setup: create new sosetup-minimal script Security-Onion-Solutions/security-onion#1579 

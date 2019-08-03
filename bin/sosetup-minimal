@@ -110,7 +110,6 @@ function tune() {
 			echo >> /etc/nsm/securityonion.conf
 			echo 'LOGSTASH_MINIMAL="yes"' >> /etc/nsm/securityonion.conf
 		fi
-		sed -i 's|30s|1s|g' /etc/logstash/*-template.json
 		sed -i 's|-Xms2000m|-Xms200m|g' /etc/logstash/jvm.options
 		sed -i 's|-Xmx2000m|-Xmx200m|g' /etc/logstash/jvm.options
 		/usr/sbin/so-logstash-start >/dev/null 2>&1

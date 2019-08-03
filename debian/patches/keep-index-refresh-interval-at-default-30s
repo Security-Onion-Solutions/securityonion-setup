@@ -1,0 +1,35 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion309) xenial; urgency=medium
+ .
+   * keep index refresh interval at default 30s
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup-minimal
++++ securityonion-setup-20120912/bin/sosetup-minimal
+@@ -110,7 +110,6 @@ function tune() {
+ 			echo >> /etc/nsm/securityonion.conf
+ 			echo 'LOGSTASH_MINIMAL="yes"' >> /etc/nsm/securityonion.conf
+ 		fi
+-		sed -i 's|30s|1s|g' /etc/logstash/*-template.json
+ 		sed -i 's|-Xms2000m|-Xms200m|g' /etc/logstash/jvm.options
+ 		sed -i 's|-Xmx2000m|-Xmx200m|g' /etc/logstash/jvm.options
+ 		/usr/sbin/so-logstash-start >/dev/null 2>&1

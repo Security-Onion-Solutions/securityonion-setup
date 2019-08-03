@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion309) xenial; urgency=medium
+
+  * keep index refresh interval at default 30s
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 03 Aug 2019 14:48:54 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion308) xenial; urgency=medium
 
   * fix sosetup-minimal for storage node 

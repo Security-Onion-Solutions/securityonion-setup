@@ -1121,8 +1121,15 @@ rm -f /tmp/GeoIP.dat
 rm -f /tmp/GeoLiteCity.dat
 rm -f /tmp/GeoLiteCity.dat.gz
 rm -f /opt/bro/etc/node.cfg
+# securityonion-setup: if re-running setup, delete any existing elastic auth config #1570
+# https://github.com/Security-Onion-Solutions/security-onion/issues/1570
+rm -f /etc/curator/config/curator.yml
+rm -f /etc/elastalert/conf/elastalert_config.yaml
 rm -f /etc/elasticsearch/elasticsearch_accounts
+rm -f /etc/elasticsearch/elasticsearch.keystore
 rm -f /etc/elasticsearch/elasticsearch_pcap
+rm -f /etc/kibana/kibana.yml
+rm -f /etc/logstash/conf.d*/*output*
 
 #########################################
 # Create files/dirs as necessary

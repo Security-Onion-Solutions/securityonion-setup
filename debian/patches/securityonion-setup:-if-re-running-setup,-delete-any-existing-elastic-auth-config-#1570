@@ -1,0 +1,43 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion310) xenial; urgency=medium
+ .
+   * securityonion-setup: if re-running setup, delete any existing elastic auth config #1570
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1121,8 +1121,15 @@ rm -f /tmp/GeoIP.dat
+ rm -f /tmp/GeoLiteCity.dat
+ rm -f /tmp/GeoLiteCity.dat.gz
+ rm -f /opt/bro/etc/node.cfg
++# securityonion-setup: if re-running setup, delete any existing elastic auth config #1570
++# https://github.com/Security-Onion-Solutions/security-onion/issues/1570
++rm -f /etc/curator/config/curator.yml
++rm -f /etc/elastalert/conf/elastalert_config.yaml
+ rm -f /etc/elasticsearch/elasticsearch_accounts
++rm -f /etc/elasticsearch/elasticsearch.keystore
+ rm -f /etc/elasticsearch/elasticsearch_pcap
++rm -f /etc/kibana/kibana.yml
++rm -f /etc/logstash/conf.d*/*output*
+ 
+ #########################################
+ # Create files/dirs as necessary

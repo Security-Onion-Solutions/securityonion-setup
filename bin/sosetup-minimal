@@ -110,7 +110,7 @@ function tune() {
 		fi
 		LS_HEAP_SIZE="200m"
 		sed -i "s/^-Xms.*/-Xms$LS_HEAP_SIZE/" /etc/logstash/jvm.options
-		sed -i "s/^-Xmx.*/-Xmx$ES_HEAP_SIZE/" /etc/logstash/jvm.options
+		sed -i "s/^-Xmx.*/-Xmx$LS_HEAP_SIZE/" /etc/logstash/jvm.options
 		/usr/sbin/so-logstash-start >/dev/null 2>&1
 
 		echo -e "XXX\n80\nPlease wait while services initialize (may be a few minutes)...\nXXX"

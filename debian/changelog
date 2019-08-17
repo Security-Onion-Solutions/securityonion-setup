@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion312) xenial; urgency=medium
+
+  * fix typo 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 17 Aug 2019 10:20:51 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion311) xenial; urgency=medium
 
   * securityonion-setup: improve heap adjustment in sosetup-minimal Security-Onion-Solutions/security-onion#1621 

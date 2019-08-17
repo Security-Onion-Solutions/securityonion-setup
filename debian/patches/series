@@ -296,3 +296,4 @@ fix-sosetup-minimal-for-storage-node
 keep-index-refresh-interval-at-default-30s
 securityonion-setup:-if-re-running-setup,-delete-any-existing-elastic-auth-config-#1570
 securityonion-setup:-improve-heap-adjustment-in-sosetup-minimal-#1621
+fix-heap-typo

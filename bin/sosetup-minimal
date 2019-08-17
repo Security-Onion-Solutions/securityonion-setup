@@ -89,11 +89,9 @@ function tune() {
 		/usr/sbin/so-elasticsearch-stop >/dev/null 2>&1
 
 		echo -e "XXX\n50\nPlease wait while configuring and restarting Elasticsearch...\nXXX"
-		# Elasticsearch heap may be set to 600 or 1000 depending on Evaluation or Production Mode
-		sed -i 's|-Xms1000m|-Xms200m|g' /etc/elasticsearch/jvm.options
-		sed -i 's|-Xmx1000m|-Xmx200m|g' /etc/elasticsearch/jvm.options
-		sed -i 's|-Xms600m|-Xms200m|g' 	/etc/elasticsearch/jvm.options
-		sed -i 's|-Xmx600m|-Xmx200m|g' 	/etc/elasticsearch/jvm.options
+		ES_HEAP_SIZE="400m"
+		sed -i "s/^-Xms.*/-Xms$ES_HEAP_SIZE/" /etc/elasticsearch/jvm.options
+		sed -i "s/^-Xmx.*/-Xmx$ES_HEAP_SIZE/" /etc/elasticsearch/jvm.options
 		CLUSTER_NAME=$(grep "cluster.name" /etc/elasticsearch/elasticsearch.yml | tail -1 | cut -d\" -f2)
 		rm -f /var/log/elasticsearch/${CLUSTER_NAME}.log
 		/usr/sbin/so-elasticsearch-start >/dev/null 2>&1
@@ -110,8 +108,9 @@ function tune() {
 			echo >> /etc/nsm/securityonion.conf
 			echo 'LOGSTASH_MINIMAL="yes"' >> /etc/nsm/securityonion.conf
 		fi
-		sed -i 's|-Xms2000m|-Xms200m|g' /etc/logstash/jvm.options
-		sed -i 's|-Xmx2000m|-Xmx200m|g' /etc/logstash/jvm.options
+		LS_HEAP_SIZE="200m"
+		sed -i "s/^-Xms.*/-Xms$LS_HEAP_SIZE/" /etc/logstash/jvm.options
+		sed -i "s/^-Xmx.*/-Xmx$ES_HEAP_SIZE/" /etc/logstash/jvm.options
 		/usr/sbin/so-logstash-start >/dev/null 2>&1
 
 		echo -e "XXX\n80\nPlease wait while services initialize (may be a few minutes)...\nXXX"

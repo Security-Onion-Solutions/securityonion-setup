@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion311) xenial; urgency=medium
+
+  * securityonion-setup: improve heap adjustment in sosetup-minimal Security-Onion-Solutions/security-onion#1621 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 17 Aug 2019 09:08:20 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion310) xenial; urgency=medium
 
   * securityonion-setup: if re-running setup, delete any existing elastic auth config #1570 

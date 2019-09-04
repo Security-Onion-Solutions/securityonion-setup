@@ -1137,6 +1137,14 @@ if [ -f /etc/elasticsearch/elasticsearch_accounts ]; then
 	rm -f /etc/logstash/conf.d/README.txt
 fi
 
+# If user had re-run the previous version of Setup, they could have README.txt but no output files.
+# If this is the case, remove README.txt so that output files will get re-created.
+if [ -f /etc/logstash/conf.d/README.txt ]; then
+	if ! ls /etc/logstash/conf.d/*output* >/dev/null 2>&1; then
+		rm -f /etc/logstash/conf.d/README.txt
+	fi
+fi
+
 #########################################
 # Create files/dirs as necessary
 #########################################

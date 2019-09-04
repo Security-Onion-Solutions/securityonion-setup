@@ -1,0 +1,42 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion314) xenial; urgency=medium
+ .
+   * Setup: improve removal of Elastic auth files Security-Onion-Solutions/security-onion#1632
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1137,6 +1137,14 @@ if [ -f /etc/elasticsearch/elasticsearch
+ 	rm -f /etc/logstash/conf.d/README.txt
+ fi
+ 
++# If user had re-run the previous version of Setup, they could have README.txt but no output files.
++# If this is the case, remove README.txt so that output files will get re-created.
++if [ -f /etc/logstash/conf.d/README.txt ]; then
++	if ! ls /etc/logstash/conf.d/*output* >/dev/null 2>&1; then
++		rm -f /etc/logstash/conf.d/README.txt
++	fi
++fi
++
+ #########################################
+ # Create files/dirs as necessary
+ #########################################

@@ -1,0 +1,85 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion315) xenial; urgency=medium
+ .
+   * issues 1659 and 1665
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/so-email
++++ securityonion-setup-20120912/bin/so-email
+@@ -49,7 +49,7 @@ SGUILEMAIL="NO"
+ # Default Sguil confirmation verbiage
+ SGUILEMAIL_SUMMARY=" - Sguil email will not be configured."
+ # Current version of script/config
+-CURRENT_CONF_VERSION="1.2"
++CURRENT_CONF_VERSION="1.3"
+ # Default setting for advanced setup
+ ADVANCED_SETUP="NO"
+ 
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -127,6 +127,7 @@ let DISK_SIZE=DISK_SIZE_K*1000
+ let LOG_SIZE_LIMIT=DISK_SIZE/2
+ let LOG_SIZE_LIMIT_GB=LOG_SIZE_LIMIT/1000000000
+ let DISK_SIZE_GB=DISK_SIZE/1000000000
++let DISK_SIZE_GB_90_PERCENT=DISK_SIZE_GB*0.9
+ let LOG_SIZE_LIMIT=LOG_SIZE_LIMIT_GB*1000000000
+ # Check amount of system RAM (MB)
+ TOTAL_MEM=`grep MemTotal /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'`
+@@ -954,18 +955,18 @@ fi
+ if [ "$ELASTIC" = "yes" ] && [ $ADVANCED_SETUP -eq 1 ] && [ "$FORWARD" != "yes" ] && [ "$LOGSTASH_OUTPUT_REDIS" != "yes" ]; then
+ 	LOG_SIZE_LIMIT_CONFIRMED="no"
+ 	while [ $LOG_SIZE_LIMIT_CONFIRMED = "no" ]; do
+-		TEXT="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\nPlease enter an integer greater than 0.\n\nPlease make sure that the value you set here is less than the size of your disk!\n\nIf you need to adjust this later, you can modify LOG__SIZE__LIMIT in /etc/nsm/securityonion.conf."
++		TEXT="How much disk space (in GigaBytes) should be allocated for Elasticsearch to store logs?\n\nPlease enter an integer greater than 0.\n\nPlease make sure that the value you set here is less than 90% of your disk space!\n\nIf you need to adjust this later, you can modify LOG__SIZE__LIMIT in /etc/nsm/securityonion.conf."
+ 		LOG_SIZE_LIMIT_GB=$(promptinput "$TEXT" "$LOG_SIZE_LIMIT_GB")
+ 		[ $? = 1 ] && exit
+ 		if [ x$LOG_SIZE_LIMIT_GB = "x" ]; then
+-			prompterror "Invalid log size limit!\n\nPlease use integers greater than 0 and less than your disk size."
++			prompterror "Invalid log size limit!\n\nPlease use integers greater than 0 and less than 90% of your disk space."
+ 		else
+ 			COMPRESSED="$(echo $LOG_SIZE_LIMIT_GB | sed -e 's/[^[:digit:]]//g')"
+ 			[ "$COMPRESSED" == "$LOG_SIZE_LIMIT_GB" ] && 
+ 			[ $LOG_SIZE_LIMIT_GB -gt 0 ] && 
+-			[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB ] && 
++			[ $LOG_SIZE_LIMIT_GB -lt $DISK_SIZE_GB_90_PERCENT ] && 
+ 			LOG_SIZE_LIMIT_CONFIRMED="yes" || 
+-			prompterror "Invalid log size limit!\n\nPlease use integers greater than 0 and less than your disk size." 
++			prompterror "Invalid log size limit!\n\nPlease use integers greater than 0 and less than 90% of your disk space." 
+ 		fi
+ 	done
+ 
+--- securityonion-setup-20120912.orig/share/securityonion/so-email.conf
++++ securityonion-setup-20120912/share/securityonion/so-email.conf
+@@ -27,6 +27,7 @@ MAILSERVER=""
+ # Daily sostat Email (Server, Sensor, Standalone)
+ #################################################
+ SOSTATEMAIL="NO"
++SOSTATADDRESS="sostat@securityonion"
+ 
+ #########################
+ # Bro Email (Sensor Only)
+@@ -47,4 +48,4 @@ SGUILEMAIL="NO"
+ TYPE="EMAIL"
+ 
+ #Version
+-VERSION="1.2"
++VERSION="1.3"

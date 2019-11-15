@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion315) xenial; urgency=medium
+
+  * issues 1659 and 1665 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 15 Nov 2019 13:39:00 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion314) xenial; urgency=medium
 
   * Setup: improve removal of Elastic auth files Security-Onion-Solutions/security-onion#1632 

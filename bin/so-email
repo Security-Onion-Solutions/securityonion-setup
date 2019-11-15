@@ -49,7 +49,7 @@ SGUILEMAIL="NO"
 # Default Sguil confirmation verbiage
 SGUILEMAIL_SUMMARY=" - Sguil email will not be configured."
 # Current version of script/config
-CURRENT_CONF_VERSION="1.2"
+CURRENT_CONF_VERSION="1.3"
 # Default setting for advanced setup
 ADVANCED_SETUP="NO"
 

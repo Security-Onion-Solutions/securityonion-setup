@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion316) xenial; urgency=medium
+
+  * fix 90 percent calculation 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 16 Nov 2019 07:35:38 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion315) xenial; urgency=medium
 
   * issues 1659 and 1665 

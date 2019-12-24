@@ -1,3 +1,33 @@
+securityonion-setup (20120912-0ubuntu0securityonion321) xenial; urgency=medium
+
+  * Setup: change #inter#face to #interface #1675 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 23 Dec 2019 15:01:59 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion320) xenial; urgency=medium
+
+  * update copyright 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 23 Dec 2019 12:40:27 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion319) xenial; urgency=medium
+
+  * change Bro to Zeek 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 23 Dec 2019 09:25:53 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion318) xenial; urgency=medium
+
+  * change [bro] to [zeek] 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 20 Dec 2019 10:53:07 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion317) xenial; urgency=medium
+
+  * migrate from broctl.cfg to zeekctl.cfg 
+
+ -- Doug Burks <doug.burks@gmail.com>  Fri, 20 Dec 2019 10:09:13 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion316) xenial; urgency=medium
 
   * fix 90 percent calculation 

@@ -301,3 +301,8 @@ Setup:-improve-removal-of-Elastic-auth-files-Security-Onion-Solutionssecurity-on
 Setup:-improve-removal-of-Elastic-auth-files-Security-Onion-Solutionssecurity-onion#1632-again
 issues-1659-and-1665
 fix-90-percent-calculation
+migrate-from-broctl.cfg-to-zeekctl.cfg
+change-[bro]-to-[zeek]
+change-Bro-to-Zeek
+update-copyright
+Setup:-change-#inter#face-to-#interface-#1675

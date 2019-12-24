@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2010,2011,2012,2013,2014 Doug Burks
-# Copyright (C) 2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+# Copyright (C) 2015,2016,2017,2018,2019,2020 Security Onion Solutions, LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 as
@@ -73,14 +73,14 @@ CORES=`grep -c ^processor /proc/cpuinfo`
 # for the OS, divided by the number of sniffing interfaces.
 SO_CORES=$(((CORES - 1) / SNIFF_INTERFACES))
 # CALCD_CORES subtracts a reserved CPU core for netsniff-ng from the available cores for
-# each interface and splits the number of cores between the IDS and Bro processes.
+# each interface and splits the number of cores between the IDS and Zeek processes.
 CALCD_CORES=$(((SO_CORES - 1) / 2))
 # IDS_LB_PROCS goes into sensor.conf and controls threads for Snort/Suricata
 IDS_LB_PROCS=1
 IDS_LB_PROCS_CONFIRM="- Run a single IDS process per interface.\n"
-# BRO_LB_PROCS goes into Bro's node.cfg and controls threads for Bro
+# BRO_LB_PROCS goes into Zeek's node.cfg and controls threads for Zeek
 BRO_LB_PROCS=1
-BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
+BRO_LB_PROCS_CONFIRM="- Run a single Zeek process per interface.\n"
 # /etc/nsm/securityonion.conf services enabled by default
 BRO_ENABLED="yes"
 OSSEC_AGENT_ENABLED="yes"
@@ -168,7 +168,7 @@ Logstash\n\
 Kibana\n\
 Squert\n\
 Sguil\n\
-Bro\n\
+Zeek\n\
 Snort/Suricata\n\
 netsniff-ng\n\
 \n\
@@ -228,7 +228,7 @@ TEXT="Evaluation Mode or Production Mode?\n\
 Evaluation Mode is recommended for first-time users or standalone VMs:\n\
 - ideal for quickly evaluating Security Onion\n\
 - will automatically configure most details of your system\n\
-- configures Snort and Bro to monitor one network interface\n\
+- configures Snort and Zeek to monitor one network interface\n\
 - NOT intended for a production deployment\n\
 \n\
 Production Mode is recommended for production deployments\n\
@@ -291,7 +291,7 @@ if [ $ADVANCED_SETUP -eq 0 ]; then
 	SENSOR=1
         ELASTIC="yes"
 	SERVERNAME="localhost"
-	SENSOR_CONFIRM_1="- Configure Snort and Bro to monitor the following interface:\n"
+	SENSOR_CONFIRM_1="- Configure Snort and Zeek to monitor the following interface:\n"
 	SENSOR_CONFIRM_2="$INTERFACES\n"
 else
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Production Mode."
@@ -600,7 +600,7 @@ fi
 # Network Sensor Services
 #########################################
 if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
-TEXT="Network sensor services include:\n\n- Snort or Suricata for NIDS alerts\n- Bro for protocol logging\n- netsniff-ng for full packet capture\n\nFor best performance, we recommend disabling network sensor services on master servers.\n\nWould you like to enable or disable network sensor services?"
+TEXT="Network sensor services include:\n\n- Snort or Suricata for NIDS alerts\n- Zeek for protocol logging\n- netsniff-ng for full packet capture\n\nFor best performance, we recommend disabling network sensor services on master servers.\n\nWould you like to enable or disable network sensor services?"
 	SENSOR=""
 	if [ "$OUTPUT" = "gui" ]; then
 		SENSOR=`zenity --list --radiolist --column "1" --column "2" --hide-header --title="$TITLE" TRUE "Enable network sensor services" FALSE "Disable network sensor services" --text="$TEXT"`
@@ -623,7 +623,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 	# Ask for PF_RING_SLOTS        
 	PF_RING_SLOTS_CONFIRMED="no"
 	while [ $PF_RING_SLOTS_CONFIRMED = "no" ]; do
-		TEXT="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module.\n\nPlease note that Bro and Suricata now default to AF__PACKET instead of PF__RING, so this setting only applies if you're running Snort."
+		TEXT="What would you like to set PF__RING min__num__slots to?\n\nThe default is 4096.  For busy networks, you may want to increase this to a higher number like 65534.\n\nIf you need to change this later, you can modify /etc/modprobe.d/pf__ring.conf and reload the pf_ring module.\n\nPlease note that Zeek and Suricata now default to AF__PACKET instead of PF__RING, so this setting only applies if you're running Snort."
 		PF_RING_SLOTS=$(promptinput "$TEXT" "4096")
 		[ $? = 1 ] && exit 1
 		COMPRESSED="$(echo $PF_RING_SLOTS | sed -e 's/[^[:digit:]]//g')"
@@ -679,7 +679,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 	SENSOR_CONFIRM_1="- Monitor each of the following interfaces:\n"
 	SENSOR_CONFIRM_2="$INTERFACES\n"
 	
-	# Determine number of cores and use that as a maximum value for IDS/Bro processes to run
+	# Determine number of cores and use that as a maximum value for IDS/Zeek processes to run
 	if [ "$OUTPUT" = "gui" ]; then
 		LIST=`seq 1 $CALCD_CORES`; SELECTIONS=`for i in $LIST; do echo "FALSE $i"; done`
 	else
@@ -752,22 +752,22 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 	fi
 	IDS_HOME_NET_CONFIRM="- Configure IDS HOME_NET as: $HOME_NET.\n"
 	if [ $CUSTOM -eq 1 ]; then
-	# Bro
-	TEXT="Bro listens on the chosen interfaces and writes protocol logs.\n\nWould you like to enable Bro?"
-	YES="Yes, enable Bro!"
-	NO="No, disable Bro."
+	# Zeek
+	TEXT="Zeek (formerly known as Bro) listens on the chosen interfaces and writes protocol logs.\n\nWould you like to enable Zeek?"
+	YES="Yes, enable Zeek!"
+	NO="No, disable Zeek."
 	promptyesno "$TEXT"
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected No.  Disabling Bro."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected No.  Disabling Zeek."
 		BRO_ENABLED="no"
 	else
-		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes.  Enabling Bro."
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Selected Yes.  Enabling Zeek."
 	fi
 
-	# Bro file extraction
+	# Zeek file extraction
 	if [ "$BRO_ENABLED" == "yes" ]; then
-		TEXT="Bro can extract files (EXEs by default) from your network traffic.\n\nIf enabled, EXEs will be stored in /nsm/bro/extracted/.\n\nWould you like to enable file extraction?"
+		TEXT="Zeek can extract files (EXEs by default) from your network traffic.\n\nIf enabled, EXEs will be stored in /nsm/bro/extracted/.\n\nWould you like to enable file extraction?"
 		YES="Yes, enable file extraction!"
 		NO="No, disable file extraction."
 		promptyesno "$TEXT"
@@ -784,7 +784,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 
 	# BRO_LB_PROCS
 	if [ "$BRO_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
-		TEXT="How many Bro processes would you like to run?\n\nBased on your system's number of CPU cores, it is recommended that you run $CALCD_CORES Bro processes per interface.\n\nIf you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
+		TEXT="How many Zeek processes would you like to run?\n\nBased on your system's number of CPU cores, it is recommended that you run $CALCD_CORES Zeek processes per interface.\n\nIf you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
 		if [ "$OUTPUT" = "gui" ]; then
 			BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
 		else
@@ -795,18 +795,18 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 			exit
 		fi
 		if [ "$CALCD_CORES" -gt 1 ]; then
-			BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Bro processes per interface.\n"
+			BRO_LB_PROCS_CONFIRM="- Run $BRO_LB_PROCS load-balanced Zeek processes per interface.\n"
 		else
 			BRO_LB_PROCS=1
-			BRO_LB_PROCS_CONFIRM="- Run a a single Bro process per interface.\n"
+			BRO_LB_PROCS_CONFIRM="- Run a a single Zeek process per interface.\n"
 		fi
 	else
 		BRO_LB_PROCS=$CALCD_CORES
 		if [ "$CALCD_CORES" -gt 1 ]; then
-			BRO_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced Bro processes per interface.\n"
+			BRO_LB_PROCS_CONFIRM="- Run $CALCD_CORES load-balanced Zeek processes per interface.\n"
 		else
 			BRO_LB_PROCS=1
-			BRO_LB_PROCS_CONFIRM="- Run a single Bro process per interface.\n"
+			BRO_LB_PROCS_CONFIRM="- Run a single Zeek process per interface.\n"
 		fi
 	fi
 
@@ -918,7 +918,7 @@ fi
 # Ask whether or not to use Elastic
 #########################################
 if [ $CUSTOM -eq 1 ] && [ $SERVER -eq 1 ]; then
-TEXT="The Elastic Stack is a platform for data ingestion, formatting, and visualization built on ElasticSearch, Logstash, and Kibana.\n\nOur customized stack also includes Curator and Elastalert.\n\nThe Elastic Stack provides a search engine and and web interface for hunting through your logs, including:\n* Bro logs\n* OSSEC alerts/logs\n* Snort/Suricata logs\n* standard syslog\n\nWould you like to enable the Elastic Stack?"
+TEXT="The Elastic Stack is a platform for data ingestion, formatting, and visualization built on ElasticSearch, Logstash, and Kibana.\n\nOur customized stack also includes Curator and Elastalert.\n\nThe Elastic Stack provides a search engine and and web interface for hunting through your logs, including:\n* Zeek logs\n* OSSEC alerts/logs\n* Snort/Suricata logs\n* standard syslog\n\nWould you like to enable the Elastic Stack?"
 	YES="Yes, enable the Elastic Stack."
 	NO="No, disable the Elastic Stack."
 	promptyesno "$TEXT"
@@ -1425,7 +1425,7 @@ for INTERFACE in $ALL_INTERFACES; do
 	fi
 done
 
-# Bro
+# Zeek
 if grep -v "^#" $SENSORTAB > /dev/null; then
 	# If user selected Quick Setup, do standalone config.
 	# Otherwise, do cluster config.
@@ -1433,7 +1433,7 @@ if grep -v "^#" $SENSORTAB > /dev/null; then
 		# standalone config
 		INTERFACE=`grep -v "^#" $SENSORTAB | awk '{print $4}'`
 		cat << EOF > /opt/bro/etc/node.cfg
-[bro]
+[zeek]
 type=standalone
 host=localhost
 interface=$INTERFACE
@@ -1461,7 +1461,7 @@ EOF
 		FANOUT_ID=30
 		for INTERFACE in $ALL_INTERFACES; do
 			if echo $INTERFACES_CSV |grep "$INTERFACE," >/dev/null 2>&1; then
-                        echo "* Configuring Bro to monitor $INTERFACE" >> $LOG 2>&1
+                        echo "* Configuring Zeek to monitor $INTERFACE" >> $LOG 2>&1
                         cat << EOF >> /opt/bro/etc/node.cfg
 [$HOSTNAME-$INTERFACE]   
 type=worker
@@ -1479,7 +1479,7 @@ EOF
 #[$HOSTNAME-$INTERFACE]   
 #type=worker
 #host=localhost
-#inter#face=$INTERFACE
+#interface=$INTERFACE
 #lb_method=custom
 #lb_procs=$BRO_LB_PROCS
 #af_packet_fanout_id=$FANOUT_ID
@@ -1496,16 +1496,16 @@ EOF
 	# Now update networks.cfg
 	sed -i '1,4!d' /opt/bro/etc/networks.cfg
 	echo $HOME_NET | tr , '\n\\' >> /opt/bro/etc/networks.cfg
-	# update broctl.cfg
-	if grep "nsm" /opt/bro/etc/broctl.cfg >/dev/null; then
-		echo "/opt/bro/etc/broctl.cfg already contains nsm" >> $LOG 2>&1
+	# update zeekctl.cfg
+	if grep "nsm" /opt/bro/etc/zeekctl.cfg >/dev/null; then
+		echo "/opt/bro/etc/zeekctl.cfg already contains nsm" >> $LOG 2>&1
 	else
-		# Before Bro 2.4, broctl.cfg defaulted to /var/opt/bro/
-		sed -i 's|SpoolDir = /var/opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/bro/etc/broctl.cfg
-		sed -i 's|LogDir = /var/opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/bro/etc/broctl.cfg
-		# Starting with Bro 2.4, broctl.cfg defaults to /opt/bro/
-		sed -i 's|SpoolDir = /opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/bro/etc/broctl.cfg
-		sed -i 's|LogDir = /opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/bro/etc/broctl.cfg
+		# Before Bro 2.4, zeekctl.cfg defaulted to /var/opt/bro/
+		sed -i 's|SpoolDir = /var/opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/bro/etc/zeekctl.cfg
+		sed -i 's|LogDir = /var/opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/bro/etc/zeekctl.cfg
+		# Starting with Bro 2.4, zeekctl.cfg defaults to /opt/bro/
+		sed -i 's|SpoolDir = /opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/bro/etc/zeekctl.cfg
+		sed -i 's|LogDir = /opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/bro/etc/zeekctl.cfg
 	fi
 	# Finished updating config files
 
@@ -1514,7 +1514,7 @@ EOF
 	mkdir -p /nsm/bro/logs
 	mkdir -p /nsm/bro/extracted
 
-	# Enable Bro file extraction
+	# Enable Zeek file extraction
 	if [ "$EXTRACT_FILES" = "yes" ]; then
 		sed -i 's|^#@load file-extraction|@load file-extraction|g' /opt/bro/share/bro/site/local.bro
 	else
@@ -1535,7 +1535,7 @@ EOF
 @load ./disable-syslog.bro
 EOF
  
- 	# Configure Bro to load disable-syslog
+ 	# Configure Zeek to load disable-syslog
 	if [ $ADVANCED_SETUP -eq 1 ]; then
 		grep -q "disable-syslog" /opt/bro/share/bro/site/local.bro || cat << EOF >> /opt/bro/share/bro/site/local.bro
  
@@ -1545,7 +1545,7 @@ EOF
 EOF
 	fi
 
-	# Configure Bro to log in JSON
+	# Configure Zeek to log in JSON
 	/usr/sbin/so-elastic-configure-bro >> $LOG 2>&1
 fi
 
@@ -1577,10 +1577,10 @@ WARN_DISK_USAGE=$WARN_DISK_USAGE
 # At what percentage of disk usage should the NSM scripts begin purging old data?
 CRIT_DISK_USAGE=$CRIT_DISK_USAGE
 
-# Do you want to run Bro?  yes/no
+# Do you want to run Zeek (formerly known as Bro)?  yes/no
 BRO_ENABLED=$BRO_ENABLED
 
-# BRO_USER specifies the user account used to start Bro.
+# BRO_USER specifies the user account used to start Zeek.
 BRO_USER=sguil
 BRO_GROUP=sguil
 
@@ -1929,7 +1929,7 @@ if [ $COUNT -eq 0 ]; then
 	cp $SYSLOGNGCONFSRC $SYSLOGNGCONFDST
 fi
 
-# If single sensor interface, we need to determine if Bro is running in standalone mode or cluster mode
+# If single sensor interface, we need to determine if Zeek is running in standalone mode or cluster mode
 if [ $COUNT -eq 1 ]; then
 	if grep "type=standalone" /opt/bro/etc/node.cfg > /dev/null; then
 		echo "* Leaving syslog-ng.conf bro_http entry unmolested." >> $LOG 2>&1
@@ -1937,13 +1937,13 @@ if [ $COUNT -eq 1 ]; then
 	else
 		echo "* Altering syslog-ng.conf bro_http entry for single interface cluster-mode" >> $LOG 2>&1
 		# Pull the interface bro is listening for from node.cfg
-		BRO_IFACE=$(grep "interface=" /opt/bro/etc/node.cfg | cut -d'=' -f2)
+		BRO_IFACE=$(grep "^interface=" /opt/bro/etc/node.cfg | cut -d'=' -f2)
 		# Alter syslog-ng.conf's entry for http
 		sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|\tfile(\"/nsm/bro/logs/current/http_$BRO_IFACE.log\" flags(no-parse) program_override(\"bro_http\"));\n|" $SYSLOGNGCONFSRC > $SYSLOGNGCONFDST
 	fi
 fi
 
-# If multiple sensor interfaces, Bro must be running in cluster mode and we need to watch multiple http logs
+# If multiple sensor interfaces, Zeek must be running in cluster mode and we need to watch multiple http logs
 if [ $COUNT -gt 1 ]; then
 	echo "* Altering syslog-ng.conf bro_http entries for multiple interfaces" >> $LOG 2>&1
 	for i in $SENSORS; do
@@ -2132,7 +2132,7 @@ fi
 # FINAL (FIN) OUTPUT FUNCTIONS
 #########################################
 function FIN1() {
-TEXT="Security Onion Setup is now complete!\n\nSetup log can be found here:\n$LOG\n\nYou may view IDS alerts using Sguil, Squert, or Kibana (if enabled).\n\nBro logs can be found in Kibana (if enabled) and the following location:\n/nsm/bro/"
+TEXT="Security Onion Setup is now complete!\n\nSetup log can be found here:\n$LOG\n\nYou may view IDS alerts using Sguil, Squert, or Kibana (if enabled).\n\nZeek logs can be found in Kibana (if enabled) and the following location:\n/nsm/bro/"
 }
 
 function FIN2() {

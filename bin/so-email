@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2014,2015,2016,2017,2018,2019 Security Onion Solutions, LLC
+# Copyright 2014,2015,2016,2017,2018,2019,2020 Security Onion Solutions, LLC
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,10 +36,10 @@ FROMADDRESS="no-reply"
 SOSTATEMAIL="NO"
 # Default sostat confirmation verbiage
 SOSTATEMAIL_SUMMARY=" - Daily sostat email will not be configured."
-# Bro email enabled - YES/NO
+# Zeek email enabled - YES/NO
 BROEMAIL="NO"
-# Default Bro confirmation verbiage
-BROEMAIL_SUMMARY=" - Bro email will not be configured."
+# Default Zeek confirmation verbiage
+BROEMAIL_SUMMARY=" - Zeek email will not be configured."
 # OSSEC email enabled - YES/NO
 OSSECEMAIL="NO"
 # Default OSSEC confirmation verbiage
@@ -187,25 +187,25 @@ else
 	SOSTATEMAIL_SUMMARY=" - Daily sostat email will be configured."
 fi
 #########################################
-# Bro email
+# Zeek email
 #########################################
 if [[ $SENSOR -eq 1 ]];then
-	TEXT="Would you like to configure email alerts for Bro?"
+	TEXT="Would you like to configure email alerts for Zeek (formerly known as Bro)?"
 	YES="Yes"
 	NO="No"
 	zenity --question --title="$TITLE" --text="$TEXT" --ok-label="$YES" --cancel-label="$NO" --no-wrap
 	ANSWER="$?"
 	if [ $ANSWER -eq 1 ]; then
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for Bro."
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked No.  Not configuring email for Zeek."
 	else
-        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Bro."
+        	[ $DEBUG -eq 1 ] && echo "DEBUG: Clicked Yes.  Configuring email for Zeek."
 		if [ $ADVANCED_SETUP == "YES" ]; then
-			BROADDRESS=$(zenity --entry --text "Please enter a FROM email address for Bro" --entry-text "root@localhost")
+			BROADDRESS=$(zenity --entry --text "Please enter a FROM email address for Zeek" --entry-text "root@localhost")
 		else
 			BROADDRESS="bro@$HOSTNAME"
 		fi
 		BROEMAIL="YES"
-		BROEMAIL_SUMMARY=" - Bro email will be configured."
+		BROEMAIL_SUMMARY=" - Zeek email will be configured."
 	fi
 fi
 #########################################
@@ -321,29 +321,28 @@ if ! [[ "$SOSTATEMAIL" == "NO" ]]; then
 	touch $SOSTAT
 	echo -e '#/etc/cron.d/sostat\n#\n#crontab entry to run sostat and email its output\n\n\nSHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\nEMAIL=root@localhost\nHOSTNAME='$HOSTNAME'\n\n01 12 * * * root /usr/sbin/sostat 2>&1 | mail -aFrom:'$SOSTATADDRESS' -s "Statistics for $HOSTNAME" $EMAIL' > $SOSTAT
 fi
-#Configure Bro
+#Configure Zeek
 if ! [[ "$BROEMAIL" == "NO" ]]; then
 	echo "30"
-	echo "# Configuring Bro email..." | tee -a $LOG
-	BROCTL="/opt/bro/etc/broctl.cfg"
+	echo "# Configuring Zeek email..." | tee -a $LOG
+	BROCTL="/opt/bro/etc/zeekctl.cfg"
 	sed -i "s|^MailTo.*$|MailTo = root@localhost|g" $BROCTL
         if grep -q "tracesummary=" $BROCTL;then
         	sed -i "s|^tracesummary=.*$|tracesummary=|g" $BROCTL
 	else
 		sed -i '/MailTo/a tracesummary=' $BROCTL
         fi
+	if ! grep MailFrom $BROCTL; then
+		echo 'MailFrom = '"$BROADDRESS"'' >> $BROCTL
+	else
+		sed -i "s/MailFrom =.*/MailFrom = $BROADDRESS/" $BROCTL
+	fi
 	LOCALBRO="/opt/bro/share/bro/site/local.bro"
         if grep -q -i "email" $LOCALBRO;then
         	:
         else
-        	echo -e "\n# Bro Notice email configuration\nhook Notice::policy(n: Notice::Info)\n             {       \n      add n\$actions[Notice::ACTION_ALARM];\n         }" >> $LOCALBRO
+        	echo -e "\n# Zeek Notice email configuration\nhook Notice::policy(n: Notice::Info)\n             {       \n      add n\$actions[Notice::ACTION_ALARM];\n         }" >> $LOCALBRO
         fi
-	BROCFG="/opt/bro/etc/broctl.cfg"
-	if ! grep MailFrom $BROCFG; then
-		echo 'MailFrom = '"$BROADDRESS"'' >> $BROCFG
-	else
-		sed -i "s/MailFrom =.*/MailFrom = $BROADDRESS/" $BROCFG
-	fi
 	nsm_sensor_ps-restart --only-bro >> $LOG 2>&1
 fi
 #Configure Sguil

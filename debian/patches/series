@@ -306,3 +306,4 @@ change-[bro]-to-[zeek]
 change-Bro-to-Zeek
 update-copyright
 Setup:-change-#inter#face-to-#interface-#1675
+change-bro_init-to-zeek_init

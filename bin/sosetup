@@ -1524,7 +1524,7 @@ EOF
 	# Create /opt/bro/share/bro/disable-syslog/disable-syslog.bro
  	mkdir -p /opt/bro/share/bro/disable-syslog/
  	cat << EOF > /opt/bro/share/bro/disable-syslog/disable-syslog.bro
-event bro_init()
+event zeek_init()
 	{
 	Log::disable_stream(Syslog::LOG);
  	}

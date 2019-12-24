@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion322) xenial; urgency=medium
+
+  * change bro_init to zeek_init 
+
+ -- Doug Burks <doug.burks@gmail.com>  Tue, 24 Dec 2019 09:47:40 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion321) xenial; urgency=medium
 
   * Setup: change #inter#face to #interface #1675 

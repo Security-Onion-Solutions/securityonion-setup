@@ -1521,18 +1521,18 @@ EOF
 		sed -i 's|^@load file-extraction|#@load file-extraction|g' /opt/bro/share/bro/site/local.bro
 	fi
 
-	# Create /opt/bro/share/bro/disable-syslog/disable-syslog.bro
+	# Create /opt/bro/share/bro/disable-syslog/disable-syslog.zeek
  	mkdir -p /opt/bro/share/bro/disable-syslog/
- 	cat << EOF > /opt/bro/share/bro/disable-syslog/disable-syslog.bro
+ 	cat << EOF > /opt/bro/share/bro/disable-syslog/disable-syslog.zeek
 event zeek_init()
 	{
 	Log::disable_stream(Syslog::LOG);
  	}
 EOF
  
- 	# Create /opt/bro/share/bro/disable-syslog/__load__.bro
- 	cat << EOF > /opt/bro/share/bro/disable-syslog/__load__.bro
-@load ./disable-syslog.bro
+ 	# Create /opt/bro/share/bro/disable-syslog/__load__.zeek
+ 	cat << EOF > /opt/bro/share/bro/disable-syslog/__load__.zeek
+@load ./disable-syslog
 EOF
  
  	# Configure Zeek to load disable-syslog

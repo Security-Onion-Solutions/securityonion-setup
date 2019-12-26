@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion323) xenial; urgency=medium
+
+  * rename disable-syslog.bro to disable-syslog.zeek 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 26 Dec 2019 06:33:23 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion322) xenial; urgency=medium
 
   * change bro_init to zeek_init 

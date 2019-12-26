@@ -308,3 +308,5 @@ update-copyright
 Setup:-change-#inter#face-to-#interface-#1675
 change-bro_init-to-zeek_init
 rename-disable-syslog.bro-to-disable-syslog.zeek
+more-bro-to-zeek-changes
+more-zeek-changes

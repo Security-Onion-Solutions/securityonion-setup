@@ -325,7 +325,7 @@ fi
 if ! [[ "$BROEMAIL" == "NO" ]]; then
 	echo "30"
 	echo "# Configuring Zeek email..." | tee -a $LOG
-	BROCTL="/opt/bro/etc/zeekctl.cfg"
+	BROCTL="/opt/zeek/etc/zeekctl.cfg"
 	sed -i "s|^MailTo.*$|MailTo = root@localhost|g" $BROCTL
         if grep -q "tracesummary=" $BROCTL;then
         	sed -i "s|^tracesummary=.*$|tracesummary=|g" $BROCTL
@@ -337,7 +337,7 @@ if ! [[ "$BROEMAIL" == "NO" ]]; then
 	else
 		sed -i "s/MailFrom =.*/MailFrom = $BROADDRESS/" $BROCTL
 	fi
-	LOCALBRO="/opt/bro/share/bro/site/local.bro"
+	LOCALBRO="/opt/zeek/share/zeek/site/local.zeek"
         if grep -q -i "email" $LOCALBRO;then
         	:
         else

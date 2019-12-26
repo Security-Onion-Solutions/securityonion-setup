@@ -784,7 +784,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 
 	# BRO_LB_PROCS
 	if [ "$BRO_ENABLED" == "yes" ] && [ "$CALCD_CORES" -gt 1 ] && [ "$CUSTOM" -eq 1 ]; then
-		TEXT="How many Zeek processes would you like to run?\n\nBased on your system's number of CPU cores, it is recommended that you run $CALCD_CORES Zeek processes per interface.\n\nIf you need to change this setting later, you can change the lb_procs variable in /opt/bro/etc/node.cfg."
+		TEXT="How many Zeek processes would you like to run?\n\nBased on your system's number of CPU cores, it is recommended that you run $CALCD_CORES Zeek processes per interface.\n\nIf you need to change this setting later, you can change the lb_procs variable in /opt/zeek/etc/node.cfg."
 		if [ "$OUTPUT" = "gui" ]; then
 			BRO_LB_PROCS=`zenity --list --radiolist --column "" --column "" $SELECTIONS --hide-header --text="$TEXT" --title="$TITLE"`
 		else
@@ -1121,7 +1121,7 @@ function CONFIGURE_SERVICES() {
 rm -f /tmp/GeoIP.dat
 rm -f /tmp/GeoLiteCity.dat
 rm -f /tmp/GeoLiteCity.dat.gz
-rm -f /opt/bro/etc/node.cfg
+rm -f /opt/zeek/etc/node.cfg
 
 # securityonion-setup: if re-running setup, delete any existing elastic auth config #1570
 # https://github.com/Security-Onion-Solutions/security-onion/issues/1570
@@ -1432,7 +1432,7 @@ if grep -v "^#" $SENSORTAB > /dev/null; then
 	if [ $ADVANCED_SETUP -eq 0 ]; then
 		# standalone config
 		INTERFACE=`grep -v "^#" $SENSORTAB | awk '{print $4}'`
-		cat << EOF > /opt/bro/etc/node.cfg
+		cat << EOF > /opt/zeek/etc/node.cfg
 [zeek]
 type=standalone
 host=localhost
@@ -1440,7 +1440,7 @@ interface=$INTERFACE
 EOF
 	else
 		# User selected Advanced Setup, so do cluster config
-		cat << EOF > /opt/bro/etc/node.cfg
+		cat << EOF > /opt/zeek/etc/node.cfg
 [logger]
 type=logger
 host=localhost
@@ -1462,7 +1462,7 @@ EOF
 		for INTERFACE in $ALL_INTERFACES; do
 			if echo $INTERFACES_CSV |grep "$INTERFACE," >/dev/null 2>&1; then
                         echo "* Configuring Zeek to monitor $INTERFACE" >> $LOG 2>&1
-                        cat << EOF >> /opt/bro/etc/node.cfg
+                        cat << EOF >> /opt/zeek/etc/node.cfg
 [$HOSTNAME-$INTERFACE]   
 type=worker
 host=localhost
@@ -1475,7 +1475,7 @@ af_packet_buffer_size=128*1024*1024
 
 EOF
 			else
-                        cat << EOF >> /opt/bro/etc/node.cfg
+                        cat << EOF >> /opt/zeek/etc/node.cfg
 #[$HOSTNAME-$INTERFACE]   
 #type=worker
 #host=localhost
@@ -1494,18 +1494,15 @@ EOF
         fi
 	# Finished with node.cfg
 	# Now update networks.cfg
-	sed -i '1,4!d' /opt/bro/etc/networks.cfg
-	echo $HOME_NET | tr , '\n\\' >> /opt/bro/etc/networks.cfg
+	sed -i '1,4!d' /opt/zeek/etc/networks.cfg
+	echo $HOME_NET | tr , '\n\\' >> /opt/zeek/etc/networks.cfg
 	# update zeekctl.cfg
-	if grep "nsm" /opt/bro/etc/zeekctl.cfg >/dev/null; then
-		echo "/opt/bro/etc/zeekctl.cfg already contains nsm" >> $LOG 2>&1
+	if grep "nsm" /opt/zeek/etc/zeekctl.cfg >/dev/null; then
+		echo "/opt/zeek/etc/zeekctl.cfg already contains nsm" >> $LOG 2>&1
 	else
-		# Before Bro 2.4, zeekctl.cfg defaulted to /var/opt/bro/
-		sed -i 's|SpoolDir = /var/opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/bro/etc/zeekctl.cfg
-		sed -i 's|LogDir = /var/opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/bro/etc/zeekctl.cfg
-		# Starting with Bro 2.4, zeekctl.cfg defaults to /opt/bro/
-		sed -i 's|SpoolDir = /opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/bro/etc/zeekctl.cfg
-		sed -i 's|LogDir = /opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/bro/etc/zeekctl.cfg
+		# Move SpoolDir and LogDir to /nsm
+		sed -i 's|SpoolDir = /opt/bro/spool|SpoolDir = /nsm/bro/spool|g' /opt/zeek/etc/zeekctl.cfg
+		sed -i 's|LogDir = /opt/bro/logs|LogDir = /nsm/bro/logs|g' /opt/zeek/etc/zeekctl.cfg
 	fi
 	# Finished updating config files
 
@@ -1516,30 +1513,30 @@ EOF
 
 	# Enable Zeek file extraction
 	if [ "$EXTRACT_FILES" = "yes" ]; then
-		sed -i 's|^#@load file-extraction|@load file-extraction|g' /opt/bro/share/bro/site/local.bro
+		sed -i 's|^#@load file-extraction|@load file-extraction|g' /opt/zeek/share/zeek/site/local.zeek
 	else
-		sed -i 's|^@load file-extraction|#@load file-extraction|g' /opt/bro/share/bro/site/local.bro
+		sed -i 's|^@load file-extraction|#@load file-extraction|g' /opt/zeek/share/zeek/site/local.zeek
 	fi
 
-	# Create /opt/bro/share/bro/disable-syslog/disable-syslog.zeek
- 	mkdir -p /opt/bro/share/bro/disable-syslog/
- 	cat << EOF > /opt/bro/share/bro/disable-syslog/disable-syslog.zeek
+	# Create /opt/zeek/share/zeek/disable-syslog/disable-syslog.zeek
+ 	mkdir -p /opt/zeek/share/zeek/disable-syslog/
+ 	cat << EOF > /opt/zeek/share/zeek/disable-syslog/disable-syslog.zeek
 event zeek_init()
 	{
 	Log::disable_stream(Syslog::LOG);
  	}
 EOF
  
- 	# Create /opt/bro/share/bro/disable-syslog/__load__.zeek
- 	cat << EOF > /opt/bro/share/bro/disable-syslog/__load__.zeek
+ 	# Create /opt/zeek/share/zeek/disable-syslog/__load__.zeek
+ 	cat << EOF > /opt/zeek/share/zeek/disable-syslog/__load__.zeek
 @load ./disable-syslog
 EOF
  
  	# Configure Zeek to load disable-syslog
 	if [ $ADVANCED_SETUP -eq 1 ]; then
-		grep -q "disable-syslog" /opt/bro/share/bro/site/local.bro || cat << EOF >> /opt/bro/share/bro/site/local.bro
+		grep -q "disable-syslog" /opt/zeek/share/zeek/site/local.zeek || cat << EOF >> /opt/zeek/share/zeek/site/local.zeek
  
-# Disable Bro syslog.log in Production Mode
+# Disable Zeek syslog.log in Production Mode
 # https://github.com/Security-Onion-Solutions/security-onion/issues/1457
 @load disable-syslog
 EOF
@@ -1931,13 +1928,13 @@ fi
 
 # If single sensor interface, we need to determine if Zeek is running in standalone mode or cluster mode
 if [ $COUNT -eq 1 ]; then
-	if grep "type=standalone" /opt/bro/etc/node.cfg > /dev/null; then
+	if grep "type=standalone" /opt/zeek/etc/node.cfg > /dev/null; then
 		echo "* Leaving syslog-ng.conf bro_http entry unmolested." >> $LOG 2>&1
 		cp $SYSLOGNGCONFSRC $SYSLOGNGCONFDST
 	else
 		echo "* Altering syslog-ng.conf bro_http entry for single interface cluster-mode" >> $LOG 2>&1
 		# Pull the interface bro is listening for from node.cfg
-		BRO_IFACE=$(grep "^interface=" /opt/bro/etc/node.cfg | cut -d'=' -f2)
+		BRO_IFACE=$(grep "^interface=" /opt/zeek/etc/node.cfg | cut -d'=' -f2)
 		# Alter syslog-ng.conf's entry for http
 		sed -e "s|^\tfile(\"/nsm/bro/logs/current/http.log\".*|\tfile(\"/nsm/bro/logs/current/http_$BRO_IFACE.log\" flags(no-parse) program_override(\"bro_http\"));\n|" $SYSLOGNGCONFSRC > $SYSLOGNGCONFDST
 	fi

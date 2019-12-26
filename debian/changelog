@@ -1,3 +1,15 @@
+securityonion-setup (20120912-0ubuntu0securityonion325) xenial; urgency=medium
+
+  * more zeek changes 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 26 Dec 2019 16:04:10 -0500
+
+securityonion-setup (20120912-0ubuntu0securityonion324) xenial; urgency=medium
+
+  * more bro to zeek changes 
+
+ -- Doug Burks <doug.burks@gmail.com>  Thu, 26 Dec 2019 16:01:49 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion323) xenial; urgency=medium
 
   * rename disable-syslog.bro to disable-syslog.zeek 

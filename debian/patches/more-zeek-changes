@@ -1,0 +1,264 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion325) xenial; urgency=medium
+ .
+   * more zeek changes
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/share/securityonion/so-email.conf
++++ securityonion-setup-20120912/share/securityonion/so-email.conf
+@@ -30,7 +30,7 @@ SOSTATEMAIL="NO"
+ SOSTATADDRESS="sostat@securityonion"
+ 
+ #########################
+-# Bro Email (Sensor Only)
++# Zeek Email (Sensor Only)
+ #########################
+ BROEMAIL="NO"
+ 
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup-forward.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup-forward.conf
+@@ -148,7 +148,7 @@ SENSOR=1
+ # If SENSOR=1, then the following services can be enabled/disabled.
+ 
+ # BRO_ENABLED
+-# Do you want to run Bro?  yes/no
++# Do you want to run Zeek?  yes/no
+ BRO_ENABLED='yes'
+ 
+ # IDS_ENGINE_ENABLED
+@@ -179,7 +179,7 @@ PCAP_AGENT_ENABLED='yes'
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+-# Bro provides the same data types plus more, so most
++# Zeek provides the same data types plus more, so most
+ # folks don't run Prads.
+ PRADS_ENABLED='no'
+ 
+@@ -198,14 +198,14 @@ PADS_AGENT_ENABLED='no'
+ ##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+-# http_agent sends http logs from Bro to Sguil.
++# http_agent sends http logs from Zeek to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+ HTTP_AGENT_ENABLED='no'
+ 
+ ##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+-# Argus writes session data, also provided by Bro and Prads.
++# Argus writes session data, also provided by Zeek and Prads.
+ # Most folks don't run Argus.
+ ARGUS_ENABLED='no'
+ 
+@@ -271,16 +271,16 @@ IDS_LB_PROCS='1'
+ HOME_NET='192.168.0.0/16,10.0.0.0/8,172.16.0.0/12'
+ 
+ ################################
+-# Bro Config
++# Zeek Config
+ ################################
+ 
+ # BRO_LB_PROCS
+-# How many PF_RING load-balanced processes would you like Bro to run?
++# How many PF_RING load-balanced processes would you like Zeek to run?
+ # This value should be lower than your number of CPU cores.
+ BRO_LB_PROCS='1'
+ 
+ # EXTRACT_FILES
+-# Do you want Bro to automatically extract Windows EXEs and write them to disk?  yes/no
++# Do you want Zeek to automatically extract Windows EXEs and write them to disk?  yes/no
+ EXTRACT_FILES='yes'
+ 
+ ################################
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup-master.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup-master.conf
+@@ -148,7 +148,7 @@ SENSOR=0
+ # If SENSOR=1, then the following services can be enabled/disabled.
+ 
+ # BRO_ENABLED
+-# Do you want to run Bro?  yes/no
++# Do you want to run Zeek?  yes/no
+ BRO_ENABLED='yes'
+ 
+ # IDS_ENGINE_ENABLED
+@@ -179,7 +179,7 @@ PCAP_AGENT_ENABLED='yes'
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+-# Bro provides the same data types plus more, so most
++# Zeek provides the same data types plus more, so most
+ # folks don't run Prads.
+ PRADS_ENABLED='no'
+ 
+@@ -198,14 +198,14 @@ PADS_AGENT_ENABLED='no'
+ ##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+-# http_agent sends http logs from Bro to Sguil.
++# http_agent sends http logs from Zeek to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+ HTTP_AGENT_ENABLED='no'
+ 
+ ##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+-# Argus writes session data, also provided by Bro and Prads.
++# Argus writes session data, also provided by Zeek and Prads.
+ # Most folks don't run Argus.
+ ARGUS_ENABLED='no'
+ 
+@@ -271,16 +271,16 @@ IDS_LB_PROCS='1'
+ HOME_NET='192.168.0.0/16,10.0.0.0/8,172.16.0.0/12'
+ 
+ ################################
+-# Bro Config
++# Zeek Config
+ ################################
+ 
+ # BRO_LB_PROCS
+-# How many PF_RING load-balanced processes would you like Bro to run?
++# How many PF_RING load-balanced processes would you like Zeek to run?
+ # This value should be lower than your number of CPU cores.
+ BRO_LB_PROCS='1'
+ 
+ # EXTRACT_FILES
+-# Do you want Bro to automatically extract Windows EXEs and write them to disk?  yes/no
++# Do you want Zeek to automatically extract Windows EXEs and write them to disk?  yes/no
+ EXTRACT_FILES='yes'
+ 
+ ################################
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup-storage.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup-storage.conf
+@@ -148,7 +148,7 @@ SENSOR=1
+ # If SENSOR=1, then the following services can be enabled/disabled.
+ 
+ # BRO_ENABLED
+-# Do you want to run Bro?  yes/no
++# Do you want to run Zeek?  yes/no
+ BRO_ENABLED='no'
+ 
+ # IDS_ENGINE_ENABLED
+@@ -179,7 +179,7 @@ PCAP_AGENT_ENABLED='no'
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+-# Bro provides the same data types plus more, so most
++# Zeek provides the same data types plus more, so most
+ # folks don't run Prads.
+ PRADS_ENABLED='no'
+ 
+@@ -198,14 +198,14 @@ PADS_AGENT_ENABLED='no'
+ ##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+-# http_agent sends http logs from Bro to Sguil.
++# http_agent sends http logs from Zeek to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+ HTTP_AGENT_ENABLED='no'
+ 
+ ##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+-# Argus writes session data, also provided by Bro and Prads.
++# Argus writes session data, also provided by Zeek and Prads.
+ # Most folks don't run Argus.
+ ARGUS_ENABLED='no'
+ 
+@@ -271,16 +271,16 @@ IDS_LB_PROCS='1'
+ HOME_NET='192.168.0.0/16,10.0.0.0/8,172.16.0.0/12'
+ 
+ ################################
+-# Bro Config
++# Zeek Config
+ ################################
+ 
+ # BRO_LB_PROCS
+-# How many PF_RING load-balanced processes would you like Bro to run?
++# How many PF_RING load-balanced processes would you like Zeek to run?
+ # This value should be lower than your number of CPU cores.
+ BRO_LB_PROCS='1'
+ 
+ # EXTRACT_FILES
+-# Do you want Bro to automatically extract Windows EXEs and write them to disk?  yes/no
++# Do you want Zeek to automatically extract Windows EXEs and write them to disk?  yes/no
+ EXTRACT_FILES='yes'
+ 
+ ################################
+--- securityonion-setup-20120912.orig/share/securityonion/sosetup.conf
++++ securityonion-setup-20120912/share/securityonion/sosetup.conf
+@@ -148,7 +148,7 @@ SENSOR=1
+ # If SENSOR=1, then the following services can be enabled/disabled.
+ 
+ # BRO_ENABLED
+-# Do you want to run Bro?  yes/no
++# Do you want to run Zeek?  yes/no
+ BRO_ENABLED='yes'
+ 
+ # IDS_ENGINE_ENABLED
+@@ -179,7 +179,7 @@ PCAP_AGENT_ENABLED='yes'
+ # PRADS_ENABLED
+ # Do you want to run Prads?  yes/no
+ # Prads writes session data and asset data.
+-# Bro provides the same data types plus more, so most
++# Zeek provides the same data types plus more, so most
+ # folks don't run Prads.
+ PRADS_ENABLED='no'
+ 
+@@ -198,14 +198,14 @@ PADS_AGENT_ENABLED='no'
+ ##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # HTTP_AGENT_ENABLED
+ # Do you want to run the http_agent?  yes/no
+-# http_agent sends http logs from Bro to Sguil.
++# http_agent sends http logs from Zeek to Sguil.
+ # If you're running ELSA, then you probably want to disable this.
+ HTTP_AGENT_ENABLED='no'
+ 
+ ##!! THIS OPTION IS DEPRECATED AND IS NO LONGER USED - DO NOT ALTER OR REMOVE
+ # ARGUS_ENABLED
+ # Do you want to run Argus?  yes/no
+-# Argus writes session data, also provided by Bro and Prads.
++# Argus writes session data, also provided by Zeek and Prads.
+ # Most folks don't run Argus.
+ ARGUS_ENABLED='no'
+ 
+@@ -271,16 +271,16 @@ IDS_LB_PROCS='1'
+ HOME_NET='192.168.0.0/16,10.0.0.0/8,172.16.0.0/12'
+ 
+ ################################
+-# Bro Config
++# Zeek Config
+ ################################
+ 
+ # BRO_LB_PROCS
+-# How many PF_RING load-balanced processes would you like Bro to run?
++# How many PF_RING load-balanced processes would you like Zeek to run?
+ # This value should be lower than your number of CPU cores.
+ BRO_LB_PROCS='1'
+ 
+ # EXTRACT_FILES
+-# Do you want Bro to automatically extract Windows EXEs and write them to disk?  yes/no
++# Do you want Zeek to automatically extract Windows EXEs and write them to disk?  yes/no
+ EXTRACT_FILES='yes'
+ 
+ ################################

@@ -23,13 +23,6 @@ if ! [ -f $COMMON ]; then
 fi
 source $COMMON
 
-# check to see if this is a sensor before continuing
-if [ -f /root/.ssh/securityonion_ssh.conf ]; then
-	echo "This machine appears to be a sensor connected to a distributed deployment."
-	echo "This script was designed for standalone systems designated for so-import-pcap."
-	exit
-fi
-
 unset DISPLAY
 source /usr/sbin/sosetup-common
 TEXT="sosetup-minimal will run the normal sosetup and then reconfigure the Elastic Stack to run in minimal mode.\n\nThis minimal mode is designed to minimize RAM and CPU usage.\n\nThe minimal Logstash config is intended to only do a basic parsing of NIDS and Zeek logs and it won't do any additional decoration or augmentation.\n\nWould you like to proceed?"

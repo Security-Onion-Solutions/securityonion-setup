@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion326) xenial; urgency=medium
+
+  * issues 1731 and 1732 
+
+ -- Doug Burks <doug.burks@gmail.com>  Wed, 18 Mar 2020 19:51:50 -0400
+
 securityonion-setup (20120912-0ubuntu0securityonion325) xenial; urgency=medium
 
   * more zeek changes 

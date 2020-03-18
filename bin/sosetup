@@ -1101,6 +1101,7 @@ EOF
 	# Set IDS_ENGINE variable
 	scp -i "$KEY" $SSH_USERNAME@$SERVERNAME:/etc/nsm/securityonion.conf $SECURITYONION_CONF_MASTER >> $LOG 2>&1
 	IDS_ENGINE=`grep ENGINE $SECURITYONION_CONF_MASTER 2>/dev/null | cut -d\= -f2`
+	LOGSTASH_MINIMAL_MASTER=`grep "^LOGSTASH_MINIMAL=" $SECURITYONION_CONF_MASTER 2>/dev/null | tail -1 | cut -d\" -f2`
 	rm -f $SECURITYONION_CONF_MASTER
 
 	# Save configuration
@@ -1973,6 +1974,16 @@ LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT_GB
 EOF
 	else
         	sed "s/LOG_SIZE_LIMIT=.*/LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT_GB/" $CONF
+	fi
+
+	# LOGSTASH_MINIMAL is now the default for new production deployments
+	if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
+		echo 'LOGSTASH_MINIMAL="yes"' >> $CONF
+	fi
+
+	# If master server is set to LOGSTASH_MINIMAL, then set that locally as well
+	if [ "$LOGSTASH_MINIMAL_MASTER" = "yes" ]; then
+		echo 'LOGSTASH_MINIMAL="yes"' >> $CONF
 	fi
 
 	if [ $SERVER -eq 1 ] && [ $LOGSTASH_OUTPUT_REDIS = "yes" ]; then

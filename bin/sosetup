@@ -1976,7 +1976,14 @@ EOF
         	sed "s/LOG_SIZE_LIMIT=.*/LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT_GB/" $CONF
 	fi
 
-	# LOGSTASH_MINIMAL is now the default for new production deployments
+	# sosetup: set LOGSTASH_MINIMAL if running sosetup-minimal #1739
+	# https://github.com/Security-Onion-Solutions/security-onion/issues/1739
+	if pgrep sosetup-minimal > /dev/null; then
+		echo 'LOGSTASH_MINIMAL="yes"' >> $CONF
+	fi
+
+	# sosetup: new production deployments should default to LOGSTASH_MINIMAL #1732
+	# https://github.com/Security-Onion-Solutions/security-onion/issues/1732
 	if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
 		echo 'LOGSTASH_MINIMAL="yes"' >> $CONF
 	fi

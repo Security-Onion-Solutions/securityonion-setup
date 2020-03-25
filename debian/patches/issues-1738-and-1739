@@ -1,0 +1,80 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion327) xenial; urgency=medium
+ .
+   * issues 1738 and 1739
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -1976,7 +1976,14 @@ EOF
+         	sed "s/LOG_SIZE_LIMIT=.*/LOG_SIZE_LIMIT=$LOG_SIZE_LIMIT_GB/" $CONF
+ 	fi
+ 
+-	# LOGSTASH_MINIMAL is now the default for new production deployments
++	# sosetup: set LOGSTASH_MINIMAL if running sosetup-minimal #1739
++	# https://github.com/Security-Onion-Solutions/security-onion/issues/1739
++	if pgrep sosetup-minimal > /dev/null; then
++		echo 'LOGSTASH_MINIMAL="yes"' >> $CONF
++	fi
++
++	# sosetup: new production deployments should default to LOGSTASH_MINIMAL #1732
++	# https://github.com/Security-Onion-Solutions/security-onion/issues/1732
+ 	if [ $ADVANCED_SETUP -eq 1 ] && [ $SERVER -eq 1 ]; then
+ 		echo 'LOGSTASH_MINIMAL="yes"' >> $CONF
+ 	fi
+--- securityonion-setup-20120912.orig/bin/sosetup-minimal
++++ securityonion-setup-20120912/bin/sosetup-minimal
+@@ -75,8 +75,10 @@ function tune() {
+ 		sed -i 's|DOMAIN_STATS_ENABLED="yes"|DOMAIN_STATS_ENABLED="no"|g' $CONF
+ 	fi
+ 
+-	# tune elasticsearch if running
+-	if docker ps |grep elasticsearch >/dev/null 2>&1; then
++	# tune elasticsearch if enabled
++	# sosetup-minimal: improve service check #1738
++	# https://github.com/Security-Onion-Solutions/security-onion/issues/1738
++	if [ "$ELASTICSEARCH_ENABLED" = "yes" ]; then
+ 
+ 		echo -e "XXX\n40\nPlease wait while stopping Elasticsearch...\nXXX"
+ 		/usr/sbin/so-elasticsearch-stop >/dev/null 2>&1
+@@ -90,17 +92,15 @@ function tune() {
+ 		/usr/sbin/so-elasticsearch-start >/dev/null 2>&1
+ 	fi
+ 
+-	# tune logstash if running
+-	if docker ps |grep logstash >/dev/null 2>&1; then
++	# tune logstash if enabled
++	# sosetup-minimal: improve service check #1738
++	# https://github.com/Security-Onion-Solutions/security-onion/issues/1738
++	if [ "$LOGSTASH_ENABLED" = "yes" ]; then
+ 
+ 		echo -e "XXX\n60\nPlease wait while stopping Logstash...\nXXX"
+ 		/usr/sbin/so-logstash-stop >/dev/null 2>&1
+ 
+ 		echo -e "XXX\n70\nPlease wait while configuring and restarting Logstash...\nXXX"
+-		if ! grep -q "LOGSTASH_MINIMAL" /etc/nsm/securityonion.conf; then
+-			echo >> /etc/nsm/securityonion.conf
+-			echo 'LOGSTASH_MINIMAL="yes"' >> /etc/nsm/securityonion.conf
+-		fi
+ 		LS_HEAP_SIZE="200m"
+ 		sed -i "s/^-Xms.*/-Xms$LS_HEAP_SIZE/" /etc/logstash/jvm.options
+ 		sed -i "s/^-Xmx.*/-Xmx$LS_HEAP_SIZE/" /etc/logstash/jvm.options

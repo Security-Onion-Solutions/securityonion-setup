@@ -75,8 +75,10 @@ function tune() {
 		sed -i 's|DOMAIN_STATS_ENABLED="yes"|DOMAIN_STATS_ENABLED="no"|g' $CONF
 	fi
 
-	# tune elasticsearch if running
-	if docker ps |grep elasticsearch >/dev/null 2>&1; then
+	# tune elasticsearch if enabled
+	# sosetup-minimal: improve service check #1738
+	# https://github.com/Security-Onion-Solutions/security-onion/issues/1738
+	if [ "$ELASTICSEARCH_ENABLED" = "yes" ]; then
 
 		echo -e "XXX\n40\nPlease wait while stopping Elasticsearch...\nXXX"
 		/usr/sbin/so-elasticsearch-stop >/dev/null 2>&1
@@ -90,17 +92,15 @@ function tune() {
 		/usr/sbin/so-elasticsearch-start >/dev/null 2>&1
 	fi
 
-	# tune logstash if running
-	if docker ps |grep logstash >/dev/null 2>&1; then
+	# tune logstash if enabled
+	# sosetup-minimal: improve service check #1738
+	# https://github.com/Security-Onion-Solutions/security-onion/issues/1738
+	if [ "$LOGSTASH_ENABLED" = "yes" ]; then
 
 		echo -e "XXX\n60\nPlease wait while stopping Logstash...\nXXX"
 		/usr/sbin/so-logstash-stop >/dev/null 2>&1
 
 		echo -e "XXX\n70\nPlease wait while configuring and restarting Logstash...\nXXX"
-		if ! grep -q "LOGSTASH_MINIMAL" /etc/nsm/securityonion.conf; then
-			echo >> /etc/nsm/securityonion.conf
-			echo 'LOGSTASH_MINIMAL="yes"' >> /etc/nsm/securityonion.conf
-		fi
 		LS_HEAP_SIZE="200m"
 		sed -i "s/^-Xms.*/-Xms$LS_HEAP_SIZE/" /etc/logstash/jvm.options
 		sed -i "s/^-Xmx.*/-Xmx$LS_HEAP_SIZE/" /etc/logstash/jvm.options

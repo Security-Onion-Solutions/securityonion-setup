@@ -767,7 +767,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSOR -eq 1 ] && [ $NODE != "Storage" ]; the
 
 	# Zeek file extraction
 	if [ "$BRO_ENABLED" == "yes" ]; then
-		TEXT="Zeek can extract files (EXEs by default) from your network traffic.\n\nIf enabled, EXEs will be stored in /nsm/bro/extracted/.\n\nWould you like to enable file extraction?"
+		TEXT="Zeek can extract files (EXEs by default) from your network traffic.\n\nIf enabled, EXEs will be stored in /nsm/zeek/extracted/.\n\nWould you like to enable file extraction?"
 		YES="Yes, enable file extraction!"
 		NO="No, disable file extraction."
 		promptyesno "$TEXT"
@@ -2147,7 +2147,7 @@ fi
 # FINAL (FIN) OUTPUT FUNCTIONS
 #########################################
 function FIN1() {
-TEXT="Security Onion Setup is now complete!\n\nSetup log can be found here:\n$LOG\n\nYou may view IDS alerts using Sguil, Squert, or Kibana (if enabled).\n\nZeek logs can be found in Kibana (if enabled) and the following location:\n/nsm/bro/"
+TEXT="Security Onion Setup is now complete!\n\nSetup log can be found here:\n$LOG\n\nYou may view IDS alerts using Sguil, Squert, or Kibana (if enabled).\n\nZeek logs can be found in Kibana (if enabled) and the following location:\n/nsm/zeek/"
 }
 
 function FIN2() {

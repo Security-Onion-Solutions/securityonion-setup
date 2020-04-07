@@ -1,0 +1,45 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion328) xenial; urgency=medium
+ .
+   * issue 1753
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -767,7 +767,7 @@ if [ $ADVANCED_SETUP -eq 1 ] && [ $SENSO
+ 
+ 	# Zeek file extraction
+ 	if [ "$BRO_ENABLED" == "yes" ]; then
+-		TEXT="Zeek can extract files (EXEs by default) from your network traffic.\n\nIf enabled, EXEs will be stored in /nsm/bro/extracted/.\n\nWould you like to enable file extraction?"
++		TEXT="Zeek can extract files (EXEs by default) from your network traffic.\n\nIf enabled, EXEs will be stored in /nsm/zeek/extracted/.\n\nWould you like to enable file extraction?"
+ 		YES="Yes, enable file extraction!"
+ 		NO="No, disable file extraction."
+ 		promptyesno "$TEXT"
+@@ -2147,7 +2147,7 @@ fi
+ # FINAL (FIN) OUTPUT FUNCTIONS
+ #########################################
+ function FIN1() {
+-TEXT="Security Onion Setup is now complete!\n\nSetup log can be found here:\n$LOG\n\nYou may view IDS alerts using Sguil, Squert, or Kibana (if enabled).\n\nZeek logs can be found in Kibana (if enabled) and the following location:\n/nsm/bro/"
++TEXT="Security Onion Setup is now complete!\n\nSetup log can be found here:\n$LOG\n\nYou may view IDS alerts using Sguil, Squert, or Kibana (if enabled).\n\nZeek logs can be found in Kibana (if enabled) and the following location:\n/nsm/zeek/"
+ }
+ 
+ function FIN2() {

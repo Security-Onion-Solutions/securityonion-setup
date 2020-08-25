@@ -366,6 +366,12 @@ function CONFIGURE_NETWORK() {
 # Create the log directory
 mkdir -p $LOGDIR
 
+# make sure we have data
+if [ -z "$MGMT_CONFIG_TYPE" -a -z "$ADDRESS" ]; then
+	echo "ERROR: unable to configure network"
+	exit
+fi
+
 # Change hostname if necessary
 if [ "$HOSTNAME" != "$NEWHOSTNAME" ]; then
 	sed -i "s|$HOSTNAME|$NEWHOSTNAME|" /etc/hosts

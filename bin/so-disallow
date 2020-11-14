@@ -61,7 +61,7 @@ echo "If you need to add any ports other than those listed above,"
 echo "you can do so using the standard 'ufw' utility."
 echo
 echo "For more information, please see:"
-echo "https://securityonion.net/docs/Firewall"
+echo "https://docs.securityonion.net/en/16.04/Firewall"
 
 device="none"
 while [ "$device" = "none" ]; do

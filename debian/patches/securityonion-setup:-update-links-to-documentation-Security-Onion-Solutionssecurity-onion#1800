@@ -1,0 +1,105 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ securityonion-setup (20120912-0ubuntu0securityonion329) xenial; urgency=medium
+ .
+   * securityonion-setup: update links to documentation Security-Onion-Solutions/security-onion#1800
+Author: Doug Burks <doug.burks@gmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- securityonion-setup-20120912.orig/bin/so-allow
++++ securityonion-setup-20120912/bin/so-allow
+@@ -74,7 +74,7 @@ echo "If you need to add any ports other
+ echo "you can do so using the standard 'ufw' utility."
+ echo
+ echo "For more information, please see:"
+-echo "https://securityonion.net/docs/Firewall"
++echo "https://docs.securityonion.net/en/16.04/Firewall"
+ 
+ device="none"
+ while [ "$device" = "none" ]; do
+--- securityonion-setup-20120912.orig/bin/so-allow-elastic
++++ securityonion-setup-20120912/bin/so-allow-elastic
+@@ -70,7 +70,7 @@ echo "If you need to add any ports other
+ echo "you can do so using the standard 'ufw' utility."
+ echo
+ echo "For more information, please see:"
+-echo "https://securityonion.net/docs/Firewall"
++echo "https://docs.securityonion.net/en/16.04/Firewall"
+ 
+ device="none"
+ while [ "$device" = "none" ]; do
+--- securityonion-setup-20120912.orig/bin/so-disallow
++++ securityonion-setup-20120912/bin/so-disallow
+@@ -61,7 +61,7 @@ echo "If you need to add any ports other
+ echo "you can do so using the standard 'ufw' utility."
+ echo
+ echo "For more information, please see:"
+-echo "https://securityonion.net/docs/Firewall"
++echo "https://docs.securityonion.net/en/16.04/Firewall"
+ 
+ device="none"
+ while [ "$device" = "none" ]; do
+--- securityonion-setup-20120912.orig/bin/so-email
++++ securityonion-setup-20120912/bin/so-email
+@@ -484,7 +484,7 @@ MOVELOG
+ TEXT="Security Onion Email Setup is now complete! \n \
+ \n\
+ If you would like to edit the email configuration manually, please refer to:\n
+-https://securityonion.net/docs/Email\n"
++https://docs.securityonion.net/en/16.04/Email\n"
+ if [ "$OUTPUT" = "gui" ]; then
+ 	zenity --info --title="$TITLE" --text="$TEXT" --no-wrap
+ else
+--- securityonion-setup-20120912.orig/bin/sosetup
++++ securityonion-setup-20120912/bin/sosetup
+@@ -134,11 +134,11 @@ TOTAL_MEM=`grep MemTotal /proc/meminfo |
+ # Make RAM # human readable (GB)
+ HR_MEM=$((TOTAL_MEM / 1000))
+ # Text for minimum memory check
+-MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\nFor best performance, please ensure the machine is allocated at least 8GB of RAM.\n\nPlease consult the following link for more information:\nhttps://securityonion.net/docs/Hardware\n
++MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\nFor best performance, please ensure the machine is allocated at least 8GB of RAM.\n\nPlease consult the following link for more information:\nhttps://docs.securityonion.net/en/16.04/Hardware\n
+ Select 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n
+ Otherwise, select 'Yes' to continue."
+ # Text for minimum core check
+-CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\nFor best performance, please ensure the machine is allocated at least 2 processor cores.\n\nPlease consult the following link for more information:\nhttps://securityonion.net/docs/Hardware\n
++CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\nFor best performance, please ensure the machine is allocated at least 2 processor cores.\n\nPlease consult the following link for more information:\nhttps://docs.securityonion.net/en/16.04/Hardware\n
+ Select 'No' to stop setup and adjust the number of processor cores allocated to this machine.\n
+ Otherwise, select 'Yes' to continue."
+ ARGS=("$@")
+@@ -432,7 +432,7 @@ Storage Nodes run Elasticsearch and Logs
+ The master server queries Storage Nodes via cross cluster search.\n"
+ 		NODE=`zenity --height=450 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Forward FALSE Heavy FALSE Storage`
+ 	else
+-		TEXT="To add to your existing deployment, please select a node type for this node.\n\nForward Nodes generate and collect logs and forward them to the master server.  Full packet capture remains local on forward nodes.\n\nHeavy Nodes generate and collect logs and store them locally.\n\nStorage Nodes do not generate logs themselves but simply extend the storage of the master server.\n\nFor more information, please see:\nhttps://securityonion.net/docs/architecture.html?#node-types"
++		TEXT="To add to your existing deployment, please select a node type for this node.\n\nForward Nodes generate and collect logs and forward them to the master server.  Full packet capture remains local on forward nodes.\n\nHeavy Nodes generate and collect logs and store them locally.\n\nStorage Nodes do not generate logs themselves but simply extend the storage of the master server.\n\nFor more information, please see:\nhttps://docs.securityonion.net/en/16.04/architecture.html?#node-types"
+ 		NODE=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 21 75 3 "Forward" ON "Heavy" OFF "Storage" OFF 3>&1 1>&2 2>&3)
+ 	fi
+ 	case $NODE in
+--- securityonion-setup-20120912.orig/bin/sosetup-network
++++ securityonion-setup-20120912/bin/sosetup-network
+@@ -45,7 +45,7 @@ if grep "Security Onion" /etc/network/in
+ 	fi
+ else
+ 	# First-time user.  Ask if they want to continue.
+-	TEXT='Would you like to configure /etc/network/interfaces now?\n\nThis is HIGHLY recommended as it will automatically optimize your network interfaces.\n\nThis includes disabling any NIC offload features which may interfere with traffic analysis.\n\nIf you choose NO, you should manually configure your interfaces per the instructions at:\nhttps://securityonion.net/docs/NetworkConfiguration'
++	TEXT='Would you like to configure /etc/network/interfaces now?\n\nThis is HIGHLY recommended as it will automatically optimize your network interfaces.\n\nThis includes disabling any NIC offload features which may interfere with traffic analysis.\n\nIf you choose NO, you should manually configure your interfaces per the instructions at:\nhttps://docs.securityonion.net/en/16.04/NetworkConfiguration'
+ 	YES='Yes, configure /etc/network/interfaces!'
+ 	NO='No, not right now.'
+ 	promptyesno

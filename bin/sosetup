@@ -134,11 +134,11 @@ TOTAL_MEM=`grep MemTotal /proc/meminfo | awk '{print $2}' | sed -r 's/.{3}$//'`
 # Make RAM # human readable (GB)
 HR_MEM=$((TOTAL_MEM / 1000))
 # Text for minimum memory check
-MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\nFor best performance, please ensure the machine is allocated at least 8GB of RAM.\n\nPlease consult the following link for more information:\nhttps://securityonion.net/docs/Hardware\n
+MEM_TEXT="This machine currently has "$HR_MEM"GB of RAM allocated.\n\nFor best performance, please ensure the machine is allocated at least 8GB of RAM.\n\nPlease consult the following link for more information:\nhttps://docs.securityonion.net/en/16.04/Hardware\n
 Select 'No' to stop setup and adjust the amount of RAM allocated to this machine.\n
 Otherwise, select 'Yes' to continue."
 # Text for minimum core check
-CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\nFor best performance, please ensure the machine is allocated at least 2 processor cores.\n\nPlease consult the following link for more information:\nhttps://securityonion.net/docs/Hardware\n
+CORE_TEXT="This machine currently has "$CORES" processor core(s) allocated.\n\nFor best performance, please ensure the machine is allocated at least 2 processor cores.\n\nPlease consult the following link for more information:\nhttps://docs.securityonion.net/en/16.04/Hardware\n
 Select 'No' to stop setup and adjust the number of processor cores allocated to this machine.\n
 Otherwise, select 'Yes' to continue."
 ARGS=("$@")
@@ -432,7 +432,7 @@ Storage Nodes run Elasticsearch and Logstash.\n\
 The master server queries Storage Nodes via cross cluster search.\n"
 		NODE=`zenity --height=450 --list --radiolist --column="1" --column="2" --hide-header --title="$TITLE" --text="$TEXT" TRUE Forward FALSE Heavy FALSE Storage`
 	else
-		TEXT="To add to your existing deployment, please select a node type for this node.\n\nForward Nodes generate and collect logs and forward them to the master server.  Full packet capture remains local on forward nodes.\n\nHeavy Nodes generate and collect logs and store them locally.\n\nStorage Nodes do not generate logs themselves but simply extend the storage of the master server.\n\nFor more information, please see:\nhttps://securityonion.net/docs/architecture.html?#node-types"
+		TEXT="To add to your existing deployment, please select a node type for this node.\n\nForward Nodes generate and collect logs and forward them to the master server.  Full packet capture remains local on forward nodes.\n\nHeavy Nodes generate and collect logs and store them locally.\n\nStorage Nodes do not generate logs themselves but simply extend the storage of the master server.\n\nFor more information, please see:\nhttps://docs.securityonion.net/en/16.04/architecture.html?#node-types"
 		NODE=$(whiptail --title="$TITLE" --radiolist --noitem "$TEXT" 21 75 3 "Forward" ON "Heavy" OFF "Storage" OFF 3>&1 1>&2 2>&3)
 	fi
 	case $NODE in

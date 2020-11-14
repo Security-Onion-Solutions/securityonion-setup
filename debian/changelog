@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion329) xenial; urgency=medium
+
+  * securityonion-setup: update links to documentation Security-Onion-Solutions/security-onion#1800 
+
+ -- Doug Burks <doug.burks@gmail.com>  Sat, 14 Nov 2020 14:30:13 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion328) xenial; urgency=medium
 
   * issue 1753 

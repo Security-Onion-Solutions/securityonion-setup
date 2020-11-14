@@ -45,7 +45,7 @@ if grep "Security Onion" /etc/network/interfaces >/dev/null 2>&1; then
 	fi
 else
 	# First-time user.  Ask if they want to continue.
-	TEXT='Would you like to configure /etc/network/interfaces now?\n\nThis is HIGHLY recommended as it will automatically optimize your network interfaces.\n\nThis includes disabling any NIC offload features which may interfere with traffic analysis.\n\nIf you choose NO, you should manually configure your interfaces per the instructions at:\nhttps://securityonion.net/docs/NetworkConfiguration'
+	TEXT='Would you like to configure /etc/network/interfaces now?\n\nThis is HIGHLY recommended as it will automatically optimize your network interfaces.\n\nThis includes disabling any NIC offload features which may interfere with traffic analysis.\n\nIf you choose NO, you should manually configure your interfaces per the instructions at:\nhttps://docs.securityonion.net/en/16.04/NetworkConfiguration'
 	YES='Yes, configure /etc/network/interfaces!'
 	NO='No, not right now.'
 	promptyesno

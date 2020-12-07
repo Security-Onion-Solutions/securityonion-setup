@@ -372,10 +372,14 @@ if [ -z "$MGMT_CONFIG_TYPE" -a -z "$ADDRESS" ]; then
 	exit
 fi
 
-# Change hostname if necessary
-if [ "$HOSTNAME" != "$NEWHOSTNAME" ]; then
-	sed -i "s|$HOSTNAME|$NEWHOSTNAME|" /etc/hosts
-	sed -i "s|$HOSTNAME|$NEWHOSTNAME|" /etc/hostname
+# Change hostname if not using answer file
+if [ -f "$ANSWERFILE" ]; then
+	echo "HOSTNAME is $HOSTNAME"
+else
+	if [ "$HOSTNAME" != "$NEWHOSTNAME" ]; then
+		sed -i "s|$HOSTNAME|$NEWHOSTNAME|" /etc/hosts
+		sed -i "s|$HOSTNAME|$NEWHOSTNAME|" /etc/hostname
+	fi
 fi
 
 # Disable network-manager

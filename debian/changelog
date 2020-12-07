@@ -1,3 +1,9 @@
+securityonion-setup (20120912-0ubuntu0securityonion330) xenial; urgency=medium
+
+  * sosetup-network: Empty hostname set when running automated installs Security-Onion-Solutions/security-onion#1783 
+
+ -- Doug Burks <doug.burks@gmail.com>  Mon, 07 Dec 2020 15:43:22 -0500
+
 securityonion-setup (20120912-0ubuntu0securityonion329) xenial; urgency=medium
 
   * securityonion-setup: update links to documentation Security-Onion-Solutions/security-onion#1800 
